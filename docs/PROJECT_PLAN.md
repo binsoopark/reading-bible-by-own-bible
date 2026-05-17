@@ -109,6 +109,14 @@ com.soobinpark.appcraft.readingbible
 
 ## 11. 작업 로그
 
+### 2026-05-18 GitHub Actions Release Signing 설정
+
+- [x] release signing 정보를 환경변수에서만 읽도록 Gradle 설정 추가
+- [x] GitHub Actions에서 keystore를 Secrets에서 복원해 release AAB/APK를 빌드하도록 workflow 추가
+- [x] 소스 파일에 keystore, store password, key alias, key password 값이 노출되지 않도록 구성
+- [x] `assembleDebug` 빌드 성공
+- [x] `bundleRelease` 빌드 task 구성 검증 성공
+
 ### 2026-05-18 앱 이름 변경
 
 - [x] 한글 앱 이름을 `내 성경 읽기`로 변경

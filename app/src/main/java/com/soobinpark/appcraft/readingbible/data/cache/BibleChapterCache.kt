@@ -95,32 +95,34 @@ class BibleChapterCache(
         }
     }
 
-    @Synchronized
     fun writeVersions(
         scanKey: String,
         versions: List<BibleVersion>,
     ) {
         if (versions.isEmpty()) return
-        val db = writableDatabase
-        db.beginTransaction()
-        try {
-            db.delete("versions", "scan_key = ?", arrayOf(scanKey))
-            versions.forEachIndexed { index, version ->
-                db.insertOrThrow(
-                    "versions",
-                    null,
-                    ContentValues().apply {
-                        put("scan_key", scanKey)
-                        put("code", version.code)
-                        put("display_name", version.displayName)
-                        put("source_type", version.sourceType.name)
-                        put("position", index)
-                    },
-                )
+        synchronized(databaseWriteLock) {
+            val db = writableDatabase
+            db.beginTransaction()
+            try {
+                db.delete("versions", "scan_key = ?", arrayOf(scanKey))
+                versions.forEachIndexed { index, version ->
+                    db.insertWithOnConflict(
+                        "versions",
+                        null,
+                        ContentValues().apply {
+                            put("scan_key", scanKey)
+                            put("code", version.code)
+                            put("display_name", version.displayName)
+                            put("source_type", version.sourceType.name)
+                            put("position", index)
+                        },
+                        SQLiteDatabase.CONFLICT_REPLACE,
+                    )
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
             }
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
         }
     }
 
@@ -172,42 +174,45 @@ class BibleChapterCache(
         }
     }
 
-    @Synchronized
     fun writeChapter(
         cacheKey: String,
         verses: List<BibleVerse>,
     ) {
         val first = verses.firstOrNull() ?: return
-        val db = writableDatabase
-        db.beginTransaction()
-        try {
-            db.delete("verses", "cache_key = ?", arrayOf(cacheKey))
-            db.delete("chapters", "cache_key = ?", arrayOf(cacheKey))
-            db.insertOrThrow(
-                "chapters",
-                null,
-                ContentValues().apply {
-                    put("cache_key", cacheKey)
-                    put("version_code", first.versionCode)
-                    put("book_index", first.bookIndex)
-                    put("chapter", first.chapter)
-                    put("cached_at", System.currentTimeMillis())
-                },
-            )
-            verses.forEach { verse ->
-                db.insertOrThrow(
-                    "verses",
+        synchronized(databaseWriteLock) {
+            val db = writableDatabase
+            db.beginTransaction()
+            try {
+                db.delete("verses", "cache_key = ?", arrayOf(cacheKey))
+                db.delete("chapters", "cache_key = ?", arrayOf(cacheKey))
+                db.insertWithOnConflict(
+                    "chapters",
                     null,
                     ContentValues().apply {
                         put("cache_key", cacheKey)
-                        put("verse", verse.verse)
-                        put("text", verse.text)
+                        put("version_code", first.versionCode)
+                        put("book_index", first.bookIndex)
+                        put("chapter", first.chapter)
+                        put("cached_at", System.currentTimeMillis())
                     },
+                    SQLiteDatabase.CONFLICT_REPLACE,
                 )
+                verses.forEach { verse ->
+                    db.insertWithOnConflict(
+                        "verses",
+                        null,
+                        ContentValues().apply {
+                            put("cache_key", cacheKey)
+                            put("verse", verse.verse)
+                            put("text", verse.text)
+                        },
+                        SQLiteDatabase.CONFLICT_REPLACE,
+                    )
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
             }
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
         }
     }
 
@@ -220,5 +225,6 @@ class BibleChapterCache(
     private companion object {
         const val DATABASE_NAME = "bible_chapter_cache.db"
         const val DATABASE_VERSION = 2
+        val databaseWriteLock = Any()
     }
 }

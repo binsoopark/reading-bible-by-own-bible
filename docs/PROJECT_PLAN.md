@@ -154,6 +154,14 @@ com.soobinpark.appcraft.readingbible
 - [x] 특정 역본/장이 비어 있으면 Reader에 파일 형식 또는 손상 여부 확인 메시지 표시
 - [x] `assembleDebug` 빌드 성공
 
+### 2026-05-17 SQLite 장 캐시 충돌 대응
+
+- [x] 같은 장 안에 중복 절 번호가 있어도 캐시 저장 중 앱이 종료되지 않도록 수정
+- [x] `verses` 저장을 `CONFLICT_REPLACE` 방식으로 변경
+- [x] 여러 ViewModel이 동시에 같은 장을 예열해도 DB 쓰기가 겹치지 않도록 프로세스 공용 lock 추가
+- [x] DB 캐시 저장 실패가 본문 읽기 실패로 전파되지 않도록 repository 안전망 추가
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-17 남은 체크리스트 일괄 구현
 
 - [x] Reader에 비교 역본 선택 추가

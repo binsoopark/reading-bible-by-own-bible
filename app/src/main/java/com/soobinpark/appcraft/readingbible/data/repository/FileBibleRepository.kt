@@ -81,7 +81,7 @@ class FileBibleRepository(
                     }
                 }
             }.getOrDefault(emptyList())
-                .also { chapterPersistentCache?.writeChapter(key, it) }
+                .also { verses -> runCatching { chapterPersistentCache?.writeChapter(key, verses) } }
         }
     }
 

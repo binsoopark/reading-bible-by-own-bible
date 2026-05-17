@@ -1,6 +1,6 @@
-# 내가 가진 성경 읽기
+# 내 성경 읽기
 
-`Reading Bible by Own Bible`은 Lifove Bible 호환 `.bdf`, `.lfa`, `.lfb` 데이터 파일을 이미 보유한 사용자를 위한 현대적인 Android 성경 읽기 앱입니다.
+`Reading My Bible`은 Lifove Bible 호환 `.bdf`, `.lfa`, `.lfb` 데이터 파일을 이미 보유한 사용자를 위한 현대적인 Android 성경 읽기 앱입니다.
 
 ## 프로젝트 계획
 

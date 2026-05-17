@@ -10,10 +10,12 @@ import com.soobinpark.appcraft.readingbible.domain.model.BibleSearchResult
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
 import com.soobinpark.appcraft.readingbible.domain.usecase.SearchBibleUseCase
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 data class SearchUiState(
@@ -57,9 +59,11 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             val root = _uiState.value.dataRoot
             _uiState.value = _uiState.value.copy(isLoading = true, message = null)
-            val versions = dataFolderUri?.let { repository.scanVersions(it) }
-                ?.takeIf { it.isNotEmpty() }
-                ?: repository.scanVersions(root)
+            val versions = withContext(Dispatchers.IO) {
+                dataFolderUri?.let { repository.scanVersions(it) }
+                    ?.takeIf { it.isNotEmpty() }
+                    ?: repository.scanVersions(root)
+            }
             _uiState.value = _uiState.value.copy(
                 versions = versions,
                 selectedVersion = versions.firstOrNull(),
@@ -86,7 +90,9 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
             }
 
             _uiState.value = state.copy(isSearching = true, message = null, results = emptyList())
-            val results = searchBible(version = version, query = query)
+            val results = withContext(Dispatchers.IO) {
+                searchBible(version = version, query = query)
+            }
             _uiState.value = _uiState.value.copy(
                 results = results,
                 isSearching = false,

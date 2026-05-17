@@ -14,6 +14,7 @@ import com.soobinpark.appcraft.readingbible.domain.model.BibleVerse
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
 import com.soobinpark.appcraft.readingbible.domain.repository.BibleRepository
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 
 class FileBibleRepository(
     private val scanner: BibleFileScanner = BibleFileScanner(),
@@ -29,23 +30,45 @@ class FileBibleRepository(
         safLfaParser = SafLfaBibleFileParser(context),
     )
 
-    override suspend fun scanVersions(root: File): List<BibleVersion> = scanner.scan(root)
+    override suspend fun scanVersions(root: File): List<BibleVersion> {
+        val key = "file:${root.absolutePath}:${root.lastModified()}"
+        return versionCache.getOrPut(key) { scanner.scan(root) }
+    }
 
-    suspend fun scanVersions(treeUri: Uri): List<BibleVersion> = safScanner?.scan(treeUri).orEmpty()
+    suspend fun scanVersions(treeUri: Uri): List<BibleVersion> {
+        val key = "saf:$treeUri"
+        return versionCache.getOrPut(key) { safScanner?.scan(treeUri).orEmpty() }
+    }
 
     override suspend fun readChapter(
         version: BibleVersion,
         book: BibleBook,
         chapter: Int,
-    ): List<BibleVerse> = if (version.treeUri != null) {
-        when (version.sourceType) {
-            BibleSourceType.BdfSplit -> safBdfParser?.readChapter(version, book, chapter).orEmpty()
-            BibleSourceType.LfaArchive -> safLfaParser?.readChapter(version, book, chapter).orEmpty()
+    ): List<BibleVerse> {
+        val key = listOf(
+            version.treeUri?.toString() ?: version.fileRoot?.absolutePath.orEmpty(),
+            version.code,
+            version.sourceType.name,
+            book.index,
+            chapter,
+        ).joinToString(":")
+        return chapterCache.getOrPut(key) {
+            if (version.treeUri != null) {
+                when (version.sourceType) {
+                    BibleSourceType.BdfSplit -> safBdfParser?.readChapter(version, book, chapter).orEmpty()
+                    BibleSourceType.LfaArchive -> safLfaParser?.readChapter(version, book, chapter).orEmpty()
+                }
+            } else {
+                when (version.sourceType) {
+                    BibleSourceType.BdfSplit -> bdfParser.readChapter(version, book, chapter)
+                    BibleSourceType.LfaArchive -> lfaParser.readChapter(version, book, chapter)
+                }
+            }
         }
-    } else {
-        when (version.sourceType) {
-            BibleSourceType.BdfSplit -> bdfParser.readChapter(version, book, chapter)
-            BibleSourceType.LfaArchive -> lfaParser.readChapter(version, book, chapter)
-        }
+    }
+
+    companion object {
+        private val versionCache = ConcurrentHashMap<String, List<BibleVersion>>()
+        private val chapterCache = ConcurrentHashMap<String, List<BibleVerse>>()
     }
 }

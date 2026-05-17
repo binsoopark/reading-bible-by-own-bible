@@ -10,7 +10,9 @@ import com.soobinpark.appcraft.readingbible.domain.model.BibleFileDiagnostic
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 data class LibraryUiState(
@@ -39,8 +41,10 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val state = _uiState.value
             _uiState.value = state.copy(isLoading = true)
-            val diagnostic = state.dataFolderUri?.let { diagnosticsReader.diagnose(it) }
-                ?: diagnosticsReader.diagnose(state.dataRoot)
+            val diagnostic = withContext(Dispatchers.IO) {
+                state.dataFolderUri?.let { diagnosticsReader.diagnose(it) }
+                    ?: diagnosticsReader.diagnose(state.dataRoot)
+            }
             _uiState.value = state.copy(
                 diagnostic = diagnostic,
                 isLoading = false,

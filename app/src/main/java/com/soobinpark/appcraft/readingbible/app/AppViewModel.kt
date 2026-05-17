@@ -2,10 +2,15 @@ package com.soobinpark.appcraft.readingbible.app
 
 import android.app.Application
 import android.net.Uri
+import android.os.Environment
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.soobinpark.appcraft.readingbible.data.preference.BookmarkPreferences
 import com.soobinpark.appcraft.readingbible.data.preference.DataFolderPreferences
+import com.soobinpark.appcraft.readingbible.data.preference.ReadingProgressPreferences
 import com.soobinpark.appcraft.readingbible.data.preference.ReadingStylePreferences
+import com.soobinpark.appcraft.readingbible.data.repository.FileBibleRepository
+import com.soobinpark.appcraft.readingbible.domain.model.BibleCatalog
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVerse
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingPalette
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingStyle
@@ -14,17 +19,26 @@ import com.soobinpark.appcraft.readingbible.domain.model.VerseBookmark
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.io.File
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val dataFolderPreferences = DataFolderPreferences(application)
     private val readingStylePreferences = ReadingStylePreferences(application)
     private val bookmarkPreferences = BookmarkPreferences(application)
+    private val readingProgressPreferences = ReadingProgressPreferences(application)
+    private val repository = FileBibleRepository(application)
     private val _dataFolderUri = MutableStateFlow(dataFolderPreferences.getTreeUri())
     private val _readingStyle = MutableStateFlow(readingStylePreferences.getStyle())
     private val _bookmarks = MutableStateFlow(bookmarkPreferences.getBookmarks())
     val dataFolderUri: StateFlow<Uri?> = _dataFolderUri.asStateFlow()
     val readingStyle: StateFlow<ReadingStyle> = _readingStyle.asStateFlow()
     val bookmarks: StateFlow<List<VerseBookmark>> = _bookmarks.asStateFlow()
+
+    init {
+        warmUpBibleCache(_dataFolderUri.value)
+    }
 
     fun exportRecordsJson(): String = bookmarkPreferences.toJson(_bookmarks.value)
 
@@ -40,6 +54,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun setDataFolderUri(uri: Uri?) {
         dataFolderPreferences.setTreeUri(uri)
         _dataFolderUri.value = uri
+        warmUpBibleCache(uri)
     }
 
     fun setReadingFontSize(sizeSp: Float) {
@@ -139,6 +154,25 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             map { bookmark -> if (bookmark.key == updated.key) updated else bookmark }
         } else {
             filterNot { it.key == updated.key }
+        }
+    }
+
+    private fun warmUpBibleCache(uri: Uri?) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val root = File(Environment.getExternalStorageDirectory(), "bible")
+            val versions = uri?.let { repository.scanVersions(it) }
+                ?.takeIf { it.isNotEmpty() }
+                ?: repository.scanVersions(root)
+            val progress = readingProgressPreferences.getProgress()
+            val bookIndex = progress.bookIndex.coerceIn(BibleCatalog.books.indices)
+            val chapter = progress.chapter.coerceIn(1, BibleCatalog.books[bookIndex].chapterCount)
+            val selected = progress.versionCode?.let { code ->
+                versions.firstOrNull { it.code.equals(code, ignoreCase = true) }
+            } ?: versions.firstOrNull()
+            selected?.let { repository.readChapter(it, BibleCatalog.books[bookIndex], chapter) }
+            versions.firstOrNull { it.code != selected?.code }?.let {
+                repository.readChapter(it, BibleCatalog.books[bookIndex], chapter)
+            }
         }
     }
 }

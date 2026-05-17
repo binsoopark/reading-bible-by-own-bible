@@ -1,0 +1,21 @@
+# Gradle
+.gradle/
+.gradle-home/
+build/
+**/build/
+
+# Kotlin / Android Studio
+.kotlin/
+.idea/
+*.iml
+
+# Local machine config
+local.properties
+
+# Android outputs
+*.apk
+*.ap_
+*.aab
+
+# OS files
+.DS_Store

@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -22,6 +23,7 @@ import java.util.Date
 @Composable
 fun RecordsRoute(
     bookmarks: List<VerseBookmark>,
+    onNoteChanged: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -43,13 +45,19 @@ fun RecordsRoute(
             }
         }
         items(bookmarks, key = { it.key }) { bookmark ->
-            BookmarkCard(bookmark)
+            BookmarkCard(
+                bookmark = bookmark,
+                onNoteChanged = onNoteChanged,
+            )
         }
     }
 }
 
 @Composable
-private fun BookmarkCard(bookmark: VerseBookmark) {
+private fun BookmarkCard(
+    bookmark: VerseBookmark,
+    onNoteChanged: (String, String) -> Unit,
+) {
     val book = BibleCatalog.books.getOrNull(bookmark.bookIndex)
     val reference = listOfNotNull(
         book?.koreanName,
@@ -67,6 +75,14 @@ private fun BookmarkCard(bookmark: VerseBookmark) {
             Text(
                 text = "${bookmark.versionCode} · ${DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(bookmark.createdAtMillis))}",
                 style = MaterialTheme.typography.labelMedium,
+            )
+            OutlinedTextField(
+                value = bookmark.note,
+                onValueChange = { onNoteChanged(bookmark.key, it) },
+                modifier = Modifier.padding(top = 6.dp),
+                label = { Text("메모") },
+                placeholder = { Text("이 구절에 대한 생각을 적어두기") },
+                minLines = 2,
             )
         }
     }

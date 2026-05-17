@@ -60,9 +60,21 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     chapter = verse.chapter,
                     verse = verse.verse,
                     text = verse.text,
+                    note = "",
                     createdAtMillis = System.currentTimeMillis(),
                 ),
             ) + current
+        }
+        bookmarkPreferences.setBookmarks(next)
+        _bookmarks.value = next
+    }
+
+    fun updateBookmarkNote(
+        bookmarkKey: String,
+        note: String,
+    ) {
+        val next = _bookmarks.value.map { bookmark ->
+            if (bookmark.key == bookmarkKey) bookmark.copy(note = note) else bookmark
         }
         bookmarkPreferences.setBookmarks(next)
         _bookmarks.value = next

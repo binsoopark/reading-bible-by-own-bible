@@ -6,6 +6,7 @@ data class VerseBookmark(
     val chapter: Int,
     val verse: Int,
     val text: String,
+    val note: String = "",
     val createdAtMillis: Long,
 ) {
     val key: String = key(versionCode, bookIndex, chapter, verse)

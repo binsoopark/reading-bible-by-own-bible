@@ -22,6 +22,7 @@ class BookmarkPreferences(context: Context) {
                             chapter = item.optInt("chapter"),
                             verse = item.optInt("verse"),
                             text = item.optString("text"),
+                            note = item.optString("note"),
                             createdAtMillis = item.optLong("createdAtMillis"),
                         ),
                     )
@@ -46,6 +47,7 @@ class BookmarkPreferences(context: Context) {
                         .put("chapter", bookmark.chapter)
                         .put("verse", bookmark.verse)
                         .put("text", bookmark.text)
+                        .put("note", bookmark.note)
                         .put("createdAtMillis", bookmark.createdAtMillis),
                 )
             }

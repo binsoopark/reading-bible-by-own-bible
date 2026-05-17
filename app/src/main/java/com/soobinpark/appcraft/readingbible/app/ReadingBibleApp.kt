@@ -54,7 +54,11 @@ fun ReadingBibleApp(
             )
             AppTab.Library -> LibraryRoute(dataFolderUri = dataFolderUri, modifier = modifier)
             AppTab.Search -> SearchRoute(dataFolderUri = dataFolderUri, modifier = modifier)
-            AppTab.Records -> RecordsRoute(bookmarks = bookmarks, modifier = modifier)
+            AppTab.Records -> RecordsRoute(
+                bookmarks = bookmarks,
+                onNoteChanged = appViewModel::updateBookmarkNote,
+                modifier = modifier,
+            )
             AppTab.Settings -> SettingsRoute(
                 dataFolderUri = dataFolderUri,
                 readingStyle = readingStyle,

@@ -88,7 +88,7 @@ com.soobinpark.appcraft.readingbible
 - [x] `.lfa` 검색
 - [x] 북마크
 - [ ] 밑줄 / 하이라이트
-- [ ] 메모
+- [x] 메모
 - [ ] 읽음 체크
 
 ## 9. MVP 4단계 후보
@@ -157,6 +157,24 @@ app/build/outputs/apk/debug/app-debug.apk
 - [x] `SafBdfBibleFileParser` 추가
 - [x] `SafLfaBibleFileParser` 추가
 - [x] `ReaderViewModel`이 SAF 폴더를 우선 스캔하고 없으면 `/sdcard/bible` fallback
+- [x] `assembleDebug` 빌드 성공
+
+### 메모 MVP 단계
+
+- [x] 메모 MVP 작업 시작
+- [x] 북마크 모델에 메모 필드 추가
+- [x] 저장된 북마크 JSON에 메모 저장/복원
+- [x] 기록 탭에서 메모 입력 UI 제공
+- [x] 메모 저장 함수 전역 연결
+- [x] `assembleDebug` 빌드 검증
+
+### 2026-05-17 메모 MVP 구현
+
+- [x] `VerseBookmark.note` 필드 추가
+- [x] 기존 북마크 JSON에 `note`가 없어도 빈 메모로 읽히도록 처리
+- [x] `BookmarkPreferences`가 메모를 저장/복원하도록 확장
+- [x] `AppViewModel.updateBookmarkNote` 추가
+- [x] 기록 탭 북마크 카드에 메모 입력란 추가
 - [x] `assembleDebug` 빌드 성공
 
 ### 북마크 MVP 단계

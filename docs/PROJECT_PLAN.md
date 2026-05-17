@@ -213,6 +213,13 @@ com.soobinpark.appcraft.readingbible
 - [x] 빠른 스크롤바 터치 영역과 thumb 폭을 키워 손으로 잡기 쉽게 개선
 - [x] `assembleDebug` 빌드 성공
 
+### 2026-05-18 Reader 스크롤바 렌더링 수정
+
+- [x] 최초 측정 전 스크롤바가 return되어 표시되지 않는 문제 수정
+- [x] 본문 절이 2개 이상이면 우측 스크롤 트랙이 항상 보이도록 변경
+- [x] thumb 폭과 대비를 높여 스크롤바가 눈에 보이도록 개선
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-17 남은 체크리스트 일괄 구현
 
 - [x] Reader에 비교 역본 선택 추가

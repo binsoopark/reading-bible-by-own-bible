@@ -662,16 +662,17 @@ private fun FastVerseScrollBar(
     val visibleCount by remember {
         derivedStateOf { listState.layoutInfo.visibleItemsInfo.size.coerceAtLeast(1) }
     }
-    val showScrollBar = itemCount > visibleCount && trackSize.height > 0
-    if (!showScrollBar) return
+    if (itemCount <= 1) return
 
-    val trackHeightPx = trackSize.height.toFloat()
-    val thumbHeightPx = (trackHeightPx * visibleCount / itemCount.toFloat()).coerceAtLeast(with(density) { 36.dp.toPx() })
+    val trackHeightPx = trackSize.height.toFloat().coerceAtLeast(1f)
+    val thumbHeightPx = (trackHeightPx * visibleCount / itemCount.toFloat())
+        .coerceIn(with(density) { 36.dp.toPx() }, trackHeightPx)
     val maxFirstIndex = (itemCount - visibleCount).coerceAtLeast(1)
     val firstIndex = listState.firstVisibleItemIndex.coerceIn(0, maxFirstIndex)
     val thumbOffsetPx = ((trackHeightPx - thumbHeightPx) * firstIndex / maxFirstIndex).coerceIn(0f, trackHeightPx - thumbHeightPx)
 
     fun scrollToPosition(y: Float) {
+        if (trackSize.height <= 0) return
         val movable = (trackHeightPx - thumbHeightPx).coerceAtLeast(1f)
         val ratio = ((y - thumbHeightPx / 2f) / movable).coerceIn(0f, 1f)
         val targetIndex = (ratio * maxFirstIndex).roundToInt().coerceIn(0, itemCount - 1)
@@ -684,7 +685,7 @@ private fun FastVerseScrollBar(
         modifier = modifier
             .width(28.dp)
             .fillMaxSize()
-            .padding(vertical = 4.dp)
+            .padding(vertical = 2.dp)
             .onSizeChanged { trackSize = it }
             .pointerInput(itemCount, trackSize) {
                 detectVerticalDragGestures(
@@ -696,23 +697,25 @@ private fun FastVerseScrollBar(
     ) {
         Box(
             modifier = Modifier
-                .width(5.dp)
+                .width(6.dp)
                 .fillMaxSize()
                 .background(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
                     shape = RoundedCornerShape(99.dp),
                 ),
         )
-        Box(
-            modifier = Modifier
-                .offset { IntOffset(x = 0, y = thumbOffsetPx.roundToInt()) }
-                .width(10.dp)
-                .height(with(density) { thumbHeightPx.toDp() })
-                .background(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
-                    shape = RoundedCornerShape(99.dp),
-                ),
-        )
+        if (trackSize.height > 0) {
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(x = 0, y = thumbOffsetPx.roundToInt()) }
+                    .width(12.dp)
+                    .height(with(density) { thumbHeightPx.toDp() })
+                    .background(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.9f),
+                        shape = RoundedCornerShape(99.dp),
+                    ),
+            )
+        }
     }
 }
 

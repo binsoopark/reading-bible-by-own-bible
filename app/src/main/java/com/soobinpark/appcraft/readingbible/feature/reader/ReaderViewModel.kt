@@ -82,6 +82,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                     message = if (versions.isEmpty()) "선택한 폴더 또는 기본 데이터 폴더에서 bdf/lfa 파일을 찾지 못했습니다." else null,
                 )
             }
+            _uiState.value.selectedVersion?.let { warmUpSelectedVersion(it) }
         }
     }
 
@@ -103,6 +104,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                 comparisonVerses = comparisonVerses,
             )
             saveProgress(version, state.bookIndex, state.chapter)
+            warmUpSelectedVersion(version)
         }
     }
 
@@ -140,6 +142,12 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                 comparisonVerses = comparisonVerses,
             )
             saveProgress(state.selectedVersion, safeBookIndex, safeChapter)
+        }
+    }
+
+    private fun warmUpSelectedVersion(version: BibleVersion) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.warmUpVersion(version)
         }
     }
 

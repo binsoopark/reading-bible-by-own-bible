@@ -173,6 +173,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             versions.firstOrNull { it.code != selected?.code }?.let {
                 repository.readChapter(it, BibleCatalog.books[bookIndex], chapter)
             }
+            selected?.let { repository.warmUpVersion(it) }
         }
     }
 }

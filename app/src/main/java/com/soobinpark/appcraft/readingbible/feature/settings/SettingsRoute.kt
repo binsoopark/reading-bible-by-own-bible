@@ -168,8 +168,8 @@ private fun ReadingStyleCard(
                 title = "글자 크기",
                 valueLabel = "${readingStyle.fontSizeSp.roundToInt()}sp",
                 value = readingStyle.fontSizeSp,
-                valueRange = 14f..28f,
-                steps = 13,
+                valueRange = 12f..28f,
+                steps = 15,
                 onValueChange = onFontSizeChanged,
             )
             SettingSlider(

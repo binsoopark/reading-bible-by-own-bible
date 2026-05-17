@@ -1,6 +1,10 @@
 package com.soobinpark.appcraft.readingbible.feature.reader
 
 import android.net.Uri
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -8,13 +12,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,6 +39,8 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
@@ -37,14 +49,23 @@ import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.FormatColorFill
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -56,6 +77,8 @@ import com.soobinpark.appcraft.readingbible.domain.model.ReadingPalette
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingStyle
 import com.soobinpark.appcraft.readingbible.domain.model.VerseHighlight
 import com.soobinpark.appcraft.readingbible.domain.model.VerseBookmark
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 @Composable
 fun ReaderRoute(
@@ -108,7 +131,28 @@ private fun ReaderScreen(
     var showBookSheet by remember { mutableStateOf(false) }
     var showVerseSheet by remember { mutableStateOf(false) }
     var selectedVerseNumber by remember(state.bookIndex, state.chapter) { mutableStateOf<Int?>(null) }
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
     val currentBook = BibleCatalog.books[state.bookIndex]
+    val previousChapter = remember(state.bookIndex, state.chapter) {
+        adjacentChapter(state.bookIndex, state.chapter, direction = -1)
+    }
+    val nextChapter = remember(state.bookIndex, state.chapter) {
+        adjacentChapter(state.bookIndex, state.chapter, direction = 1)
+    }
+
+    LaunchedEffect(state.bookIndex, state.chapter, selectedVerseNumber) {
+        listState.scrollToItem(0)
+    }
+
+    fun moveTo(target: ChapterTarget?) {
+        if (target == null) return
+        selectedVerseNumber = null
+        onBookChapterSelected(target.bookIndex, target.chapter)
+        coroutineScope.launch {
+            listState.scrollToItem(0)
+        }
+    }
 
     Column(
         modifier = modifier
@@ -141,6 +185,20 @@ private fun ReaderScreen(
                 label = { Text(state.comparisonVersion?.let { "비교 ${it.displayName}" } ?: "비교 없음") },
             )
         }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            IconButton(
+                onClick = { moveTo(previousChapter) },
+                enabled = previousChapter != null && !state.isLoading,
+            ) {
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "이전 장")
+            }
+            IconButton(
+                onClick = { moveTo(nextChapter) },
+                enabled = nextChapter != null && !state.isLoading,
+            ) {
+                Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = "다음 장")
+            }
+        }
         if (cacheWarmUpState.isActive) {
             CacheWarmUpBanner(cacheWarmUpState)
         }
@@ -156,69 +214,94 @@ private fun ReaderScreen(
             val visibleVerses = selectedVerseNumber?.let { verseNumber ->
                 state.verses.filter { it.verse == verseNumber }
             } ?: state.verses
-            LazyColumn(
-                contentPadding = PaddingValues(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(state.bookIndex, state.chapter, previousChapter, nextChapter) {
+                        var totalDrag = 0f
+                        detectHorizontalDragGestures(
+                            onDragStart = { totalDrag = 0f },
+                            onHorizontalDrag = { _, dragAmount -> totalDrag += dragAmount },
+                            onDragEnd = {
+                                when {
+                                    totalDrag < -120f -> moveTo(nextChapter)
+                                    totalDrag > 120f -> moveTo(previousChapter)
+                                }
+                            },
+                        )
+                    },
             ) {
-                items(visibleVerses, key = { "${it.versionCode}-${it.bookIndex}-${it.chapter}-${it.verse}" }) { verse ->
-                    val record = recordsByKey[verse.bookmarkKey()]
-                    val comparisonVerse = comparisonByVerse[verse.verse]
-                    val isHighlighted = record?.highlight != null && record.highlight != VerseHighlight.None
-                    val isRead = record?.isRead == true
-                    Card(
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (isHighlighted) palette.highlightContainer else palette.container,
-                            contentColor = palette.content,
-                        ),
-                    ) {
-                        Column(Modifier.padding(16.dp)) {
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LazyColumn(
+                    state = listState,
+                    contentPadding = PaddingValues(end = 18.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    items(visibleVerses, key = { "${it.versionCode}-${it.bookIndex}-${it.chapter}-${it.verse}" }) { verse ->
+                        val record = recordsByKey[verse.bookmarkKey()]
+                        val comparisonVerse = comparisonByVerse[verse.verse]
+                        val isHighlighted = record?.highlight != null && record.highlight != VerseHighlight.None
+                        val isRead = record?.isRead == true
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isHighlighted) palette.highlightContainer else palette.container,
+                                contentColor = palette.content,
+                            ),
+                        ) {
+                            Column(Modifier.padding(16.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    Text(
+                                        text = "${verse.verse}",
+                                        style = MaterialTheme.typography.labelLarge,
+                                        color = palette.accent,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                    IconButton(onClick = { onHighlightToggle(verse) }) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.FormatColorFill,
+                                            contentDescription = if (isHighlighted) "하이라이트 해제" else "하이라이트 추가",
+                                            tint = if (isHighlighted) palette.highlightAccent else palette.accent,
+                                        )
+                                    }
+                                    IconButton(onClick = { onReadToggle(verse) }) {
+                                        Icon(
+                                            imageVector = if (isRead) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                                            contentDescription = if (isRead) "읽음 해제" else "읽음 표시",
+                                            tint = if (isRead) palette.highlightAccent else palette.accent,
+                                        )
+                                    }
+                                    IconButton(onClick = { onBookmarkToggle(verse) }) {
+                                        val selected = record?.isBookmarked == true
+                                        Icon(
+                                            imageVector = if (selected) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
+                                            contentDescription = if (selected) "북마크 해제" else "북마크 추가",
+                                            tint = palette.accent,
+                                        )
+                                    }
+                                }
                                 Text(
-                                    text = "${verse.verse}",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = palette.accent,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                IconButton(onClick = { onHighlightToggle(verse) }) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.FormatColorFill,
-                                        contentDescription = if (isHighlighted) "하이라이트 해제" else "하이라이트 추가",
-                                        tint = if (isHighlighted) palette.highlightAccent else palette.accent,
-                                    )
-                                }
-                                IconButton(onClick = { onReadToggle(verse) }) {
-                                    Icon(
-                                        imageVector = if (isRead) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-                                        contentDescription = if (isRead) "읽음 해제" else "읽음 표시",
-                                        tint = if (isRead) palette.highlightAccent else palette.accent,
-                                    )
-                                }
-                                IconButton(onClick = { onBookmarkToggle(verse) }) {
-                                    val selected = record?.isBookmarked == true
-                                    Icon(
-                                        imageVector = if (selected) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
-                                        contentDescription = if (selected) "북마크 해제" else "북마크 추가",
-                                        tint = palette.accent,
-                                    )
-                                }
-                            }
-                            Text(
-                                text = verse.text,
-                                fontSize = readingStyle.fontSizeSp.sp,
-                                lineHeight = (readingStyle.fontSizeSp * readingStyle.lineHeightMultiplier).sp,
-                            )
-                            if (comparisonVerse != null) {
-                                Text(
-                                    text = comparisonVerse.text,
-                                    color = palette.secondaryContent,
-                                    fontSize = (readingStyle.fontSizeSp - 1f).coerceAtLeast(14f).sp,
+                                    text = verse.text,
+                                    fontSize = readingStyle.fontSizeSp.sp,
                                     lineHeight = (readingStyle.fontSizeSp * readingStyle.lineHeightMultiplier).sp,
-                                    modifier = Modifier.padding(top = 10.dp),
                                 )
+                                if (comparisonVerse != null) {
+                                    Text(
+                                        text = comparisonVerse.text,
+                                        color = palette.secondaryContent,
+                                        fontSize = (readingStyle.fontSizeSp - 1f).coerceAtLeast(12f).sp,
+                                        lineHeight = (readingStyle.fontSizeSp * readingStyle.lineHeightMultiplier).sp,
+                                        modifier = Modifier.padding(top = 10.dp),
+                                    )
+                                }
                             }
                         }
                     }
                 }
+                FastVerseScrollBar(
+                    listState = listState,
+                    itemCount = visibleVerses.size,
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                )
             }
         }
     }
@@ -514,6 +597,95 @@ private fun readingPaletteColors(palette: ReadingPalette): ReaderPaletteColors {
             highlightContainer = Color(0xFFFFDFA0),
             highlightAccent = Color(0xFF855200),
             secondaryContent = Color(0xFF6D4F2C),
+        )
+    }
+}
+
+private data class ChapterTarget(
+    val bookIndex: Int,
+    val chapter: Int,
+)
+
+private fun adjacentChapter(
+    bookIndex: Int,
+    chapter: Int,
+    direction: Int,
+): ChapterTarget? {
+    val book = BibleCatalog.books.getOrNull(bookIndex) ?: return null
+    return when {
+        direction > 0 && chapter < book.chapterCount -> ChapterTarget(bookIndex, chapter + 1)
+        direction > 0 && bookIndex < BibleCatalog.books.lastIndex -> ChapterTarget(bookIndex + 1, 1)
+        direction < 0 && chapter > 1 -> ChapterTarget(bookIndex, chapter - 1)
+        direction < 0 && bookIndex > 0 -> {
+            val previousBook = BibleCatalog.books[bookIndex - 1]
+            ChapterTarget(bookIndex - 1, previousBook.chapterCount)
+        }
+        else -> null
+    }
+}
+
+@Composable
+private fun FastVerseScrollBar(
+    listState: LazyListState,
+    itemCount: Int,
+    modifier: Modifier = Modifier,
+) {
+    val density = LocalDensity.current
+    val coroutineScope = rememberCoroutineScope()
+    var trackSize by remember { mutableStateOf(IntSize.Zero) }
+    val visibleCount by remember {
+        derivedStateOf { listState.layoutInfo.visibleItemsInfo.size.coerceAtLeast(1) }
+    }
+    val showScrollBar = itemCount > visibleCount && trackSize.height > 0
+    if (!showScrollBar) return
+
+    val trackHeightPx = trackSize.height.toFloat()
+    val thumbHeightPx = (trackHeightPx * visibleCount / itemCount.toFloat()).coerceAtLeast(with(density) { 36.dp.toPx() })
+    val maxFirstIndex = (itemCount - visibleCount).coerceAtLeast(1)
+    val firstIndex = listState.firstVisibleItemIndex.coerceIn(0, maxFirstIndex)
+    val thumbOffsetPx = ((trackHeightPx - thumbHeightPx) * firstIndex / maxFirstIndex).coerceIn(0f, trackHeightPx - thumbHeightPx)
+
+    fun scrollToPosition(y: Float) {
+        val movable = (trackHeightPx - thumbHeightPx).coerceAtLeast(1f)
+        val ratio = ((y - thumbHeightPx / 2f) / movable).coerceIn(0f, 1f)
+        val targetIndex = (ratio * maxFirstIndex).roundToInt().coerceIn(0, itemCount - 1)
+        coroutineScope.launch {
+            listState.scrollToItem(targetIndex)
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .width(18.dp)
+            .fillMaxSize()
+            .padding(vertical = 4.dp)
+            .onSizeChanged { trackSize = it }
+            .pointerInput(itemCount, trackSize) {
+                detectVerticalDragGestures(
+                    onDragStart = { offset: Offset -> scrollToPosition(offset.y) },
+                    onVerticalDrag = { change, _ -> scrollToPosition(change.position.y) },
+                )
+            },
+        contentAlignment = Alignment.TopCenter,
+    ) {
+        Box(
+            modifier = Modifier
+                .width(4.dp)
+                .fillMaxSize()
+                .background(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+                    shape = RoundedCornerShape(99.dp),
+                ),
+        )
+        Box(
+            modifier = Modifier
+                .offset { IntOffset(x = 0, y = thumbOffsetPx.roundToInt()) }
+                .width(8.dp)
+                .height(with(density) { thumbHeightPx.toDp() })
+                .background(
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
+                    shape = RoundedCornerShape(99.dp),
+                ),
         )
     }
 }

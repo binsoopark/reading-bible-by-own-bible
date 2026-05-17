@@ -12,7 +12,7 @@ class ReadingStylePreferences(context: Context) {
             ?.let { runCatching { ReadingPalette.valueOf(it) }.getOrNull() }
             ?: ReadingPalette.Paper
         return ReadingStyle(
-            fontSizeSp = prefs.getFloat(KEY_FONT_SIZE_SP, 18f).coerceIn(14f, 28f),
+            fontSizeSp = prefs.getFloat(KEY_FONT_SIZE_SP, 18f).coerceIn(12f, 28f),
             lineHeightMultiplier = prefs.getFloat(KEY_LINE_HEIGHT_MULTIPLIER, 1.55f).coerceIn(1.2f, 2.2f),
             palette = palette,
         )
@@ -20,7 +20,7 @@ class ReadingStylePreferences(context: Context) {
 
     fun setStyle(style: ReadingStyle) {
         prefs.edit()
-            .putFloat(KEY_FONT_SIZE_SP, style.fontSizeSp.coerceIn(14f, 28f))
+            .putFloat(KEY_FONT_SIZE_SP, style.fontSizeSp.coerceIn(12f, 28f))
             .putFloat(KEY_LINE_HEIGHT_MULTIPLIER, style.lineHeightMultiplier.coerceIn(1.2f, 2.2f))
             .putString(KEY_PALETTE, style.palette.name)
             .apply()

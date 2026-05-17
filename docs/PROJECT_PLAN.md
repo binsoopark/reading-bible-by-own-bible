@@ -80,7 +80,7 @@ com.soobinpark.appcraft.readingbible
 - [x] 장 선택 adaptive grid
 - [ ] 절 선택 bottom sheet
 - [ ] 글자 크기 / 줄 간격 / 팔레트 설정
-- [ ] 최근 읽은 위치 저장
+- [x] 최근 읽은 위치 저장
 
 ## 8. MVP 3단계 후보
 
@@ -157,6 +157,23 @@ app/build/outputs/apk/debug/app-debug.apk
 - [x] `SafBdfBibleFileParser` 추가
 - [x] `SafLfaBibleFileParser` 추가
 - [x] `ReaderViewModel`이 SAF 폴더를 우선 스캔하고 없으면 `/sdcard/bible` fallback
+- [x] `assembleDebug` 빌드 성공
+
+### 최근 읽은 위치 저장 단계
+
+- [x] 최근 읽은 위치 저장 작업 시작
+- [x] 최근 읽은 역본 코드/책/장 preference 모델 추가
+- [x] 앱 시작 시 저장된 위치 복원
+- [x] 역본/책/장 변경 시 최근 위치 저장
+- [x] `assembleDebug` 빌드 검증
+
+### 2026-05-17 최근 읽은 위치 저장 구현
+
+- [x] `ReadingProgress` 모델 추가
+- [x] `ReadingProgressPreferences` 추가
+- [x] Reader 초기 스캔 후 저장된 역본 코드/책/장을 복원
+- [x] 역본 또는 책/장 변경 시 최근 위치 저장
+- [x] 저장된 역본이 현재 폴더에 없으면 첫 번째 감지 역본으로 fallback
 - [x] `assembleDebug` 빌드 성공
 
 다음 작업 후보:

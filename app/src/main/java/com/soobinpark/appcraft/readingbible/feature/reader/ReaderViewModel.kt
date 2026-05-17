@@ -5,10 +5,12 @@ import android.net.Uri
 import android.os.Environment
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.soobinpark.appcraft.readingbible.data.preference.ReadingProgressPreferences
 import com.soobinpark.appcraft.readingbible.data.repository.FileBibleRepository
 import com.soobinpark.appcraft.readingbible.domain.model.BibleCatalog
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVerse
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
+import com.soobinpark.appcraft.readingbible.domain.model.ReadingProgress
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,6 +30,7 @@ data class ReaderUiState(
 
 class ReaderViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = FileBibleRepository(application)
+    private val progressPreferences = ReadingProgressPreferences(application)
     private val _uiState = MutableStateFlow(ReaderUiState())
     val uiState: StateFlow<ReaderUiState> = _uiState.asStateFlow()
     private var dataFolderUri: Uri? = null
@@ -49,13 +52,20 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
             val versions = dataFolderUri?.let { repository.scanVersions(it) }
                 ?.takeIf { it.isNotEmpty() }
                 ?: repository.scanVersions(root)
-            val selected = versions.firstOrNull()
+            val savedProgress = progressPreferences.getProgress()
+            val safeBookIndex = savedProgress.bookIndex.coerceIn(BibleCatalog.books.indices)
+            val safeChapter = savedProgress.chapter.coerceIn(1, BibleCatalog.books[safeBookIndex].chapterCount)
+            val selected = savedProgress.versionCode?.let { code ->
+                versions.firstOrNull { it.code.equals(code, ignoreCase = true) }
+            } ?: versions.firstOrNull()
             val verses = selected?.let {
-                repository.readChapter(it, BibleCatalog.books[_uiState.value.bookIndex], _uiState.value.chapter)
+                repository.readChapter(it, BibleCatalog.books[safeBookIndex], safeChapter)
             }.orEmpty()
             _uiState.value = _uiState.value.copy(
                 versions = versions,
                 selectedVersion = selected,
+                bookIndex = safeBookIndex,
+                chapter = safeChapter,
                 verses = verses,
                 isLoading = false,
                 message = if (versions.isEmpty()) "선택한 폴더 또는 기본 데이터 폴더에서 bdf/lfa 파일을 찾지 못했습니다." else null,
@@ -68,6 +78,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
             val state = _uiState.value
             val verses = repository.readChapter(version, BibleCatalog.books[state.bookIndex], state.chapter)
             _uiState.value = state.copy(selectedVersion = version, verses = verses)
+            saveProgress(version, state.bookIndex, state.chapter)
         }
     }
 
@@ -80,6 +91,21 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                 repository.readChapter(it, BibleCatalog.books[safeBookIndex], safeChapter)
             }.orEmpty()
             _uiState.value = state.copy(bookIndex = safeBookIndex, chapter = safeChapter, verses = verses)
+            saveProgress(state.selectedVersion, safeBookIndex, safeChapter)
         }
+    }
+
+    private fun saveProgress(
+        version: BibleVersion?,
+        bookIndex: Int,
+        chapter: Int,
+    ) {
+        progressPreferences.setProgress(
+            ReadingProgress(
+                versionCode = version?.code,
+                bookIndex = bookIndex,
+                chapter = chapter,
+            ),
+        )
     }
 }

@@ -160,7 +160,7 @@ private fun ReaderScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 14.dp, vertical = 10.dp),
+            .padding(start = 14.dp, top = 10.dp, end = 4.dp, bottom = 10.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(
@@ -238,7 +238,7 @@ private fun ReaderScreen(
             ) {
                 LazyColumn(
                     state = listState,
-                    contentPadding = PaddingValues(end = 18.dp, bottom = 24.dp),
+                    contentPadding = PaddingValues(end = 30.dp, bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                     modifier = Modifier.fillMaxSize(),
                 ) {
@@ -479,15 +479,17 @@ private fun BookChapterPickerSheet(
                     label = { Text("신약") },
                 )
             }
-            LazyColumn(
-                modifier = Modifier.heightIn(max = 180.dp),
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 92.dp),
+                modifier = Modifier.heightIn(max = 220.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(visibleBooks, key = { it.index }) { book ->
                     FilterChip(
                         selected = book.index == activeBookIndex,
                         onClick = { activeBookIndex = book.index },
-                        label = { Text("${book.koreanName} · ${book.englishName}") },
+                        label = { Text(book.koreanName) },
                     )
                 }
             }
@@ -680,7 +682,7 @@ private fun FastVerseScrollBar(
 
     Box(
         modifier = modifier
-            .width(18.dp)
+            .width(28.dp)
             .fillMaxSize()
             .padding(vertical = 4.dp)
             .onSizeChanged { trackSize = it }
@@ -690,24 +692,24 @@ private fun FastVerseScrollBar(
                     onVerticalDrag = { change, _ -> scrollToPosition(change.position.y) },
                 )
             },
-        contentAlignment = Alignment.TopCenter,
+        contentAlignment = Alignment.TopEnd,
     ) {
         Box(
             modifier = Modifier
-                .width(4.dp)
+                .width(5.dp)
                 .fillMaxSize()
                 .background(
-                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f),
                     shape = RoundedCornerShape(99.dp),
                 ),
         )
         Box(
             modifier = Modifier
                 .offset { IntOffset(x = 0, y = thumbOffsetPx.roundToInt()) }
-                .width(8.dp)
+                .width(10.dp)
                 .height(with(density) { thumbHeightPx.toDp() })
                 .background(
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.75f),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
                     shape = RoundedCornerShape(99.dp),
                 ),
         )

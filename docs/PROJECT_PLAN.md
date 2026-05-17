@@ -197,6 +197,14 @@ com.soobinpark.appcraft.readingbible
 - [x] Reader 화면 여백과 행 간격 축소
 - [x] `assembleDebug` 빌드 성공
 
+### 2026-05-18 책 선택 Grid와 스크롤바 개선
+
+- [x] 책 선택 목록을 세로 리스트에서 adaptive grid로 변경
+- [x] 책 선택 chip은 한글 책 이름 중심으로 간결하게 표시
+- [x] Reader 본문 우측 여백을 줄여 스크롤바를 화면 오른쪽에 더 가깝게 배치
+- [x] 빠른 스크롤바 터치 영역과 thumb 폭을 키워 손으로 잡기 쉽게 개선
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-17 남은 체크리스트 일괄 구현
 
 - [x] Reader에 비교 역본 선택 추가

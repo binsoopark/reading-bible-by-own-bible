@@ -188,6 +188,15 @@ com.soobinpark.appcraft.readingbible
 - [x] 글자 크기 최소값을 12sp까지 낮춤
 - [x] `assembleDebug` 빌드 성공
 
+### 2026-05-18 Reader 상단 툴바 압축
+
+- [x] Reader 상단 앱 제목 줄 제거
+- [x] 책/장 선택과 이전/다음 장 버튼을 한 줄로 압축
+- [x] 역본, 비교 역본, 절 선택을 한 줄로 압축
+- [x] 이전/다음 장 버튼 크기를 36dp로 줄여 본문 영역 확대
+- [x] Reader 화면 여백과 행 간격 축소
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-17 남은 체크리스트 일괄 구현
 
 - [x] Reader에 비교 역본 선택 추가

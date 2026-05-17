@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,7 +26,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,10 +33,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -66,6 +68,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -157,47 +160,49 @@ private fun ReaderScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 20.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text(
-            text = "내가 가진 성경 읽기",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AssistChip(
-                onClick = { showVersionSheet = true },
-                label = { Text(state.selectedVersion?.displayName ?: "역본 없음") },
-            )
-            AssistChip(
-                onClick = { showBookSheet = true },
-                label = { Text("${currentBook.koreanName} ${state.chapter}장") },
-            )
-            AssistChip(
-                onClick = { showVerseSheet = true },
-                label = { Text(selectedVerseNumber?.let { "${it}절" } ?: "전체 절") },
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AssistChip(
-                onClick = { showComparisonSheet = true },
-                label = { Text(state.comparisonVersion?.let { "비교 ${it.displayName}" } ?: "비교 없음") },
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            IconButton(
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CompactIconButton(
                 onClick = { moveTo(previousChapter) },
                 enabled = previousChapter != null && !state.isLoading,
             ) {
                 Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "이전 장")
             }
-            IconButton(
+            SuggestionChip(
+                onClick = { showBookSheet = true },
+                label = { Text("${currentBook.koreanName} ${state.chapter}장") },
+                modifier = Modifier.weight(1f),
+            )
+            CompactIconButton(
                 onClick = { moveTo(nextChapter) },
                 enabled = nextChapter != null && !state.isLoading,
             ) {
                 Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = "다음 장")
             }
+        }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SuggestionChip(
+                onClick = { showVersionSheet = true },
+                label = { Text(state.selectedVersion?.displayName ?: "역본 없음") },
+                modifier = Modifier.weight(1f),
+            )
+            SuggestionChip(
+                onClick = { showComparisonSheet = true },
+                label = { Text(state.comparisonVersion?.let { "비교 ${it.displayName}" } ?: "비교 없음") },
+                modifier = Modifier.weight(1f),
+            )
+            SuggestionChip(
+                onClick = { showVerseSheet = true },
+                label = { Text(selectedVerseNumber?.let { "${it}절" } ?: "전체 절") },
+            )
         }
         if (cacheWarmUpState.isActive) {
             CacheWarmUpBanner(cacheWarmUpState)
@@ -599,6 +604,25 @@ private fun readingPaletteColors(palette: ReadingPalette): ReaderPaletteColors {
             secondaryContent = Color(0xFF6D4F2C),
         )
     }
+}
+
+@Composable
+private fun CompactIconButton(
+    onClick: () -> Unit,
+    enabled: Boolean,
+    size: Dp = 36.dp,
+    content: @Composable () -> Unit,
+) {
+    IconButton(
+        onClick = onClick,
+        enabled = enabled,
+        colors = IconButtonDefaults.iconButtonColors(
+            contentColor = MaterialTheme.colorScheme.primary,
+            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+        ),
+        modifier = Modifier.size(size),
+        content = content,
+    )
 }
 
 private data class ChapterTarget(

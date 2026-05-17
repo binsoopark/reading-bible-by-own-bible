@@ -84,8 +84,8 @@ com.soobinpark.appcraft.readingbible
 
 ## 8. MVP 3단계 후보
 
-- [ ] `.bdf` 검색
-- [ ] `.lfa` 검색
+- [x] `.bdf` 검색
+- [x] `.lfa` 검색
 - [ ] 북마크
 - [ ] 밑줄 / 하이라이트
 - [ ] 메모
@@ -157,6 +157,27 @@ app/build/outputs/apk/debug/app-debug.apk
 - [x] `SafBdfBibleFileParser` 추가
 - [x] `SafLfaBibleFileParser` 추가
 - [x] `ReaderViewModel`이 SAF 폴더를 우선 스캔하고 없으면 `/sdcard/bible` fallback
+- [x] `assembleDebug` 빌드 성공
+
+### 본문 검색 MVP 단계
+
+- [x] 본문 검색 MVP 작업 시작
+- [x] 검색 결과 도메인 모델 추가
+- [x] 현재 데이터 폴더의 역본 스캔 연결
+- [x] 선택한 역본 전체 장 순회 검색 구현
+- [x] 검색 탭 UI 구현
+- [x] `.bdf` / `.lfa` 검색 경로 검증
+- [x] `assembleDebug` 빌드 검증
+
+### 2026-05-17 본문 검색 MVP 구현
+
+- [x] `BibleSearchResult` 모델 추가
+- [x] `SearchBibleUseCase` 추가
+- [x] `SearchViewModel` 추가
+- [x] 검색 탭에서 SAF 폴더 또는 기본 `/sdcard/bible` 역본 스캔
+- [x] 선택한 역본의 전체 책/장을 순회해 검색
+- [x] 검색 결과를 최대 100개까지 표시
+- [x] 검색 결과에 책, 장, 절, 역본 코드 표시
 - [x] `assembleDebug` 빌드 성공
 
 ### 읽기 스타일 설정 단계

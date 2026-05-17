@@ -50,7 +50,7 @@ fun ReadingBibleApp(
                 modifier = modifier,
             )
             AppTab.Library -> LibraryRoute(dataFolderUri = dataFolderUri, modifier = modifier)
-            AppTab.Search -> SearchRoute(modifier)
+            AppTab.Search -> SearchRoute(dataFolderUri = dataFolderUri, modifier = modifier)
             AppTab.Records -> RecordsRoute(modifier)
             AppTab.Settings -> SettingsRoute(
                 dataFolderUri = dataFolderUri,

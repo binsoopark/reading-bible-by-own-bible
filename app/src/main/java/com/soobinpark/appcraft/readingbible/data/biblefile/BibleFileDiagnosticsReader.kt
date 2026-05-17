@@ -3,6 +3,7 @@ package com.soobinpark.appcraft.readingbible.data.biblefile
 import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
+import com.soobinpark.appcraft.readingbible.domain.model.BibleAudioFile
 import com.soobinpark.appcraft.readingbible.domain.model.BibleFileDiagnostic
 import com.soobinpark.appcraft.readingbible.domain.model.BibleFileIssue
 import com.soobinpark.appcraft.readingbible.domain.model.BibleFileIssueSeverity
@@ -41,6 +42,9 @@ class BibleFileDiagnosticsReader(
         return buildDiagnostic(
             rootLabel = root.absolutePath,
             fileNames = files.map { it.name },
+            audioFiles = files
+                .filter { it.extension.equals("mp3", ignoreCase = true) }
+                .map { BibleAudioFile(name = it.name, uri = Uri.fromFile(it)) },
             versions = fileScanner.scan(root),
         )
     }
@@ -71,6 +75,9 @@ class BibleFileDiagnosticsReader(
         return buildDiagnostic(
             rootLabel = root.name ?: treeUri.toString(),
             fileNames = files.mapNotNull { it.name },
+            audioFiles = files
+                .filter { it.name?.endsWith(".mp3", ignoreCase = true) == true }
+                .mapNotNull { file -> file.name?.let { BibleAudioFile(name = it, uri = file.uri) } },
             versions = safScanner.scan(treeUri),
         )
     }
@@ -78,12 +85,14 @@ class BibleFileDiagnosticsReader(
     private fun buildDiagnostic(
         rootLabel: String,
         fileNames: List<String>,
+        audioFiles: List<BibleAudioFile>,
         versions: List<BibleVersion>,
     ): BibleFileDiagnostic {
         val lfaCount = fileNames.count { it.endsWith(".lfa", ignoreCase = true) }
         val lfbCount = fileNames.count { it.endsWith(".lfb", ignoreCase = true) }
+        val mp3Count = fileNames.count { it.endsWith(".mp3", ignoreCase = true) }
         val bdfNames = fileNames.filter { it.endsWith(".bdf", ignoreCase = true) }
-        val knownCount = lfaCount + lfbCount + bdfNames.size
+        val knownCount = lfaCount + lfbCount + mp3Count + bdfNames.size
         val groups = bdfNames
             .mapNotNull { name ->
                 val stem = name.substringBeforeLast(".")
@@ -123,6 +132,14 @@ class BibleFileDiagnosticsReader(
             )
         }
 
+        if (mp3Count > 0) {
+            issues += BibleFileIssue(
+                title = "MP3 파일이 감지되었습니다",
+                detail = "오디오 파일 ${mp3Count}개가 있습니다. 현재 단계에서는 감지만 지원하고, 재생 UI는 이후 오디오 플레이어 단계에서 연결합니다.",
+                severity = BibleFileIssueSeverity.Info,
+            )
+        }
+
         val unknownFileCount = fileNames.size - knownCount
         if (unknownFileCount > 0) {
             issues += BibleFileIssue(
@@ -145,10 +162,12 @@ class BibleFileDiagnosticsReader(
             scannedFileCount = fileNames.size,
             lfaCount = lfaCount,
             lfbCount = lfbCount,
+            mp3Count = mp3Count,
             bdfFileCount = bdfNames.size,
             completeBdfVersionCount = completeBdfVersionCount,
             unknownFileCount = unknownFileCount,
             versions = versions,
+            audioFiles = audioFiles,
             issues = issues.sortedByDescending { it.severity.ordinal },
         )
     }
@@ -162,10 +181,12 @@ class BibleFileDiagnosticsReader(
             scannedFileCount = 0,
             lfaCount = 0,
             lfbCount = 0,
+            mp3Count = 0,
             bdfFileCount = 0,
             completeBdfVersionCount = 0,
             unknownFileCount = 0,
             versions = emptyList(),
+            audioFiles = emptyList(),
             issues = listOf(issue),
         )
     }

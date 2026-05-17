@@ -21,9 +21,11 @@ data class ReaderUiState(
     val dataRoot: File = File(Environment.getExternalStorageDirectory(), "bible"),
     val versions: List<BibleVersion> = emptyList(),
     val selectedVersion: BibleVersion? = null,
+    val comparisonVersion: BibleVersion? = null,
     val bookIndex: Int = 0,
     val chapter: Int = 1,
     val verses: List<BibleVerse> = emptyList(),
+    val comparisonVerses: List<BibleVerse> = emptyList(),
     val isLoading: Boolean = true,
     val message: String? = null,
 )
@@ -58,15 +60,21 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
             val selected = savedProgress.versionCode?.let { code ->
                 versions.firstOrNull { it.code.equals(code, ignoreCase = true) }
             } ?: versions.firstOrNull()
+            val comparison = versions.firstOrNull { it.code != selected?.code }
             val verses = selected?.let {
+                repository.readChapter(it, BibleCatalog.books[safeBookIndex], safeChapter)
+            }.orEmpty()
+            val comparisonVerses = comparison?.let {
                 repository.readChapter(it, BibleCatalog.books[safeBookIndex], safeChapter)
             }.orEmpty()
             _uiState.value = _uiState.value.copy(
                 versions = versions,
                 selectedVersion = selected,
+                comparisonVersion = comparison,
                 bookIndex = safeBookIndex,
                 chapter = safeChapter,
                 verses = verses,
+                comparisonVerses = comparisonVerses,
                 isLoading = false,
                 message = if (versions.isEmpty()) "선택한 폴더 또는 기본 데이터 폴더에서 bdf/lfa 파일을 찾지 못했습니다." else null,
             )
@@ -77,8 +85,28 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             val state = _uiState.value
             val verses = repository.readChapter(version, BibleCatalog.books[state.bookIndex], state.chapter)
-            _uiState.value = state.copy(selectedVersion = version, verses = verses)
+            val comparison = state.comparisonVersion?.takeUnless { it.code == version.code }
+            val comparisonVerses = comparison?.let {
+                repository.readChapter(it, BibleCatalog.books[state.bookIndex], state.chapter)
+            }.orEmpty()
+            _uiState.value = state.copy(
+                selectedVersion = version,
+                comparisonVersion = comparison,
+                verses = verses,
+                comparisonVerses = comparisonVerses,
+            )
             saveProgress(version, state.bookIndex, state.chapter)
+        }
+    }
+
+    fun selectComparisonVersion(version: BibleVersion?) {
+        viewModelScope.launch {
+            val state = _uiState.value
+            val comparison = version?.takeUnless { it.code == state.selectedVersion?.code }
+            val verses = comparison?.let {
+                repository.readChapter(it, BibleCatalog.books[state.bookIndex], state.chapter)
+            }.orEmpty()
+            _uiState.value = state.copy(comparisonVersion = comparison, comparisonVerses = verses)
         }
     }
 
@@ -90,7 +118,15 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
             val verses = state.selectedVersion?.let {
                 repository.readChapter(it, BibleCatalog.books[safeBookIndex], safeChapter)
             }.orEmpty()
-            _uiState.value = state.copy(bookIndex = safeBookIndex, chapter = safeChapter, verses = verses)
+            val comparisonVerses = state.comparisonVersion?.let {
+                repository.readChapter(it, BibleCatalog.books[safeBookIndex], safeChapter)
+            }.orEmpty()
+            _uiState.value = state.copy(
+                bookIndex = safeBookIndex,
+                chapter = safeChapter,
+                verses = verses,
+                comparisonVerses = comparisonVerses,
+            )
             saveProgress(state.selectedVersion, safeBookIndex, safeChapter)
         }
     }

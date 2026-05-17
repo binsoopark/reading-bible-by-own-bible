@@ -3,4 +3,5 @@
     <string name="app_name">내가 가진 성경 읽기</string>
     <string name="app_name_en">Reading Bible by Own Bible</string>
     <string name="app_info_lifove_compat">이 앱은 기존 Lifove Bible에서 사용되던 bdf/lfa 형식의 성경 데이터 파일을 보유한 사용자가 자신의 파일을 불러와 읽을 수 있도록 만든 독립적인 성경 읽기 앱입니다. 이 앱 자체는 성경 번역 데이터를 포함하지 않습니다.</string>
+    <string name="widget_description">내가 가진 성경 읽기를 빠르게 엽니다.</string>
 </resources>

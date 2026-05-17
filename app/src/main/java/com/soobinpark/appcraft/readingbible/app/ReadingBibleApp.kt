@@ -64,10 +64,15 @@ fun ReadingBibleApp(
             AppTab.Settings -> SettingsRoute(
                 dataFolderUri = dataFolderUri,
                 readingStyle = readingStyle,
-                onDataFolderSelected = appViewModel::setDataFolderUri,
+                onDataFolderSelected = {
+                    appViewModel.setDataFolderUri(it)
+                    selectedTab = AppTab.Reader
+                },
                 onFontSizeChanged = appViewModel::setReadingFontSize,
                 onLineHeightChanged = appViewModel::setReadingLineHeight,
                 onPaletteSelected = appViewModel::setReadingPalette,
+                onExportRecords = appViewModel::exportRecordsJson,
+                onImportRecords = appViewModel::importRecordsJson,
                 modifier = modifier,
             )
         }

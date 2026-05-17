@@ -5,6 +5,7 @@ import com.soobinpark.appcraft.readingbible.domain.model.BibleCatalog
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVerse
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
 import java.io.File
+import java.nio.charset.Charset
 import java.util.zip.ZipFile
 
 class LfaBibleFileParser : BibleFileParser {
@@ -23,11 +24,19 @@ class LfaBibleFileParser : BibleFileParser {
 
         return ZipFile(archive).use { zip ->
             val entry = zip.getEntry(entryName) ?: return emptyList()
-            zip.getInputStream(entry).bufferedReader().useLines { lines ->
-                lines.mapNotNull { line ->
+            val text = decodeLfaText(zip.getInputStream(entry).readBytes())
+            text.lineSequence().mapNotNull { line ->
                     parseVerseLine(version.code, book.index, chapter, bookNumber, chapterNeedle, line)
                 }.toList()
-            }
         }
+    }
+}
+
+internal fun decodeLfaText(bytes: ByteArray): String {
+    val utf8 = bytes.toString(Charsets.UTF_8)
+    return if (utf8.count { it == '\uFFFD' } > 3) {
+        bytes.toString(Charset.forName("MS949"))
+    } else {
+        utf8
     }
 }

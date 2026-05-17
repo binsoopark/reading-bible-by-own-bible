@@ -3,4 +3,5 @@
     <string name="app_name">Reading Bible by Own Bible</string>
     <string name="app_name_en">Reading Bible by Own Bible</string>
     <string name="app_info_lifove_compat">This independent Bible reader is built for users who already own bdf/lfa Bible data files used by the existing Lifove Bible app. The app itself does not include Bible translation data.</string>
+    <string name="widget_description">Quickly open Reading Bible by Own Bible.</string>
 </resources>

@@ -26,6 +26,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val readingStyle: StateFlow<ReadingStyle> = _readingStyle.asStateFlow()
     val bookmarks: StateFlow<List<VerseBookmark>> = _bookmarks.asStateFlow()
 
+    fun exportRecordsJson(): String = bookmarkPreferences.toJson(_bookmarks.value)
+
+    fun importRecordsJson(json: String) {
+        val imported = bookmarkPreferences.fromJson(json)
+        val merged = (imported + _bookmarks.value)
+            .distinctBy { it.key }
+            .sortedByDescending { it.createdAtMillis }
+        bookmarkPreferences.setBookmarks(merged)
+        _bookmarks.value = merged
+    }
+
     fun setDataFolderUri(uri: Uri?) {
         dataFolderPreferences.setTreeUri(uri)
         _dataFolderUri.value = uri

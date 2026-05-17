@@ -16,7 +16,11 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -35,9 +39,12 @@ fun SettingsRoute(
     onFontSizeChanged: (Float) -> Unit,
     onLineHeightChanged: (Float) -> Unit,
     onPaletteSelected: (ReadingPalette) -> Unit,
+    onExportRecords: () -> String,
+    onImportRecords: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    var importExportMessage by remember { mutableStateOf<String?>(null) }
     val folderPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
     ) { uri ->
@@ -48,6 +55,35 @@ fun SettingsRoute(
                 context.contentResolver.takePersistableUriPermission(uri, flags)
             }
             onDataFolderSelected(uri)
+        }
+    }
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json"),
+    ) { uri ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.openOutputStream(uri)?.use { output ->
+                    output.write(onExportRecords().toByteArray(Charsets.UTF_8))
+                }
+            }.onSuccess {
+                importExportMessage = "구절 기록을 내보냈습니다."
+            }.onFailure {
+                importExportMessage = "내보내기에 실패했습니다."
+            }
+        }
+    }
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
+            }.onSuccess { json ->
+                onImportRecords(json)
+                importExportMessage = "구절 기록을 가져왔습니다."
+            }.onFailure {
+                importExportMessage = "가져오기에 실패했습니다."
+            }
         }
     }
 
@@ -68,6 +104,34 @@ fun SettingsRoute(
                     Button(onClick = { folderPicker.launch(null) }) {
                         Text("bdf/lfa 폴더 선택")
                     }
+                }
+            }
+        }
+        item {
+            Card {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("처음 시작", style = MaterialTheme.typography.titleMedium)
+                    Text("1. Lifove Bible 호환 bdf/lfa 파일이 들어 있는 폴더를 선택합니다.")
+                    Text("2. 성경 탭에서 감지된 파일과 누락 파일을 확인합니다.")
+                    Text("3. 읽기 탭에서 역본, 책, 장, 절을 선택해 읽습니다.")
+                    Text("이 앱은 성경 본문 데이터를 포함하지 않으며, 사용자가 가진 파일을 읽습니다.")
+                }
+            }
+        }
+        item {
+            Card {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("기록 가져오기 / 내보내기", style = MaterialTheme.typography.titleMedium)
+                    Text("북마크, 메모, 하이라이트, 읽음 체크를 JSON 파일로 백업하거나 복원합니다.")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { exportLauncher.launch("reading-bible-records.json") }) {
+                            Text("내보내기")
+                        }
+                        Button(onClick = { importLauncher.launch(arrayOf("application/json", "text/*", "*/*")) }) {
+                            Text("가져오기")
+                        }
+                    }
+                    importExportMessage?.let { Text(it) }
                 }
             }
         }

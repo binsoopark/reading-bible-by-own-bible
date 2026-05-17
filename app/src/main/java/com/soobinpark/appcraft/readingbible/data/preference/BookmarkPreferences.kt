@@ -11,6 +11,10 @@ class BookmarkPreferences(context: Context) {
 
     fun getBookmarks(): List<VerseBookmark> {
         val raw = prefs.getString(KEY_BOOKMARKS, null) ?: return emptyList()
+        return fromJson(raw)
+    }
+
+    fun fromJson(raw: String): List<VerseBookmark> {
         return runCatching {
             val array = JSONArray(raw)
             buildList {
@@ -41,6 +45,12 @@ class BookmarkPreferences(context: Context) {
     }
 
     fun setBookmarks(bookmarks: List<VerseBookmark>) {
+        prefs.edit()
+            .putString(KEY_BOOKMARKS, toJson(bookmarks))
+            .apply()
+    }
+
+    fun toJson(bookmarks: List<VerseBookmark>): String {
         val array = JSONArray()
         bookmarks
             .distinctBy { it.key }
@@ -60,9 +70,7 @@ class BookmarkPreferences(context: Context) {
                         .put("createdAtMillis", bookmark.createdAtMillis),
                 )
             }
-        prefs.edit()
-            .putString(KEY_BOOKMARKS, array.toString())
-            .apply()
+        return array.toString()
     }
 
     private companion object {

@@ -29,11 +29,10 @@ class SafLfaBibleFileParser(
             generateSequence { zip.nextEntry }
                 .firstOrNull { it.name == entryName }
                 ?.let {
-                    zip.bufferedReader().useLines { lines ->
-                        lines.mapNotNull { line ->
+                    val text = decodeLfaText(zip.readBytes())
+                    text.lineSequence().mapNotNull { line ->
                             parseVerseLine(version.code, book.index, chapter, bookNumber, chapterNeedle, line)
                         }.toList()
-                    }
                 }
                 .orEmpty()
         }

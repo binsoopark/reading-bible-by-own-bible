@@ -1,5 +1,6 @@
 package com.soobinpark.appcraft.readingbible.feature.library
 
+import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
@@ -21,6 +23,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -83,7 +86,41 @@ private fun LibraryScreen(
             state.diagnostic?.let { diagnostic ->
                 item { SummaryGrid(diagnostic) }
                 item { VersionSection(diagnostic) }
+                item { AudioSection(diagnostic) }
                 item { IssueSection(diagnostic) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AudioSection(diagnostic: BibleFileDiagnostic) {
+    val context = LocalContext.current
+    Card {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("오디오 파일", style = MaterialTheme.typography.titleMedium)
+            if (diagnostic.audioFiles.isEmpty()) {
+                Text("감지된 MP3 파일이 없습니다.")
+            } else {
+                diagnostic.audioFiles.take(20).forEach { audio ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(audio.name, modifier = Modifier.weight(1f))
+                        Button(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_VIEW).apply {
+                                    setDataAndType(audio.uri, "audio/mpeg")
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                runCatching { context.startActivity(intent) }
+                            },
+                        ) {
+                            Text("재생")
+                        }
+                    }
+                }
+                if (diagnostic.audioFiles.size > 20) {
+                    Text("그 외 ${diagnostic.audioFiles.size - 20}개 파일이 더 있습니다.")
+                }
             }
         }
     }
@@ -124,6 +161,10 @@ private fun SummaryGrid(diagnostic: BibleFileDiagnostic) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SummaryCard("완성 bdf", diagnostic.completeBdfVersionCount.toString(), Modifier.weight(1f))
             SummaryCard("이슈", diagnostic.issues.size.toString(), Modifier.weight(1f))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            SummaryCard(".lfb", diagnostic.lfbCount.toString(), Modifier.weight(1f))
+            SummaryCard("MP3", diagnostic.mp3Count.toString(), Modifier.weight(1f))
         }
     }
 }

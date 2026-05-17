@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
@@ -73,6 +74,7 @@ fun ReaderRoute(
         readingStyle = readingStyle,
         bookmarks = bookmarks,
         onVersionSelected = viewModel::selectVersion,
+        onComparisonVersionSelected = viewModel::selectComparisonVersion,
         onBookChapterSelected = viewModel::selectBookAndChapter,
         onBookmarkToggle = onBookmarkToggle,
         onHighlightToggle = onHighlightToggle,
@@ -88,6 +90,7 @@ private fun ReaderScreen(
     readingStyle: ReadingStyle,
     bookmarks: List<VerseBookmark>,
     onVersionSelected: (BibleVersion) -> Unit,
+    onComparisonVersionSelected: (BibleVersion?) -> Unit,
     onBookChapterSelected: (Int, Int) -> Unit,
     onBookmarkToggle: (BibleVerse) -> Unit,
     onHighlightToggle: (BibleVerse) -> Unit,
@@ -95,7 +98,10 @@ private fun ReaderScreen(
     modifier: Modifier = Modifier,
 ) {
     var showVersionSheet by remember { mutableStateOf(false) }
+    var showComparisonSheet by remember { mutableStateOf(false) }
     var showBookSheet by remember { mutableStateOf(false) }
+    var showVerseSheet by remember { mutableStateOf(false) }
+    var selectedVerseNumber by remember(state.bookIndex, state.chapter) { mutableStateOf<Int?>(null) }
     val currentBook = BibleCatalog.books[state.bookIndex]
 
     Column(
@@ -118,6 +124,16 @@ private fun ReaderScreen(
                 onClick = { showBookSheet = true },
                 label = { Text("${currentBook.koreanName} ${state.chapter}장") },
             )
+            AssistChip(
+                onClick = { showVerseSheet = true },
+                label = { Text(selectedVerseNumber?.let { "${it}절" } ?: "전체 절") },
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            AssistChip(
+                onClick = { showComparisonSheet = true },
+                label = { Text(state.comparisonVersion?.let { "비교 ${it.code}" } ?: "비교 없음") },
+            )
         }
 
         if (state.isLoading) {
@@ -127,12 +143,17 @@ private fun ReaderScreen(
         } else {
             val palette = readingPaletteColors(readingStyle.palette)
             val recordsByKey = bookmarks.associateBy { it.key }
+            val comparisonByVerse = state.comparisonVerses.associateBy { it.verse }
+            val visibleVerses = selectedVerseNumber?.let { verseNumber ->
+                state.verses.filter { it.verse == verseNumber }
+            } ?: state.verses
             LazyColumn(
                 contentPadding = PaddingValues(bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                items(state.verses, key = { "${it.versionCode}-${it.bookIndex}-${it.chapter}-${it.verse}" }) { verse ->
+                items(visibleVerses, key = { "${it.versionCode}-${it.bookIndex}-${it.chapter}-${it.verse}" }) { verse ->
                     val record = recordsByKey[verse.bookmarkKey()]
+                    val comparisonVerse = comparisonByVerse[verse.verse]
                     val isHighlighted = record?.highlight != null && record.highlight != VerseHighlight.None
                     val isRead = record?.isRead == true
                     Card(
@@ -177,6 +198,15 @@ private fun ReaderScreen(
                                 fontSize = readingStyle.fontSizeSp.sp,
                                 lineHeight = (readingStyle.fontSizeSp * readingStyle.lineHeightMultiplier).sp,
                             )
+                            if (comparisonVerse != null) {
+                                Text(
+                                    text = "${comparisonVerse.versionCode} ${comparisonVerse.text}",
+                                    color = palette.secondaryContent,
+                                    fontSize = (readingStyle.fontSizeSp - 1f).coerceAtLeast(14f).sp,
+                                    lineHeight = (readingStyle.fontSizeSp * readingStyle.lineHeightMultiplier).sp,
+                                    modifier = Modifier.padding(top = 10.dp),
+                                )
+                            }
                         }
                     }
                 }
@@ -189,9 +219,27 @@ private fun ReaderScreen(
             versions = state.versions,
             selectedVersion = state.selectedVersion,
             onDismiss = { showVersionSheet = false },
+            allowClear = false,
             onVersionSelected = {
                 onVersionSelected(it)
                 showVersionSheet = false
+            },
+        )
+    }
+
+    if (showComparisonSheet) {
+        VersionPickerSheet(
+            versions = state.versions.filter { it.code != state.selectedVersion?.code },
+            selectedVersion = state.comparisonVersion,
+            onDismiss = { showComparisonSheet = false },
+            allowClear = true,
+            onCleared = {
+                onComparisonVersionSelected(null)
+                showComparisonSheet = false
+            },
+            onVersionSelected = {
+                onComparisonVersionSelected(it)
+                showComparisonSheet = false
             },
         )
     }
@@ -207,6 +255,22 @@ private fun ReaderScreen(
             },
         )
     }
+
+    if (showVerseSheet) {
+        VersePickerSheet(
+            verses = state.verses.map { it.verse },
+            selectedVerse = selectedVerseNumber,
+            onDismiss = { showVerseSheet = false },
+            onVerseSelected = {
+                selectedVerseNumber = it
+                showVerseSheet = false
+            },
+            onShowAll = {
+                selectedVerseNumber = null
+                showVerseSheet = false
+            },
+        )
+    }
 }
 
 private fun BibleVerse.bookmarkKey(): String {
@@ -219,6 +283,8 @@ private fun VersionPickerSheet(
     versions: List<BibleVersion>,
     selectedVersion: BibleVersion?,
     onDismiss: () -> Unit,
+    allowClear: Boolean,
+    onCleared: () -> Unit = {},
     onVersionSelected: (BibleVersion) -> Unit,
 ) {
     var query by remember { mutableStateOf("") }
@@ -239,6 +305,11 @@ private fun VersionPickerSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("역본 선택", style = MaterialTheme.typography.titleLarge)
+            if (allowClear) {
+                TextButton(onClick = onCleared) {
+                    Text("비교 역본 끄기")
+                }
+            }
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
@@ -277,8 +348,12 @@ private fun BookChapterPickerSheet(
     onBookChapterSelected: (Int, Int) -> Unit,
 ) {
     var activeBookIndex by remember(selectedBookIndex) { mutableStateOf(selectedBookIndex) }
+    var testament by remember(selectedBookIndex) { mutableStateOf(if (selectedBookIndex < 39) "구약" else "신약") }
     val activeBook = BibleCatalog.books[activeBookIndex]
     val chapters = remember(activeBookIndex) { (1..activeBook.chapterCount).toList() }
+    val visibleBooks = remember(testament) {
+        if (testament == "구약") BibleCatalog.books.take(39) else BibleCatalog.books.drop(39)
+    }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -286,11 +361,23 @@ private fun BookChapterPickerSheet(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text("책과 장 선택", style = MaterialTheme.typography.titleLarge)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = testament == "구약",
+                    onClick = { testament = "구약" },
+                    label = { Text("구약") },
+                )
+                FilterChip(
+                    selected = testament == "신약",
+                    onClick = { testament = "신약" },
+                    label = { Text("신약") },
+                )
+            }
             LazyColumn(
                 modifier = Modifier.heightIn(max = 180.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(BibleCatalog.books, key = { it.index }) { book ->
+                items(visibleBooks, key = { it.index }) { book ->
                     FilterChip(
                         selected = book.index == activeBookIndex,
                         onClick = { activeBookIndex = book.index },
@@ -322,12 +409,50 @@ private fun BookChapterPickerSheet(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun VersePickerSheet(
+    verses: List<Int>,
+    selectedVerse: Int?,
+    onDismiss: () -> Unit,
+    onVerseSelected: (Int) -> Unit,
+    onShowAll: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text("절 선택", style = MaterialTheme.typography.titleLarge)
+            TextButton(onClick = onShowAll) {
+                Text("전체 절 보기")
+            }
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 56.dp),
+                modifier = Modifier.heightIn(max = 360.dp),
+                contentPadding = PaddingValues(bottom = 32.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(verses, key = { it }) { verse ->
+                    FilterChip(
+                        selected = selectedVerse == verse,
+                        onClick = { onVerseSelected(verse) },
+                        label = { Text("${verse}절") },
+                    )
+                }
+            }
+        }
+    }
+}
+
 private data class ReaderPaletteColors(
     val container: Color,
     val content: Color,
     val accent: Color,
     val highlightContainer: Color,
     val highlightAccent: Color,
+    val secondaryContent: Color,
 )
 
 private fun readingPaletteColors(palette: ReadingPalette): ReaderPaletteColors {
@@ -338,6 +463,7 @@ private fun readingPaletteColors(palette: ReadingPalette): ReaderPaletteColors {
             accent = Color(0xFF1B6B62),
             highlightContainer = Color(0xFFFFF2A8),
             highlightAccent = Color(0xFF8A6200),
+            secondaryContent = Color(0xFF625B4B),
         )
         ReadingPalette.Evening -> ReaderPaletteColors(
             container = Color(0xFF26231F),
@@ -345,6 +471,7 @@ private fun readingPaletteColors(palette: ReadingPalette): ReaderPaletteColors {
             accent = Color(0xFFE0B56B),
             highlightContainer = Color(0xFF4A3B1D),
             highlightAccent = Color(0xFFFFD66E),
+            secondaryContent = Color(0xFFCDBFA8),
         )
         ReadingPalette.Oled -> ReaderPaletteColors(
             container = Color(0xFF000000),
@@ -352,6 +479,7 @@ private fun readingPaletteColors(palette: ReadingPalette): ReaderPaletteColors {
             accent = Color(0xFF77D7C8),
             highlightContainer = Color(0xFF242000),
             highlightAccent = Color(0xFFFFE45E),
+            secondaryContent = Color(0xFFB8B8B8),
         )
         ReadingPalette.HighContrast -> ReaderPaletteColors(
             container = Color(0xFFFFFFFF),
@@ -359,6 +487,7 @@ private fun readingPaletteColors(palette: ReadingPalette): ReaderPaletteColors {
             accent = Color(0xFF005BD3),
             highlightContainer = Color(0xFFFFFF66),
             highlightAccent = Color(0xFF000000),
+            secondaryContent = Color(0xFF262626),
         )
         ReadingPalette.WarmLight -> ReaderPaletteColors(
             container = Color(0xFFFFF1D6),
@@ -366,6 +495,7 @@ private fun readingPaletteColors(palette: ReadingPalette): ReaderPaletteColors {
             accent = Color(0xFF9A5B00),
             highlightContainer = Color(0xFFFFDFA0),
             highlightAccent = Color(0xFF855200),
+            secondaryContent = Color(0xFF6D4F2C),
         )
     }
 }

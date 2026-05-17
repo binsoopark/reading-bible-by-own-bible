@@ -74,11 +74,11 @@ com.soobinpark.appcraft.readingbible
 
 ## 7. MVP 2단계 후보
 
-- [ ] 다중 역본 병렬 표시
+- [x] 다중 역본 병렬 표시
 - [x] 역본 선택 bottom sheet
-- [ ] 책 선택 segmented UI
+- [x] 책 선택 segmented UI
 - [x] 장 선택 adaptive grid
-- [ ] 절 선택 bottom sheet
+- [x] 절 선택 bottom sheet
 - [x] 글자 크기 / 줄 간격 / 팔레트 설정
 - [x] 최근 읽은 위치 저장
 
@@ -93,21 +93,38 @@ com.soobinpark.appcraft.readingbible
 
 ## 9. MVP 4단계 후보
 
-- [ ] 홈 화면 위젯
-- [ ] 데이터 import/export
-- [ ] FTS 검색 index
-- [ ] MP3 파일 감지 및 재생
-- [ ] 데이터 파일 진단 화면
+- [x] 홈 화면 위젯
+- [x] 데이터 import/export
+- [x] FTS 검색 index
+- [x] MP3 파일 감지 및 재생
+- [x] 데이터 파일 진단 화면
 
 ## 10. 추천 추가 기능
 
-- [ ] 데이터 파일 진단: 누락 파일, 깨진 zip, 알 수 없는 역본 코드, 인코딩 문제 표시
-- [ ] 빠른 역본 비교
-- [ ] 읽기 팔레트 preset: 종이, 저녁, OLED, 고대비, 따뜻한 빛
-- [ ] 첫 실행 onboarding: 데이터 폴더 선택과 지원 포맷 안내
-- [ ] 검색 index 생성
+- [x] 데이터 파일 진단: 누락 파일, 깨진 zip, 알 수 없는 역본 코드, 인코딩 문제 표시
+- [x] 빠른 역본 비교
+- [x] 읽기 팔레트 preset: 종이, 저녁, OLED, 고대비, 따뜻한 빛
+- [x] 첫 실행 onboarding: 데이터 폴더 선택과 지원 포맷 안내
+- [x] 검색 index 생성
 
 ## 11. 작업 로그
+
+### 2026-05-17 남은 체크리스트 일괄 구현
+
+- [x] Reader에 비교 역본 선택 추가
+- [x] Reader 절 카드에 비교 역본 본문 병렬 표시
+- [x] 책 선택 sheet에 구약/신약 segmented UI 추가
+- [x] 절 선택 bottom sheet 추가
+- [x] 설정 탭에 첫 실행 안내 카드 추가
+- [x] 설정 탭에 구절 기록 JSON 가져오기/내보내기 추가
+- [x] 검색 use case에 인메모리 검색 index 캐시 추가
+- [x] `.lfa` parser 문자셋 fallback 추가: UTF-8 우선, 깨짐 감지 시 MS949 재시도
+- [x] 성경 파일 진단에 MP3 감지 추가
+- [x] 성경 탭에서 MP3 목록 표시 및 외부 플레이어 재생 연결
+- [x] 홈 화면 위젯 provider, 레이아웃, 위젯 metadata 추가
+- [x] 설정에서 데이터 폴더 선택 후 Reader 탭으로 자동 이동
+- [x] 남은 PLAN 체크리스트 완료 처리
+- [x] `assembleDebug` 빌드 성공
 
 ### 2026-05-17
 
@@ -131,10 +148,10 @@ app/build/outputs/apk/debug/app-debug.apk
 다음 작업 후보:
 
 - [x] Android 13+ 저장소 접근 UX 설계: SAF 기반 폴더 선택
-- [ ] 실제 데이터 파일 진단 화면 구현
-- [ ] 역본 선택 bottom sheet 검색/정렬 개선
-- [ ] 책/장 선택을 adaptive grid UX로 개선
-- [ ] 다중 역본 병렬 표시 구현
+- [x] 실제 데이터 파일 진단 화면 구현
+- [x] 역본 선택 bottom sheet 검색/정렬 개선
+- [x] 책/장 선택을 adaptive grid UX로 개선
+- [x] 다중 역본 병렬 표시 구현
 
 ### SAF 폴더 선택 단계
 
@@ -296,10 +313,10 @@ app/build/outputs/apk/debug/app-debug.apk
 
 다음 작업 후보:
 
-- [ ] 선택한 폴더의 파일 진단 UI 추가
-- [ ] SAF `.lfa` parser의 charset 처리 개선
-- [ ] 폴더 변경 후 Reader 탭으로 자동 이동 UX 검토
-- [ ] 역본 선택 sheet에 검색과 정렬 추가
+- [x] 선택한 폴더의 파일 진단 UI 추가
+- [x] SAF `.lfa` parser의 charset 처리 개선
+- [x] 폴더 변경 후 Reader 탭으로 자동 이동 UX 검토
+- [x] 역본 선택 sheet에 검색과 정렬 추가
 
 ### 읽기 선택 UX 개선 단계
 

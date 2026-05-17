@@ -79,7 +79,7 @@ com.soobinpark.appcraft.readingbible
 - [ ] 책 선택 segmented UI
 - [x] 장 선택 adaptive grid
 - [ ] 절 선택 bottom sheet
-- [ ] 글자 크기 / 줄 간격 / 팔레트 설정
+- [x] 글자 크기 / 줄 간격 / 팔레트 설정
 - [x] 최근 읽은 위치 저장
 
 ## 8. MVP 3단계 후보
@@ -157,6 +157,27 @@ app/build/outputs/apk/debug/app-debug.apk
 - [x] `SafBdfBibleFileParser` 추가
 - [x] `SafLfaBibleFileParser` 추가
 - [x] `ReaderViewModel`이 SAF 폴더를 우선 스캔하고 없으면 `/sdcard/bible` fallback
+- [x] `assembleDebug` 빌드 성공
+
+### 읽기 스타일 설정 단계
+
+- [x] 읽기 스타일 설정 작업 시작
+- [x] 글자 크기 preference 모델 추가
+- [x] 줄 간격 preference 모델 추가
+- [x] 읽기 팔레트 preference 모델 추가
+- [x] 설정 탭에 스타일 컨트롤 추가
+- [x] Reader 본문에 스타일 반영
+- [x] `assembleDebug` 빌드 검증
+
+### 2026-05-17 읽기 스타일 설정 구현
+
+- [x] `ReadingStyle`, `ReadingPalette` 모델 추가
+- [x] `ReadingStylePreferences` 추가
+- [x] 앱 전역 `AppViewModel`에서 읽기 스타일 상태 공유
+- [x] 설정 탭에 글자 크기 slider 추가
+- [x] 설정 탭에 줄 간격 slider 추가
+- [x] 설정 탭에 종이/저녁/OLED/고대비/따뜻한 빛 팔레트 선택 추가
+- [x] Reader 본문 카드에 팔레트, 글자 크기, 줄 간격 적용
 - [x] `assembleDebug` 빌드 성공
 
 ### 최근 읽은 위치 저장 단계

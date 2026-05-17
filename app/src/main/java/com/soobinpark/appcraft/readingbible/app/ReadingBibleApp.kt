@@ -26,6 +26,7 @@ fun ReadingBibleApp(
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(AppTab.Reader) }
     val dataFolderUri by appViewModel.dataFolderUri.collectAsState()
+    val readingStyle by appViewModel.readingStyle.collectAsState()
 
     Scaffold(
         bottomBar = {
@@ -43,13 +44,21 @@ fun ReadingBibleApp(
     ) { innerPadding ->
         val modifier = Modifier.padding(innerPadding)
         when (selectedTab) {
-            AppTab.Reader -> ReaderRoute(dataFolderUri = dataFolderUri, modifier = modifier)
+            AppTab.Reader -> ReaderRoute(
+                dataFolderUri = dataFolderUri,
+                readingStyle = readingStyle,
+                modifier = modifier,
+            )
             AppTab.Library -> LibraryRoute(dataFolderUri = dataFolderUri, modifier = modifier)
             AppTab.Search -> SearchRoute(modifier)
             AppTab.Records -> RecordsRoute(modifier)
             AppTab.Settings -> SettingsRoute(
                 dataFolderUri = dataFolderUri,
+                readingStyle = readingStyle,
                 onDataFolderSelected = appViewModel::setDataFolderUri,
+                onFontSizeChanged = appViewModel::setReadingFontSize,
+                onLineHeightChanged = appViewModel::setReadingLineHeight,
+                onPaletteSelected = appViewModel::setReadingPalette,
                 modifier = modifier,
             )
         }

@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -31,15 +32,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.soobinpark.appcraft.readingbible.domain.model.BibleCatalog
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
+import com.soobinpark.appcraft.readingbible.domain.model.ReadingPalette
+import com.soobinpark.appcraft.readingbible.domain.model.ReadingStyle
 
 @Composable
 fun ReaderRoute(
     dataFolderUri: Uri?,
+    readingStyle: ReadingStyle,
     modifier: Modifier = Modifier,
     viewModel: ReaderViewModel = viewModel(),
 ) {
@@ -49,6 +55,7 @@ fun ReaderRoute(
     }
     ReaderScreen(
         state = uiState,
+        readingStyle = readingStyle,
         onVersionSelected = viewModel::selectVersion,
         onBookChapterSelected = viewModel::selectBookAndChapter,
         modifier = modifier,
@@ -59,6 +66,7 @@ fun ReaderRoute(
 @Composable
 private fun ReaderScreen(
     state: ReaderUiState,
+    readingStyle: ReadingStyle,
     onVersionSelected: (BibleVersion) -> Unit,
     onBookChapterSelected: (Int, Int) -> Unit,
     modifier: Modifier = Modifier,
@@ -94,21 +102,28 @@ private fun ReaderScreen(
         } else if (state.message != null) {
             EmptyReaderState(state)
         } else {
+            val palette = readingPaletteColors(readingStyle.palette)
             LazyColumn(
                 contentPadding = PaddingValues(bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 items(state.verses, key = { "${it.versionCode}-${it.bookIndex}-${it.chapter}-${it.verse}" }) { verse ->
-                    Card {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = palette.container,
+                            contentColor = palette.content,
+                        ),
+                    ) {
                         Column(Modifier.padding(16.dp)) {
                             Text(
                                 text = "${verse.verse}",
                                 style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary,
+                                color = palette.accent,
                             )
                             Text(
                                 text = verse.text,
-                                style = MaterialTheme.typography.bodyLarge,
+                                fontSize = readingStyle.fontSizeSp.sp,
+                                lineHeight = (readingStyle.fontSizeSp * readingStyle.lineHeightMultiplier).sp,
                             )
                         }
                     }
@@ -248,6 +263,42 @@ private fun BookChapterPickerSheet(
                 }
             }
         }
+    }
+}
+
+private data class ReaderPaletteColors(
+    val container: Color,
+    val content: Color,
+    val accent: Color,
+)
+
+private fun readingPaletteColors(palette: ReadingPalette): ReaderPaletteColors {
+    return when (palette) {
+        ReadingPalette.Paper -> ReaderPaletteColors(
+            container = Color(0xFFFFFCF4),
+            content = Color(0xFF242018),
+            accent = Color(0xFF1B6B62),
+        )
+        ReadingPalette.Evening -> ReaderPaletteColors(
+            container = Color(0xFF26231F),
+            content = Color(0xFFF1E8D8),
+            accent = Color(0xFFE0B56B),
+        )
+        ReadingPalette.Oled -> ReaderPaletteColors(
+            container = Color(0xFF000000),
+            content = Color(0xFFECECEC),
+            accent = Color(0xFF77D7C8),
+        )
+        ReadingPalette.HighContrast -> ReaderPaletteColors(
+            container = Color(0xFFFFFFFF),
+            content = Color(0xFF000000),
+            accent = Color(0xFF005BD3),
+        )
+        ReadingPalette.WarmLight -> ReaderPaletteColors(
+            container = Color(0xFFFFF1D6),
+            content = Color(0xFF2D2215),
+            accent = Color(0xFF9A5B00),
+        )
     }
 }
 

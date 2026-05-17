@@ -29,6 +29,7 @@ data class ReaderUiState(
     val verses: List<BibleVerse> = emptyList(),
     val comparisonVerses: List<BibleVerse> = emptyList(),
     val isLoading: Boolean = true,
+    val loadingMessage: String = "성경 데이터를 준비하는 중입니다.",
     val message: String? = null,
 )
 
@@ -52,36 +53,45 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
     fun refresh() {
         viewModelScope.launch {
             val root = _uiState.value.dataRoot
-            _uiState.value = _uiState.value.copy(isLoading = true, message = null)
-            _uiState.value = withContext(Dispatchers.IO) {
-                val versions = dataFolderUri?.let { repository.scanVersions(it) }
+            _uiState.value = _uiState.value.copy(
+                isLoading = true,
+                loadingMessage = "데이터 폴더에서 BDF/LFA 역본을 찾는 중입니다.",
+                message = null,
+            )
+            val versions = withContext(Dispatchers.IO) {
+                dataFolderUri?.let { repository.scanVersions(it) }
                     ?.takeIf { it.isNotEmpty() }
                     ?: repository.scanVersions(root)
-                val savedProgress = progressPreferences.getProgress()
-                val safeBookIndex = savedProgress.bookIndex.coerceIn(BibleCatalog.books.indices)
-                val safeChapter = savedProgress.chapter.coerceIn(1, BibleCatalog.books[safeBookIndex].chapterCount)
-                val selected = savedProgress.versionCode?.let { code ->
-                    versions.firstOrNull { it.code.equals(code, ignoreCase = true) }
-                } ?: versions.firstOrNull()
-                val comparison = versions.firstOrNull { it.code != selected?.code }
-                val verses = selected?.let {
-                    repository.readChapter(it, BibleCatalog.books[safeBookIndex], safeChapter)
-                }.orEmpty()
-                val comparisonVerses = comparison?.let {
-                    repository.readChapter(it, BibleCatalog.books[safeBookIndex], safeChapter)
-                }.orEmpty()
-                _uiState.value.copy(
-                    versions = versions,
-                    selectedVersion = selected,
-                    comparisonVersion = comparison,
-                    bookIndex = safeBookIndex,
-                    chapter = safeChapter,
-                    verses = verses,
-                    comparisonVerses = comparisonVerses,
-                    isLoading = false,
-                    message = if (versions.isEmpty()) "선택한 폴더 또는 기본 데이터 폴더에서 bdf/lfa 파일을 찾지 못했습니다." else null,
-                )
             }
+            val savedProgress = progressPreferences.getProgress()
+            val safeBookIndex = savedProgress.bookIndex.coerceIn(BibleCatalog.books.indices)
+            val safeChapter = savedProgress.chapter.coerceIn(1, BibleCatalog.books[safeBookIndex].chapterCount)
+            val selected = savedProgress.versionCode?.let { code ->
+                versions.firstOrNull { it.code.equals(code, ignoreCase = true) }
+            } ?: versions.firstOrNull()
+            val comparison = versions.firstOrNull { it.code != selected?.code }
+            val book = BibleCatalog.books[safeBookIndex]
+            _uiState.value = _uiState.value.copy(
+                versions = versions,
+                selectedVersion = selected,
+                comparisonVersion = comparison,
+                bookIndex = safeBookIndex,
+                chapter = safeChapter,
+                loadingMessage = selected?.let { "${it.code} ${book.koreanName} ${safeChapter}장을 여는 중입니다." }
+                    ?: "사용 가능한 역본을 확인하는 중입니다.",
+            )
+            val (verses, comparisonVerses) = withContext(Dispatchers.IO) {
+                val verses = selected?.let { repository.readChapter(it, book, safeChapter) }.orEmpty()
+                val comparisonVerses = comparison?.let { repository.readChapter(it, book, safeChapter) }.orEmpty()
+                verses to comparisonVerses
+            }
+            _uiState.value = _uiState.value.copy(
+                verses = verses,
+                comparisonVerses = comparisonVerses,
+                isLoading = false,
+                loadingMessage = "",
+                message = if (versions.isEmpty()) "선택한 폴더 또는 기본 데이터 폴더에서 bdf/lfa 파일을 찾지 못했습니다." else null,
+            )
             _uiState.value.selectedVersion?.let { warmUpSelectedVersion(it) }
         }
     }

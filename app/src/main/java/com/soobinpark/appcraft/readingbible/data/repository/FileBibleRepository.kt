@@ -83,7 +83,10 @@ class FileBibleRepository(
         }
     }
 
-    suspend fun warmUpVersion(version: BibleVersion) {
+    suspend fun warmUpVersion(
+        version: BibleVersion,
+        onProgress: suspend (current: Int, total: Int, label: String) -> Unit = { _, _, _ -> },
+    ) {
         val warmUpKey = listOf(
             version.treeUri?.toString() ?: version.fileRoot?.absolutePath.orEmpty(),
             version.code,
@@ -91,8 +94,14 @@ class FileBibleRepository(
             "full",
         ).joinToString(":")
         if (!warmUpVersions.add(warmUpKey)) return
+        val total = BibleCatalog.books.sumOf { it.chapterCount }
+        var current = 0
         for (book in BibleCatalog.books) {
             for (chapter in 1..book.chapterCount) {
+                current += 1
+                if (current == 1 || current == total || chapter == 1 || current % 25 == 0) {
+                    onProgress(current, total, "${book.koreanName} ${chapter}장")
+                }
                 readChapter(version, book, chapter)
             }
         }

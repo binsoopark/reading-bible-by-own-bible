@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -22,6 +23,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -46,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.soobinpark.appcraft.readingbible.app.CacheWarmUpUiState
 import com.soobinpark.appcraft.readingbible.domain.model.BibleCatalog
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVerse
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
@@ -59,6 +62,7 @@ fun ReaderRoute(
     dataFolderUri: Uri?,
     readingStyle: ReadingStyle,
     bookmarks: List<VerseBookmark>,
+    cacheWarmUpState: CacheWarmUpUiState,
     onBookmarkToggle: (BibleVerse) -> Unit,
     onHighlightToggle: (BibleVerse) -> Unit,
     onReadToggle: (BibleVerse) -> Unit,
@@ -73,6 +77,7 @@ fun ReaderRoute(
         state = uiState,
         readingStyle = readingStyle,
         bookmarks = bookmarks,
+        cacheWarmUpState = cacheWarmUpState,
         onVersionSelected = viewModel::selectVersion,
         onComparisonVersionSelected = viewModel::selectComparisonVersion,
         onBookChapterSelected = viewModel::selectBookAndChapter,
@@ -89,6 +94,7 @@ private fun ReaderScreen(
     state: ReaderUiState,
     readingStyle: ReadingStyle,
     bookmarks: List<VerseBookmark>,
+    cacheWarmUpState: CacheWarmUpUiState,
     onVersionSelected: (BibleVersion) -> Unit,
     onComparisonVersionSelected: (BibleVersion?) -> Unit,
     onBookChapterSelected: (Int, Int) -> Unit,
@@ -135,9 +141,12 @@ private fun ReaderScreen(
                 label = { Text(state.comparisonVersion?.let { "비교 ${it.code}" } ?: "비교 없음") },
             )
         }
+        if (cacheWarmUpState.isActive) {
+            CacheWarmUpBanner(cacheWarmUpState)
+        }
 
         if (state.isLoading) {
-            CircularProgressIndicator()
+            LoadingReaderState(state.loadingMessage)
         } else if (state.message != null) {
             EmptyReaderState(state)
         } else {
@@ -497,6 +506,68 @@ private fun readingPaletteColors(palette: ReadingPalette): ReaderPaletteColors {
             highlightAccent = Color(0xFF855200),
             secondaryContent = Color(0xFF6D4F2C),
         )
+    }
+}
+
+@Composable
+private fun LoadingReaderState(message: String) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHighest),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            CircularProgressIndicator()
+            Text(
+                text = message.ifBlank { "성경 데이터를 준비하는 중입니다." },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = "처음 여는 데이터는 BDF/LFA 파일을 읽고 앱 내부 캐시에 저장합니다.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CacheWarmUpBanner(state: CacheWarmUpUiState) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                CircularProgressIndicator(
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+                Text(
+                    text = state.message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            state.progress?.let { progress ->
+                LinearProgressIndicator(
+                    progress = { progress.coerceIn(0f, 1f) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    text = "${(progress.coerceIn(0f, 1f) * 100).toInt()}%",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            } ?: Spacer(modifier = Modifier.fillMaxWidth())
+        }
     }
 }
 

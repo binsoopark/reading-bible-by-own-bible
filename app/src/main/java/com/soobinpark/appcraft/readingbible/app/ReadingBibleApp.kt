@@ -28,6 +28,7 @@ fun ReadingBibleApp(
     val dataFolderUri by appViewModel.dataFolderUri.collectAsState()
     val readingStyle by appViewModel.readingStyle.collectAsState()
     val bookmarks by appViewModel.bookmarks.collectAsState()
+    val cacheWarmUpState by appViewModel.cacheWarmUpState.collectAsState()
 
     Scaffold(
         bottomBar = {
@@ -49,6 +50,7 @@ fun ReadingBibleApp(
                 dataFolderUri = dataFolderUri,
                 readingStyle = readingStyle,
                 bookmarks = bookmarks,
+                cacheWarmUpState = cacheWarmUpState,
                 onBookmarkToggle = appViewModel::toggleBookmark,
                 onHighlightToggle = appViewModel::toggleHighlight,
                 onReadToggle = appViewModel::toggleRead,

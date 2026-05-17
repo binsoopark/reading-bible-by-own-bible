@@ -62,7 +62,7 @@ com.soobinpark.appcraft.readingbible
 - [x] 패키지명 적용
 - [x] 한국어/영어 앱 이름 리소스 추가
 - [x] Compose + Material 3 설정
-- [ ] BottomTab shell 구현
+- [x] BottomTab shell 구현
 - [x] Clean Architecture 패키지 기본 구조 생성
 - [x] 성경 데이터 파일 스캔 모델 작성
 - [x] `.bdf` parser MVP 작성
@@ -75,9 +75,9 @@ com.soobinpark.appcraft.readingbible
 ## 7. MVP 2단계 후보
 
 - [ ] 다중 역본 병렬 표시
-- [ ] 역본 선택 bottom sheet
+- [x] 역본 선택 bottom sheet
 - [ ] 책 선택 segmented UI
-- [ ] 장 선택 adaptive grid
+- [x] 장 선택 adaptive grid
 - [ ] 절 선택 bottom sheet
 - [ ] 글자 크기 / 줄 간격 / 팔레트 설정
 - [ ] 최근 읽은 위치 저장
@@ -165,6 +165,22 @@ app/build/outputs/apk/debug/app-debug.apk
 - [ ] SAF `.lfa` parser의 charset 처리 개선
 - [ ] 폴더 변경 후 Reader 탭으로 자동 이동 UX 검토
 - [ ] 역본 선택 sheet에 검색과 정렬 추가
+
+### 읽기 선택 UX 개선 단계
+
+- [x] Reader 선택 UI 작업 시작
+- [x] 역본 선택 sheet 검색 입력 추가
+- [x] 역본 목록 정렬 개선
+- [x] 책/장 선택 sheet를 adaptive grid 기반으로 개선
+- [x] `assembleDebug` 빌드 검증
+
+### 2026-05-17 읽기 선택 UX 개선 구현
+
+- [x] 역본 선택 bottom sheet에 검색 필드 추가
+- [x] 역본 목록을 포맷 유형과 코드 기준으로 정렬
+- [x] 책 선택 후 장을 grid로 바로 선택하는 bottom sheet 구현
+- [x] 장 grid가 화면 폭에 맞춰 adaptive column으로 표시되도록 개선
+- [x] `assembleDebug` 빌드 성공
 
 ### 데이터 파일 진단 단계
 

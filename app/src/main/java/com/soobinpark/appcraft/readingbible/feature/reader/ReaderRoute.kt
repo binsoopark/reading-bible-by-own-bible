@@ -7,9 +7,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -17,8 +21,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,6 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.soobinpark.appcraft.readingbible.domain.model.BibleCatalog
+import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
 
 @Composable
 fun ReaderRoute(
@@ -54,7 +59,7 @@ fun ReaderRoute(
 @Composable
 private fun ReaderScreen(
     state: ReaderUiState,
-    onVersionSelected: (com.soobinpark.appcraft.readingbible.domain.model.BibleVersion) -> Unit,
+    onVersionSelected: (BibleVersion) -> Unit,
     onBookChapterSelected: (Int, Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -113,39 +118,133 @@ private fun ReaderScreen(
     }
 
     if (showVersionSheet) {
-        ModalBottomSheet(onDismissRequest = { showVersionSheet = false }) {
-            Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("역본 선택", style = MaterialTheme.typography.titleLarge)
-                state.versions.forEach { version ->
-                    FilterChip(
-                        selected = state.selectedVersion == version,
-                        onClick = {
-                            onVersionSelected(version)
-                            showVersionSheet = false
-                        },
-                        label = { Text("${version.code} · ${version.sourceType}") },
-                    )
+        VersionPickerSheet(
+            versions = state.versions,
+            selectedVersion = state.selectedVersion,
+            onDismiss = { showVersionSheet = false },
+            onVersionSelected = {
+                onVersionSelected(it)
+                showVersionSheet = false
+            },
+        )
+    }
+
+    if (showBookSheet) {
+        BookChapterPickerSheet(
+            selectedBookIndex = state.bookIndex,
+            selectedChapter = state.chapter,
+            onDismiss = { showBookSheet = false },
+            onBookChapterSelected = { bookIndex, chapter ->
+                onBookChapterSelected(bookIndex, chapter)
+                showBookSheet = false
+            },
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun VersionPickerSheet(
+    versions: List<BibleVersion>,
+    selectedVersion: BibleVersion?,
+    onDismiss: () -> Unit,
+    onVersionSelected: (BibleVersion) -> Unit,
+) {
+    var query by remember { mutableStateOf("") }
+    val visibleVersions = remember(versions, query) {
+        versions
+            .filter { version ->
+                query.isBlank() ||
+                    version.code.contains(query, ignoreCase = true) ||
+                    version.displayName.contains(query, ignoreCase = true) ||
+                    version.sourceType.name.contains(query, ignoreCase = true)
+            }
+            .sortedWith(compareBy({ it.sourceType.name }, { it.code.lowercase() }))
+    }
+
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text("역본 선택", style = MaterialTheme.typography.titleLarge)
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("역본 검색") },
+                placeholder = { Text("예: kor, niv, bdf") },
+            )
+            if (visibleVersions.isEmpty()) {
+                Text("검색 결과가 없습니다.", style = MaterialTheme.typography.bodyMedium)
+            } else {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 420.dp),
+                    contentPadding = PaddingValues(bottom = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(visibleVersions, key = { "${it.sourceType}-${it.code}" }) { version ->
+                        FilterChip(
+                            selected = selectedVersion == version,
+                            onClick = { onVersionSelected(version) },
+                            label = { Text("${version.code} · ${version.sourceType}") },
+                        )
+                    }
                 }
             }
         }
     }
+}
 
-    if (showBookSheet) {
-        ModalBottomSheet(onDismissRequest = { showBookSheet = false }) {
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BookChapterPickerSheet(
+    selectedBookIndex: Int,
+    selectedChapter: Int,
+    onDismiss: () -> Unit,
+    onBookChapterSelected: (Int, Int) -> Unit,
+) {
+    var activeBookIndex by remember(selectedBookIndex) { mutableStateOf(selectedBookIndex) }
+    val activeBook = BibleCatalog.books[activeBookIndex]
+    val chapters = remember(activeBookIndex) { (1..activeBook.chapterCount).toList() }
+
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.padding(horizontal = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text("책과 장 선택", style = MaterialTheme.typography.titleLarge)
             LazyColumn(
-                modifier = Modifier.padding(horizontal = 20.dp),
-                contentPadding = PaddingValues(bottom = 32.dp),
+                modifier = Modifier.heightIn(max = 180.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                items(BibleCatalog.books) { book ->
-                    TextButton(
-                        onClick = {
-                            onBookChapterSelected(book.index, 1)
-                            showBookSheet = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("${book.koreanName} · ${book.englishName} · ${book.chapterCount}장")
-                    }
+                items(BibleCatalog.books, key = { it.index }) { book ->
+                    FilterChip(
+                        selected = book.index == activeBookIndex,
+                        onClick = { activeBookIndex = book.index },
+                        label = { Text("${book.koreanName} · ${book.englishName}") },
+                    )
+                }
+            }
+            Text(
+                text = "${activeBook.koreanName} ${activeBook.chapterCount}장",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            LazyVerticalGrid(
+                columns = GridCells.Adaptive(minSize = 56.dp),
+                modifier = Modifier.heightIn(max = 320.dp),
+                contentPadding = PaddingValues(bottom = 32.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items(chapters, key = { it }) { chapter ->
+                    FilterChip(
+                        selected = activeBookIndex == selectedBookIndex && chapter == selectedChapter,
+                        onClick = { onBookChapterSelected(activeBookIndex, chapter) },
+                        label = { Text("${chapter}장") },
+                    )
                 }
             }
         }

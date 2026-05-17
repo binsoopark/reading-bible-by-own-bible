@@ -68,17 +68,19 @@ class FileBibleRepository(
         ).joinToString(":")
         return chapterCache.getOrPut(key) {
             chapterPersistentCache?.readChapter(key)?.takeIf { it.isNotEmpty() }?.let { return@getOrPut it }
-            if (version.treeUri != null) {
-                when (version.sourceType) {
-                    BibleSourceType.BdfSplit -> safBdfParser?.readChapter(version, book, chapter).orEmpty()
-                    BibleSourceType.LfaArchive -> safLfaParser?.readChapter(version, book, chapter).orEmpty()
+            runCatching {
+                if (version.treeUri != null) {
+                    when (version.sourceType) {
+                        BibleSourceType.BdfSplit -> safBdfParser?.readChapter(version, book, chapter).orEmpty()
+                        BibleSourceType.LfaArchive -> safLfaParser?.readChapter(version, book, chapter).orEmpty()
+                    }
+                } else {
+                    when (version.sourceType) {
+                        BibleSourceType.BdfSplit -> bdfParser.readChapter(version, book, chapter)
+                        BibleSourceType.LfaArchive -> lfaParser.readChapter(version, book, chapter)
+                    }
                 }
-            } else {
-                when (version.sourceType) {
-                    BibleSourceType.BdfSplit -> bdfParser.readChapter(version, book, chapter)
-                    BibleSourceType.LfaArchive -> lfaParser.readChapter(version, book, chapter)
-                }
-            }
+            }.getOrDefault(emptyList())
                 .also { chapterPersistentCache?.writeChapter(key, it) }
         }
     }

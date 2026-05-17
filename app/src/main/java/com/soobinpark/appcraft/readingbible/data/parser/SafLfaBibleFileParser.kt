@@ -25,16 +25,19 @@ class SafLfaBibleFileParser(
         val entryName = "${version.code}${bookNumber}_$chapter.lfb"
 
         val input = context.contentResolver.openInputStream(archive.uri) ?: return emptyList()
-        return ZipInputStream(input.buffered()).use { zip ->
-            generateSequence { zip.nextEntry }
-                .firstOrNull { it.name == entryName }
-                ?.let {
-                    val text = decodeLfaText(zip.readBytes())
-                    text.lineSequence().mapNotNull { line ->
+        return input.use { stream ->
+            ZipInputStream(stream.buffered()).use { zip ->
+                while (true) {
+                    val entry = runCatching { zip.nextEntry }.getOrNull() ?: return emptyList()
+                    if (entry.name == entryName) {
+                        val text = runCatching { decodeLfaText(zip.readBytes()) }.getOrNull() ?: return emptyList()
+                        return text.lineSequence().mapNotNull { line ->
                             parseVerseLine(version.code, book.index, chapter, bookNumber, chapterNeedle, line)
                         }.toList()
+                    }
                 }
-                .orEmpty()
+                emptyList()
+            }
         }
     }
 }

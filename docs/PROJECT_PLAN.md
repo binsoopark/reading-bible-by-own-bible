@@ -146,6 +146,14 @@ com.soobinpark.appcraft.readingbible
 - [x] 데이터 파일이 추가/삭제/교체되면 이전 역본 목록 캐시를 사용하지 않도록 수정
 - [x] `assembleDebug` 빌드 성공
 
+### 2026-05-17 SAF LFA 런타임 예외 대응
+
+- [x] SAF `.lfa` ZIP entry 탐색 중 `ZipException` 발생 시 앱이 종료되지 않도록 방어
+- [x] 손상되었거나 비표준 ZIP metadata를 가진 `.lfa` 파일은 빈 결과로 안전 처리
+- [x] repository 레벨에서 parser 예외가 UI 코루틴까지 전파되지 않도록 안전망 추가
+- [x] 특정 역본/장이 비어 있으면 Reader에 파일 형식 또는 손상 여부 확인 메시지 표시
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-17 남은 체크리스트 일괄 구현
 
 - [x] Reader에 비교 역본 선택 추가

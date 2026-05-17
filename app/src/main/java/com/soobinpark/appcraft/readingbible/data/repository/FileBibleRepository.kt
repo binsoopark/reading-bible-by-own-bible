@@ -38,7 +38,7 @@ class FileBibleRepository(
     )
 
     override suspend fun scanVersions(root: File): List<BibleVersion> {
-        val key = "file:${root.absolutePath}:${root.lastModified()}"
+        val key = scanKey(root)
         return versionCache.getOrPut(key) {
             chapterPersistentCache?.readVersions(scanKey = key, fileRoot = root)?.takeIf { it.isNotEmpty() }
                 ?: scanner.scan(root).also { chapterPersistentCache?.writeVersions(key, it) }
@@ -46,7 +46,7 @@ class FileBibleRepository(
     }
 
     suspend fun scanVersions(treeUri: Uri): List<BibleVersion> {
-        val key = "saf:$treeUri"
+        val key = scanKey(treeUri)
         return versionCache.getOrPut(key) {
             chapterPersistentCache?.readVersions(scanKey = key, treeUri = treeUri)?.takeIf { it.isNotEmpty() }
                 ?: safScanner?.scan(treeUri).orEmpty().also { chapterPersistentCache?.writeVersions(key, it) }
@@ -116,6 +116,25 @@ class FileBibleRepository(
         } else {
             fileSourceStamp(version, book)
         }
+    }
+
+    private fun scanKey(root: File): String {
+        val fileStamp = root.listFiles()
+            ?.filter { it.isFile && (it.extension.equals("bdf", ignoreCase = true) || it.extension.equals("lfa", ignoreCase = true)) }
+            ?.sortedBy { it.name.lowercase() }
+            ?.joinToString("|") { "${it.name}:${it.lastModified()}:${it.length()}" }
+            .orEmpty()
+        return "file:${root.absolutePath}:$fileStamp"
+    }
+
+    private fun scanKey(treeUri: Uri): String {
+        val appContext = context ?: return "saf:$treeUri"
+        val root = DocumentFile.fromTreeUri(appContext, treeUri) ?: return "saf:$treeUri:missing"
+        val fileStamp = root.listFiles()
+            .filter { it.isFile && (it.name?.endsWith(".bdf", ignoreCase = true) == true || it.name?.endsWith(".lfa", ignoreCase = true) == true) }
+            .sortedBy { it.name.orEmpty().lowercase() }
+            .joinToString("|") { "${it.name}:${it.lastModified()}:${it.length()}" }
+        return "saf:$treeUri:$fileStamp"
     }
 
     private fun fileSourceStamp(

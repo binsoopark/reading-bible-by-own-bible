@@ -220,6 +220,12 @@ com.soobinpark.appcraft.readingbible
 - [x] thumb 폭과 대비를 높여 스크롤바가 눈에 보이도록 개선
 - [x] `assembleDebug` 빌드 성공
 
+### 2026-05-18 Reader 스크롤바 초기 측정 크래시 수정
+
+- [x] 트랙 높이가 thumb 최소 높이보다 작은 초기 프레임에서 `coerceIn` 예외가 발생하지 않도록 수정
+- [x] 트랙 높이가 충분히 측정된 뒤에만 thumb 계산과 드래그 이동 처리
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-17 남은 체크리스트 일괄 구현
 
 - [x] Reader에 비교 역본 선택 추가

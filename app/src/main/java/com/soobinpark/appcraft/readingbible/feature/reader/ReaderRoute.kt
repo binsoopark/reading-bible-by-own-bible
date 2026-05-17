@@ -664,15 +664,24 @@ private fun FastVerseScrollBar(
     }
     if (itemCount <= 1) return
 
-    val trackHeightPx = trackSize.height.toFloat().coerceAtLeast(1f)
-    val thumbHeightPx = (trackHeightPx * visibleCount / itemCount.toFloat())
-        .coerceIn(with(density) { 36.dp.toPx() }, trackHeightPx)
+    val trackHeightPx = trackSize.height.toFloat()
+    val minThumbHeightPx = with(density) { 36.dp.toPx() }
+    val canShowThumb = trackHeightPx >= minThumbHeightPx
+    val thumbHeightPx = if (canShowThumb) {
+        (trackHeightPx * visibleCount / itemCount.toFloat()).coerceIn(minThumbHeightPx, trackHeightPx)
+    } else {
+        0f
+    }
     val maxFirstIndex = (itemCount - visibleCount).coerceAtLeast(1)
     val firstIndex = listState.firstVisibleItemIndex.coerceIn(0, maxFirstIndex)
-    val thumbOffsetPx = ((trackHeightPx - thumbHeightPx) * firstIndex / maxFirstIndex).coerceIn(0f, trackHeightPx - thumbHeightPx)
+    val thumbOffsetPx = if (canShowThumb) {
+        ((trackHeightPx - thumbHeightPx) * firstIndex / maxFirstIndex).coerceIn(0f, trackHeightPx - thumbHeightPx)
+    } else {
+        0f
+    }
 
     fun scrollToPosition(y: Float) {
-        if (trackSize.height <= 0) return
+        if (!canShowThumb) return
         val movable = (trackHeightPx - thumbHeightPx).coerceAtLeast(1f)
         val ratio = ((y - thumbHeightPx / 2f) / movable).coerceIn(0f, 1f)
         val targetIndex = (ratio * maxFirstIndex).roundToInt().coerceIn(0, itemCount - 1)
@@ -704,7 +713,7 @@ private fun FastVerseScrollBar(
                     shape = RoundedCornerShape(99.dp),
                 ),
         )
-        if (trackSize.height > 0) {
+        if (canShowThumb) {
             Box(
                 modifier = Modifier
                     .offset { IntOffset(x = 0, y = thumbOffsetPx.roundToInt()) }

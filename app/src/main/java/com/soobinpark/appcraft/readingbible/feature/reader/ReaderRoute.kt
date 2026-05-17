@@ -209,7 +209,7 @@ private fun ReaderScreen(
                             )
                             if (comparisonVerse != null) {
                                 Text(
-                                    text = "${comparisonVerse.versionCode} ${comparisonVerse.text}",
+                                    text = comparisonVerse.text,
                                     color = palette.secondaryContent,
                                     fontSize = (readingStyle.fontSizeSp - 1f).coerceAtLeast(14f).sp,
                                     lineHeight = (readingStyle.fontSizeSp * readingStyle.lineHeightMultiplier).sp,

@@ -172,6 +172,12 @@ com.soobinpark.appcraft.readingbible
 - [x] Search/Library 역본 목록도 표시명 중심으로 개선
 - [x] `assembleDebug` 빌드 성공
 
+### 2026-05-17 Reader 본문 표시 간소화
+
+- [x] 비교 역본 본문 앞에 매 절마다 붙던 원본 역본 ID 제거
+- [x] 역본 정보는 상단 선택 칩과 역본 선택 sheet에서만 확인하도록 정리
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-17 남은 체크리스트 일괄 구현
 
 - [x] Reader에 비교 역본 선택 추가

@@ -29,6 +29,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.FormatColorFill
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -58,6 +60,7 @@ fun ReaderRoute(
     bookmarks: List<VerseBookmark>,
     onBookmarkToggle: (BibleVerse) -> Unit,
     onHighlightToggle: (BibleVerse) -> Unit,
+    onReadToggle: (BibleVerse) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ReaderViewModel = viewModel(),
 ) {
@@ -73,6 +76,7 @@ fun ReaderRoute(
         onBookChapterSelected = viewModel::selectBookAndChapter,
         onBookmarkToggle = onBookmarkToggle,
         onHighlightToggle = onHighlightToggle,
+        onReadToggle = onReadToggle,
         modifier = modifier,
     )
 }
@@ -87,6 +91,7 @@ private fun ReaderScreen(
     onBookChapterSelected: (Int, Int) -> Unit,
     onBookmarkToggle: (BibleVerse) -> Unit,
     onHighlightToggle: (BibleVerse) -> Unit,
+    onReadToggle: (BibleVerse) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showVersionSheet by remember { mutableStateOf(false) }
@@ -129,6 +134,7 @@ private fun ReaderScreen(
                 items(state.verses, key = { "${it.versionCode}-${it.bookIndex}-${it.chapter}-${it.verse}" }) { verse ->
                     val record = recordsByKey[verse.bookmarkKey()]
                     val isHighlighted = record?.highlight != null && record.highlight != VerseHighlight.None
+                    val isRead = record?.isRead == true
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = if (isHighlighted) palette.highlightContainer else palette.container,
@@ -148,6 +154,13 @@ private fun ReaderScreen(
                                         imageVector = Icons.Outlined.FormatColorFill,
                                         contentDescription = if (isHighlighted) "하이라이트 해제" else "하이라이트 추가",
                                         tint = if (isHighlighted) palette.highlightAccent else palette.accent,
+                                    )
+                                }
+                                IconButton(onClick = { onReadToggle(verse) }) {
+                                    Icon(
+                                        imageVector = if (isRead) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
+                                        contentDescription = if (isRead) "읽음 해제" else "읽음 표시",
+                                        tint = if (isRead) palette.highlightAccent else palette.accent,
                                     )
                                 }
                                 IconButton(onClick = { onBookmarkToggle(verse) }) {

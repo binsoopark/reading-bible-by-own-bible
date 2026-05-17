@@ -89,9 +89,24 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         _bookmarks.value = next
     }
 
+    fun toggleRead(verse: BibleVerse) {
+        val key = VerseBookmark.key(verse.versionCode, verse.bookIndex, verse.chapter, verse.verse)
+        val current = _bookmarks.value
+        val existing = current.firstOrNull { it.key == key }
+        val next = if (existing != null) {
+            val updated = existing.copy(isRead = !existing.isRead)
+            current.replaceOrRemoveEmpty(updated)
+        } else {
+            listOf(verse.toBookmark(isBookmarked = false, isRead = true)) + current
+        }
+        bookmarkPreferences.setBookmarks(next)
+        _bookmarks.value = next
+    }
+
     private fun BibleVerse.toBookmark(
         isBookmarked: Boolean,
         highlight: VerseHighlight = VerseHighlight.None,
+        isRead: Boolean = false,
     ): VerseBookmark {
         return VerseBookmark(
             versionCode = versionCode,
@@ -102,12 +117,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             note = "",
             isBookmarked = isBookmarked,
             highlight = highlight,
+            isRead = isRead,
             createdAtMillis = System.currentTimeMillis(),
         )
     }
 
     private fun List<VerseBookmark>.replaceOrRemoveEmpty(updated: VerseBookmark): List<VerseBookmark> {
-        val keep = updated.isBookmarked || updated.note.isNotBlank() || updated.highlight != VerseHighlight.None
+        val keep = updated.isBookmarked || updated.note.isNotBlank() || updated.highlight != VerseHighlight.None || updated.isRead
         return if (keep) {
             map { bookmark -> if (bookmark.key == updated.key) updated else bookmark }
         } else {

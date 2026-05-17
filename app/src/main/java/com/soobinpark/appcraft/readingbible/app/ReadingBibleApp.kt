@@ -51,6 +51,7 @@ fun ReadingBibleApp(
                 bookmarks = bookmarks,
                 onBookmarkToggle = appViewModel::toggleBookmark,
                 onHighlightToggle = appViewModel::toggleHighlight,
+                onReadToggle = appViewModel::toggleRead,
                 modifier = modifier,
             )
             AppTab.Library -> LibraryRoute(dataFolderUri = dataFolderUri, modifier = modifier)

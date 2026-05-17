@@ -89,7 +89,7 @@ com.soobinpark.appcraft.readingbible
 - [x] 북마크
 - [x] 밑줄 / 하이라이트
 - [x] 메모
-- [ ] 읽음 체크
+- [x] 읽음 체크
 
 ## 9. MVP 4단계 후보
 
@@ -157,6 +157,25 @@ app/build/outputs/apk/debug/app-debug.apk
 - [x] `SafBdfBibleFileParser` 추가
 - [x] `SafLfaBibleFileParser` 추가
 - [x] `ReaderViewModel`이 SAF 폴더를 우선 스캔하고 없으면 `/sdcard/bible` fallback
+- [x] `assembleDebug` 빌드 성공
+
+### 읽음 체크 MVP 단계
+
+- [x] 읽음 체크 MVP 작업 시작
+- [x] 구절 기록 모델에 읽음 상태 추가
+- [x] 저장된 구절 기록 JSON에 읽음 상태 저장/복원
+- [x] Reader 절 카드에 읽음 체크 토글 추가
+- [x] 기록 탭에 읽음 상태 표시
+- [x] `assembleDebug` 빌드 검증
+
+### 2026-05-17 읽음 체크 MVP 구현
+
+- [x] `VerseBookmark.isRead` 필드 추가
+- [x] 기존 구절 기록 JSON은 `isRead=false`로 호환 처리
+- [x] `BookmarkPreferences`가 읽음 상태를 저장/복원하도록 확장
+- [x] `AppViewModel.toggleRead` 추가
+- [x] Reader 절 카드에 읽음 토글 버튼 추가
+- [x] 기록 탭 구절 카드에 읽음 상태 표시
 - [x] `assembleDebug` 빌드 성공
 
 ### 하이라이트 MVP 단계

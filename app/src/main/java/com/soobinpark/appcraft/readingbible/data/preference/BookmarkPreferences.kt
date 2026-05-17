@@ -27,6 +27,7 @@ class BookmarkPreferences(context: Context) {
                             isBookmarked = item.optBoolean("isBookmarked", true),
                             highlight = item.optString("highlight", VerseHighlight.None.name)
                                 .let { runCatching { VerseHighlight.valueOf(it) }.getOrDefault(VerseHighlight.None) },
+                            isRead = item.optBoolean("isRead", false),
                             createdAtMillis = item.optLong("createdAtMillis"),
                         ),
                     )
@@ -34,7 +35,7 @@ class BookmarkPreferences(context: Context) {
             }
         }.getOrDefault(emptyList())
             .filter { it.versionCode.isNotBlank() && it.text.isNotBlank() }
-            .filter { it.isBookmarked || it.note.isNotBlank() || it.highlight != VerseHighlight.None }
+            .filter { it.isBookmarked || it.note.isNotBlank() || it.highlight != VerseHighlight.None || it.isRead }
             .distinctBy { it.key }
             .sortedByDescending { it.createdAtMillis }
     }
@@ -55,6 +56,7 @@ class BookmarkPreferences(context: Context) {
                         .put("note", bookmark.note)
                         .put("isBookmarked", bookmark.isBookmarked)
                         .put("highlight", bookmark.highlight.name)
+                        .put("isRead", bookmark.isRead)
                         .put("createdAtMillis", bookmark.createdAtMillis),
                 )
             }

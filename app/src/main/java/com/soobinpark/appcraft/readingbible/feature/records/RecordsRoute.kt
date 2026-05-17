@@ -41,8 +41,8 @@ fun RecordsRoute(
         item {
             Card {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("북마크", style = MaterialTheme.typography.titleMedium)
-                    Text(if (bookmarks.isEmpty()) "아직 저장한 구절이 없습니다." else "${bookmarks.size}개 구절을 저장했습니다.")
+                    Text("구절 기록", style = MaterialTheme.typography.titleMedium)
+                    Text(if (bookmarks.isEmpty()) "아직 저장한 구절이 없습니다." else "${bookmarks.size}개 구절 기록이 있습니다.")
                 }
             }
         }
@@ -82,6 +82,12 @@ private fun BookmarkCard(
                 AssistChip(
                     onClick = {},
                     label = { Text("${bookmark.highlight.label} 하이라이트") },
+                )
+            }
+            if (bookmark.isRead) {
+                AssistChip(
+                    onClick = {},
+                    label = { Text("읽음") },
                 )
             }
             OutlinedTextField(

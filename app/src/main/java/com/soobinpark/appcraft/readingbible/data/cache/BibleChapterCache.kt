@@ -5,6 +5,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.net.Uri
+import com.soobinpark.appcraft.readingbible.data.biblefile.BibleVersionNames
 import com.soobinpark.appcraft.readingbible.domain.model.BibleSourceType
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVerse
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
@@ -84,7 +85,7 @@ class BibleChapterCache(
                     add(
                         BibleVersion(
                             code = it.getString(0),
-                            displayName = it.getString(1),
+                            displayName = BibleVersionNames.displayNameFor(it.getString(0)),
                             sourceType = BibleSourceType.valueOf(it.getString(2)),
                             fileRoot = fileRoot,
                             treeUri = treeUri,

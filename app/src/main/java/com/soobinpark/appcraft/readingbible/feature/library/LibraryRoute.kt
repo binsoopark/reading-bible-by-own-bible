@@ -194,7 +194,7 @@ private fun VersionSection(diagnostic: BibleFileDiagnostic) {
                 diagnostic.versions.forEach { version ->
                     AssistChip(
                         onClick = {},
-                        label = { Text("${version.code} · ${version.sourceType}") },
+                        label = { Text("${version.displayName} · ${version.code}") },
                     )
                 }
             }

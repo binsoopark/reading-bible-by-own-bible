@@ -19,7 +19,7 @@ class SafBibleFileScanner(
                 file.name?.removeSuffixIgnoreCase(".lfa")?.let { code ->
                     BibleVersion(
                         code = code,
-                        displayName = code,
+                        displayName = BibleVersionNames.displayNameFor(code),
                         sourceType = BibleSourceType.LfaArchive,
                         treeUri = treeUri,
                     )
@@ -36,7 +36,7 @@ class SafBibleFileScanner(
             .map { code ->
                 BibleVersion(
                     code = code,
-                    displayName = code,
+                    displayName = BibleVersionNames.displayNameFor(code),
                     sourceType = BibleSourceType.BdfSplit,
                     treeUri = treeUri,
                 )

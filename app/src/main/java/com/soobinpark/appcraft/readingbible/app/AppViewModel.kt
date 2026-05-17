@@ -205,7 +205,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     repository.warmUpVersion(version) { current, total, label ->
                         _cacheWarmUpState.value = CacheWarmUpUiState(
                             isActive = true,
-                            message = "${version.code} 역본을 빠른 실행용 DB 캐시로 준비 중입니다. $label",
+                            message = "${version.displayName} 역본을 빠른 실행용 DB 캐시로 준비 중입니다. $label",
                             progress = current.toFloat() / total.toFloat(),
                         )
                     }

@@ -92,7 +92,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                 loadingMessage = "",
                 message = when {
                     versions.isEmpty() -> "선택한 폴더 또는 기본 데이터 폴더에서 bdf/lfa 파일을 찾지 못했습니다."
-                    selected != null && verses.isEmpty() -> "${selected.code} ${book.koreanName} ${safeChapter}장을 읽지 못했습니다. LFA/BDF 파일 형식 또는 손상 여부를 확인해 주세요."
+                    selected != null && verses.isEmpty() -> "${selected.displayName} ${book.koreanName} ${safeChapter}장을 읽지 못했습니다. LFA/BDF 파일 형식 또는 손상 여부를 확인해 주세요."
                     else -> null
                 },
             )
@@ -118,7 +118,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                 comparisonVerses = comparisonVerses,
                 message = if (verses.isEmpty()) {
                     val book = BibleCatalog.books[state.bookIndex]
-                    "${version.code} ${book.koreanName} ${state.chapter}장을 읽지 못했습니다. LFA/BDF 파일 형식 또는 손상 여부를 확인해 주세요."
+                    "${version.displayName} ${book.koreanName} ${state.chapter}장을 읽지 못했습니다. LFA/BDF 파일 형식 또는 손상 여부를 확인해 주세요."
                 } else {
                     null
                 },
@@ -162,7 +162,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                 comparisonVerses = comparisonVerses,
                 message = if (state.selectedVersion != null && verses.isEmpty()) {
                     val book = BibleCatalog.books[safeBookIndex]
-                    "${state.selectedVersion.code} ${book.koreanName} ${safeChapter}장을 읽지 못했습니다. LFA/BDF 파일 형식 또는 손상 여부를 확인해 주세요."
+                    "${state.selectedVersion.displayName} ${book.koreanName} ${safeChapter}장을 읽지 못했습니다. LFA/BDF 파일 형식 또는 손상 여부를 확인해 주세요."
                 } else {
                     null
                 },

@@ -13,7 +13,7 @@ class BibleFileScanner {
             ?.map { file ->
                 BibleVersion(
                     code = file.nameWithoutExtension,
-                    displayName = file.nameWithoutExtension,
+                    displayName = BibleVersionNames.displayNameFor(file.nameWithoutExtension),
                     sourceType = BibleSourceType.LfaArchive,
                     fileRoot = root,
                 )
@@ -28,7 +28,7 @@ class BibleFileScanner {
             ?.map { code ->
                 BibleVersion(
                     code = code,
-                    displayName = code,
+                    displayName = BibleVersionNames.displayNameFor(code),
                     sourceType = BibleSourceType.BdfSplit,
                     fileRoot = root,
                 )

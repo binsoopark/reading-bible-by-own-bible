@@ -124,7 +124,7 @@ private fun ReaderScreen(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AssistChip(
                 onClick = { showVersionSheet = true },
-                label = { Text(state.selectedVersion?.code ?: "역본 없음") },
+                label = { Text(state.selectedVersion?.displayName ?: "역본 없음") },
             )
             AssistChip(
                 onClick = { showBookSheet = true },
@@ -138,7 +138,7 @@ private fun ReaderScreen(
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AssistChip(
                 onClick = { showComparisonSheet = true },
-                label = { Text(state.comparisonVersion?.let { "비교 ${it.code}" } ?: "비교 없음") },
+                label = { Text(state.comparisonVersion?.let { "비교 ${it.displayName}" } ?: "비교 없음") },
             )
         }
         if (cacheWarmUpState.isActive) {
@@ -305,7 +305,7 @@ private fun VersionPickerSheet(
                     version.displayName.contains(query, ignoreCase = true) ||
                     version.sourceType.name.contains(query, ignoreCase = true)
             }
-            .sortedWith(compareBy({ it.sourceType.name }, { it.code.lowercase() }))
+            .sortedWith(compareBy({ it.sourceType.name }, { it.displayName.lowercase() }, { it.code.lowercase() }))
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
@@ -339,7 +339,16 @@ private fun VersionPickerSheet(
                         FilterChip(
                             selected = selectedVersion == version,
                             onClick = { onVersionSelected(version) },
-                            label = { Text("${version.code} · ${version.sourceType}") },
+                            label = {
+                                Column {
+                                    Text(version.displayName)
+                                    Text(
+                                        text = "${version.code} · ${version.sourceType}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            },
                         )
                     }
                 }

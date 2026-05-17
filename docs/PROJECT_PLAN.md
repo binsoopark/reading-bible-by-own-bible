@@ -162,6 +162,16 @@ com.soobinpark.appcraft.readingbible
 - [x] DB 캐시 저장 실패가 본문 읽기 실패로 전파되지 않도록 repository 안전망 추가
 - [x] `assembleDebug` 빌드 성공
 
+### 2026-05-17 역본 표시명 개선
+
+- [x] Lifove APK의 `version_code` / `versions` 리소스를 참고해 코드-표시명 매핑 추가
+- [x] `kornkrv`, `korhrv`, `engNIV`, `ENGKJV`, `engNASB` 등 주요 코드 표시명 변환
+- [x] 역본 스캔 시 파일 접근용 code는 유지하고 사용자용 `displayName` 설정
+- [x] 기존 SQLite 역본 캐시를 읽을 때도 code 기반 표시명을 다시 계산
+- [x] Reader 역본 선택 UI에서 표시명을 기본으로 노출하고 원본 code는 보조 정보로 표시
+- [x] Search/Library 역본 목록도 표시명 중심으로 개선
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-17 남은 체크리스트 일괄 구현
 
 - [x] Reader에 비교 역본 선택 추가

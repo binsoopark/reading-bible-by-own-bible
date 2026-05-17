@@ -123,7 +123,7 @@ private fun SearchInputCard(
                         FilterChip(
                             selected = state.selectedVersion == version,
                             onClick = { onVersionSelected(version) },
-                            label = { Text("${version.code} · ${version.sourceType}") },
+                            label = { Text("${version.displayName} · ${version.code}") },
                         )
                     }
                 }

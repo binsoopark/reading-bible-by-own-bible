@@ -86,7 +86,7 @@ com.soobinpark.appcraft.readingbible
 
 - [x] `.bdf` 검색
 - [x] `.lfa` 검색
-- [ ] 북마크
+- [x] 북마크
 - [ ] 밑줄 / 하이라이트
 - [ ] 메모
 - [ ] 읽음 체크
@@ -157,6 +157,25 @@ app/build/outputs/apk/debug/app-debug.apk
 - [x] `SafBdfBibleFileParser` 추가
 - [x] `SafLfaBibleFileParser` 추가
 - [x] `ReaderViewModel`이 SAF 폴더를 우선 스캔하고 없으면 `/sdcard/bible` fallback
+- [x] `assembleDebug` 빌드 성공
+
+### 북마크 MVP 단계
+
+- [x] 북마크 MVP 작업 시작
+- [x] 북마크 도메인 모델 추가
+- [x] 북마크 preference 저장소 추가
+- [x] Reader 절 카드에 북마크 토글 추가
+- [x] 기록 탭에 북마크 목록 표시
+- [x] `assembleDebug` 빌드 검증
+
+### 2026-05-17 북마크 MVP 구현
+
+- [x] `VerseBookmark` 모델 추가
+- [x] `BookmarkPreferences` 추가
+- [x] 앱 전역 `AppViewModel`에서 북마크 목록 공유
+- [x] Reader 절 카드에 북마크 추가/해제 버튼 추가
+- [x] 기록 탭에 저장된 북마크 목록 표시
+- [x] 북마크에 역본 코드, 책, 장, 절, 본문 스냅샷, 저장 시각 보존
 - [x] `assembleDebug` 빌드 성공
 
 ### 본문 검색 MVP 단계

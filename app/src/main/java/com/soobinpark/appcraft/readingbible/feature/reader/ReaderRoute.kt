@@ -20,10 +20,15 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Bookmark
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -38,14 +43,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.soobinpark.appcraft.readingbible.domain.model.BibleCatalog
+import com.soobinpark.appcraft.readingbible.domain.model.BibleVerse
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingPalette
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingStyle
+import com.soobinpark.appcraft.readingbible.domain.model.VerseBookmark
 
 @Composable
 fun ReaderRoute(
     dataFolderUri: Uri?,
     readingStyle: ReadingStyle,
+    bookmarks: List<VerseBookmark>,
+    onBookmarkToggle: (BibleVerse) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ReaderViewModel = viewModel(),
 ) {
@@ -56,8 +65,10 @@ fun ReaderRoute(
     ReaderScreen(
         state = uiState,
         readingStyle = readingStyle,
+        bookmarks = bookmarks,
         onVersionSelected = viewModel::selectVersion,
         onBookChapterSelected = viewModel::selectBookAndChapter,
+        onBookmarkToggle = onBookmarkToggle,
         modifier = modifier,
     )
 }
@@ -67,8 +78,10 @@ fun ReaderRoute(
 private fun ReaderScreen(
     state: ReaderUiState,
     readingStyle: ReadingStyle,
+    bookmarks: List<VerseBookmark>,
     onVersionSelected: (BibleVersion) -> Unit,
     onBookChapterSelected: (Int, Int) -> Unit,
+    onBookmarkToggle: (BibleVerse) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showVersionSheet by remember { mutableStateOf(false) }
@@ -103,6 +116,7 @@ private fun ReaderScreen(
             EmptyReaderState(state)
         } else {
             val palette = readingPaletteColors(readingStyle.palette)
+            val bookmarkKeys = bookmarks.map { it.key }.toSet()
             LazyColumn(
                 contentPadding = PaddingValues(bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -115,11 +129,22 @@ private fun ReaderScreen(
                         ),
                     ) {
                         Column(Modifier.padding(16.dp)) {
-                            Text(
-                                text = "${verse.verse}",
-                                style = MaterialTheme.typography.labelLarge,
-                                color = palette.accent,
-                            )
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    text = "${verse.verse}",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = palette.accent,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                IconButton(onClick = { onBookmarkToggle(verse) }) {
+                                    val selected = verse.bookmarkKey() in bookmarkKeys
+                                    Icon(
+                                        imageVector = if (selected) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
+                                        contentDescription = if (selected) "북마크 해제" else "북마크 추가",
+                                        tint = palette.accent,
+                                    )
+                                }
+                            }
                             Text(
                                 text = verse.text,
                                 fontSize = readingStyle.fontSizeSp.sp,
@@ -155,6 +180,10 @@ private fun ReaderScreen(
             },
         )
     }
+}
+
+private fun BibleVerse.bookmarkKey(): String {
+    return VerseBookmark.key(versionCode, bookIndex, chapter, verse)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

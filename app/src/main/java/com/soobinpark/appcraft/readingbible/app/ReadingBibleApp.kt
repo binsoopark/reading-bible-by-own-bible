@@ -27,6 +27,7 @@ fun ReadingBibleApp(
     var selectedTab by rememberSaveable { mutableStateOf(AppTab.Reader) }
     val dataFolderUri by appViewModel.dataFolderUri.collectAsState()
     val readingStyle by appViewModel.readingStyle.collectAsState()
+    val bookmarks by appViewModel.bookmarks.collectAsState()
 
     Scaffold(
         bottomBar = {
@@ -47,11 +48,13 @@ fun ReadingBibleApp(
             AppTab.Reader -> ReaderRoute(
                 dataFolderUri = dataFolderUri,
                 readingStyle = readingStyle,
+                bookmarks = bookmarks,
+                onBookmarkToggle = appViewModel::toggleBookmark,
                 modifier = modifier,
             )
             AppTab.Library -> LibraryRoute(dataFolderUri = dataFolderUri, modifier = modifier)
             AppTab.Search -> SearchRoute(dataFolderUri = dataFolderUri, modifier = modifier)
-            AppTab.Records -> RecordsRoute(modifier)
+            AppTab.Records -> RecordsRoute(bookmarks = bookmarks, modifier = modifier)
             AppTab.Settings -> SettingsRoute(
                 dataFolderUri = dataFolderUri,
                 readingStyle = readingStyle,

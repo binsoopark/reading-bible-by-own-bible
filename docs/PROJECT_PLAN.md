@@ -87,7 +87,7 @@ com.soobinpark.appcraft.readingbible
 - [x] `.bdf` 검색
 - [x] `.lfa` 검색
 - [x] 북마크
-- [ ] 밑줄 / 하이라이트
+- [x] 밑줄 / 하이라이트
 - [x] 메모
 - [ ] 읽음 체크
 
@@ -157,6 +157,26 @@ app/build/outputs/apk/debug/app-debug.apk
 - [x] `SafBdfBibleFileParser` 추가
 - [x] `SafLfaBibleFileParser` 추가
 - [x] `ReaderViewModel`이 SAF 폴더를 우선 스캔하고 없으면 `/sdcard/bible` fallback
+- [x] `assembleDebug` 빌드 성공
+
+### 하이라이트 MVP 단계
+
+- [x] 하이라이트 MVP 작업 시작
+- [x] 구절 기록 모델에 하이라이트 상태 추가
+- [x] 저장된 북마크 JSON에 하이라이트 저장/복원
+- [x] Reader 절 카드에 하이라이트 토글 추가
+- [x] 기록 탭에 하이라이트 상태 표시
+- [x] `assembleDebug` 빌드 검증
+
+### 2026-05-17 하이라이트 MVP 구현
+
+- [x] `VerseHighlight` 모델 추가
+- [x] `VerseBookmark`에 `isBookmarked`, `highlight` 필드 추가
+- [x] 기존 북마크 JSON은 `isBookmarked=true`, `highlight=None`으로 호환 처리
+- [x] `AppViewModel.toggleHighlight` 추가
+- [x] Reader 절 카드에 하이라이트 토글 버튼 추가
+- [x] 하이라이트된 절은 팔레트별 강조 배경으로 표시
+- [x] 기록 탭 북마크 카드에 하이라이트 상태 표시
 - [x] `assembleDebug` 빌드 성공
 
 ### 메모 MVP 단계

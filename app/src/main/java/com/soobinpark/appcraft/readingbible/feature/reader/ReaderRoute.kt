@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
+import androidx.compose.material.icons.outlined.FormatColorFill
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -47,6 +48,7 @@ import com.soobinpark.appcraft.readingbible.domain.model.BibleVerse
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingPalette
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingStyle
+import com.soobinpark.appcraft.readingbible.domain.model.VerseHighlight
 import com.soobinpark.appcraft.readingbible.domain.model.VerseBookmark
 
 @Composable
@@ -55,6 +57,7 @@ fun ReaderRoute(
     readingStyle: ReadingStyle,
     bookmarks: List<VerseBookmark>,
     onBookmarkToggle: (BibleVerse) -> Unit,
+    onHighlightToggle: (BibleVerse) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ReaderViewModel = viewModel(),
 ) {
@@ -69,6 +72,7 @@ fun ReaderRoute(
         onVersionSelected = viewModel::selectVersion,
         onBookChapterSelected = viewModel::selectBookAndChapter,
         onBookmarkToggle = onBookmarkToggle,
+        onHighlightToggle = onHighlightToggle,
         modifier = modifier,
     )
 }
@@ -82,6 +86,7 @@ private fun ReaderScreen(
     onVersionSelected: (BibleVersion) -> Unit,
     onBookChapterSelected: (Int, Int) -> Unit,
     onBookmarkToggle: (BibleVerse) -> Unit,
+    onHighlightToggle: (BibleVerse) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showVersionSheet by remember { mutableStateOf(false) }
@@ -116,15 +121,17 @@ private fun ReaderScreen(
             EmptyReaderState(state)
         } else {
             val palette = readingPaletteColors(readingStyle.palette)
-            val bookmarkKeys = bookmarks.map { it.key }.toSet()
+            val recordsByKey = bookmarks.associateBy { it.key }
             LazyColumn(
                 contentPadding = PaddingValues(bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 items(state.verses, key = { "${it.versionCode}-${it.bookIndex}-${it.chapter}-${it.verse}" }) { verse ->
+                    val record = recordsByKey[verse.bookmarkKey()]
+                    val isHighlighted = record?.highlight != null && record.highlight != VerseHighlight.None
                     Card(
                         colors = CardDefaults.cardColors(
-                            containerColor = palette.container,
+                            containerColor = if (isHighlighted) palette.highlightContainer else palette.container,
                             contentColor = palette.content,
                         ),
                     ) {
@@ -136,8 +143,15 @@ private fun ReaderScreen(
                                     color = palette.accent,
                                     modifier = Modifier.weight(1f),
                                 )
+                                IconButton(onClick = { onHighlightToggle(verse) }) {
+                                    Icon(
+                                        imageVector = Icons.Outlined.FormatColorFill,
+                                        contentDescription = if (isHighlighted) "하이라이트 해제" else "하이라이트 추가",
+                                        tint = if (isHighlighted) palette.highlightAccent else palette.accent,
+                                    )
+                                }
                                 IconButton(onClick = { onBookmarkToggle(verse) }) {
-                                    val selected = verse.bookmarkKey() in bookmarkKeys
+                                    val selected = record?.isBookmarked == true
                                     Icon(
                                         imageVector = if (selected) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
                                         contentDescription = if (selected) "북마크 해제" else "북마크 추가",
@@ -299,6 +313,8 @@ private data class ReaderPaletteColors(
     val container: Color,
     val content: Color,
     val accent: Color,
+    val highlightContainer: Color,
+    val highlightAccent: Color,
 )
 
 private fun readingPaletteColors(palette: ReadingPalette): ReaderPaletteColors {
@@ -307,26 +323,36 @@ private fun readingPaletteColors(palette: ReadingPalette): ReaderPaletteColors {
             container = Color(0xFFFFFCF4),
             content = Color(0xFF242018),
             accent = Color(0xFF1B6B62),
+            highlightContainer = Color(0xFFFFF2A8),
+            highlightAccent = Color(0xFF8A6200),
         )
         ReadingPalette.Evening -> ReaderPaletteColors(
             container = Color(0xFF26231F),
             content = Color(0xFFF1E8D8),
             accent = Color(0xFFE0B56B),
+            highlightContainer = Color(0xFF4A3B1D),
+            highlightAccent = Color(0xFFFFD66E),
         )
         ReadingPalette.Oled -> ReaderPaletteColors(
             container = Color(0xFF000000),
             content = Color(0xFFECECEC),
             accent = Color(0xFF77D7C8),
+            highlightContainer = Color(0xFF242000),
+            highlightAccent = Color(0xFFFFE45E),
         )
         ReadingPalette.HighContrast -> ReaderPaletteColors(
             container = Color(0xFFFFFFFF),
             content = Color(0xFF000000),
             accent = Color(0xFF005BD3),
+            highlightContainer = Color(0xFFFFFF66),
+            highlightAccent = Color(0xFF000000),
         )
         ReadingPalette.WarmLight -> ReaderPaletteColors(
             container = Color(0xFFFFF1D6),
             content = Color(0xFF2D2215),
             accent = Color(0xFF9A5B00),
+            highlightContainer = Color(0xFFFFDFA0),
+            highlightAccent = Color(0xFF855200),
         )
     }
 }

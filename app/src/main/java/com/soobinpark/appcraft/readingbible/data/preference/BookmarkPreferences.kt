@@ -1,6 +1,7 @@
 package com.soobinpark.appcraft.readingbible.data.preference
 
 import android.content.Context
+import com.soobinpark.appcraft.readingbible.domain.model.VerseHighlight
 import com.soobinpark.appcraft.readingbible.domain.model.VerseBookmark
 import org.json.JSONArray
 import org.json.JSONObject
@@ -23,6 +24,9 @@ class BookmarkPreferences(context: Context) {
                             verse = item.optInt("verse"),
                             text = item.optString("text"),
                             note = item.optString("note"),
+                            isBookmarked = item.optBoolean("isBookmarked", true),
+                            highlight = item.optString("highlight", VerseHighlight.None.name)
+                                .let { runCatching { VerseHighlight.valueOf(it) }.getOrDefault(VerseHighlight.None) },
                             createdAtMillis = item.optLong("createdAtMillis"),
                         ),
                     )
@@ -30,6 +34,7 @@ class BookmarkPreferences(context: Context) {
             }
         }.getOrDefault(emptyList())
             .filter { it.versionCode.isNotBlank() && it.text.isNotBlank() }
+            .filter { it.isBookmarked || it.note.isNotBlank() || it.highlight != VerseHighlight.None }
             .distinctBy { it.key }
             .sortedByDescending { it.createdAtMillis }
     }
@@ -48,6 +53,8 @@ class BookmarkPreferences(context: Context) {
                         .put("verse", bookmark.verse)
                         .put("text", bookmark.text)
                         .put("note", bookmark.note)
+                        .put("isBookmarked", bookmark.isBookmarked)
+                        .put("highlight", bookmark.highlight.name)
                         .put("createdAtMillis", bookmark.createdAtMillis),
                 )
             }

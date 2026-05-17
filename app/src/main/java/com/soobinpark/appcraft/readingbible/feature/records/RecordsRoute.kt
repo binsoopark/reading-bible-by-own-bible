@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -16,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.soobinpark.appcraft.readingbible.domain.model.BibleCatalog
+import com.soobinpark.appcraft.readingbible.domain.model.VerseHighlight
 import com.soobinpark.appcraft.readingbible.domain.model.VerseBookmark
 import java.text.DateFormat
 import java.util.Date
@@ -76,6 +78,12 @@ private fun BookmarkCard(
                 text = "${bookmark.versionCode} · ${DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Date(bookmark.createdAtMillis))}",
                 style = MaterialTheme.typography.labelMedium,
             )
+            if (bookmark.highlight != VerseHighlight.None) {
+                AssistChip(
+                    onClick = {},
+                    label = { Text("${bookmark.highlight.label} 하이라이트") },
+                )
+            }
             OutlinedTextField(
                 value = bookmark.note,
                 onValueChange = { onNoteChanged(bookmark.key, it) },

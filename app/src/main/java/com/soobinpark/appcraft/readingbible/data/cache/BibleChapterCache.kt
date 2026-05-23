@@ -38,9 +38,34 @@ class BibleChapterCache(
             """.trimIndent(),
         )
         db.execSQL("CREATE INDEX index_verses_cache_key ON verses(cache_key)")
+        createVersionsTable(db)
+        createWarmUpsTable(db)
+    }
+
+    override fun onUpgrade(
+        db: SQLiteDatabase,
+        oldVersion: Int,
+        newVersion: Int,
+    ) {
+        if (oldVersion < 2) {
+            createVersionsTable(db)
+        }
+        if (oldVersion < 3) {
+            createWarmUpsTable(db)
+        }
+        if (oldVersion > newVersion) {
+            db.execSQL("DROP TABLE IF EXISTS warmups")
+            db.execSQL("DROP TABLE IF EXISTS versions")
+            db.execSQL("DROP TABLE IF EXISTS verses")
+            db.execSQL("DROP TABLE IF EXISTS chapters")
+            onCreate(db)
+        }
+    }
+
+    private fun createVersionsTable(db: SQLiteDatabase) {
         db.execSQL(
             """
-            CREATE TABLE versions (
+            CREATE TABLE IF NOT EXISTS versions (
                 scan_key TEXT NOT NULL,
                 code TEXT NOT NULL,
                 display_name TEXT NOT NULL,
@@ -52,15 +77,15 @@ class BibleChapterCache(
         )
     }
 
-    override fun onUpgrade(
-        db: SQLiteDatabase,
-        oldVersion: Int,
-        newVersion: Int,
-    ) {
-        db.execSQL("DROP TABLE IF EXISTS versions")
-        db.execSQL("DROP TABLE IF EXISTS verses")
-        db.execSQL("DROP TABLE IF EXISTS chapters")
-        onCreate(db)
+    private fun createWarmUpsTable(db: SQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS warmups (
+                warmup_key TEXT PRIMARY KEY,
+                completed_at INTEGER NOT NULL
+            )
+            """.trimIndent(),
+        )
     }
 
     @Synchronized
@@ -217,6 +242,35 @@ class BibleChapterCache(
         }
     }
 
+    @Synchronized
+    fun isWarmUpComplete(warmUpKey: String): Boolean {
+        val cursor = readableDatabase.query(
+            "warmups",
+            arrayOf("warmup_key"),
+            "warmup_key = ?",
+            arrayOf(warmUpKey),
+            null,
+            null,
+            null,
+            "1",
+        )
+        return cursor.use { it.moveToFirst() }
+    }
+
+    fun markWarmUpComplete(warmUpKey: String) {
+        synchronized(databaseWriteLock) {
+            writableDatabase.insertWithOnConflict(
+                "warmups",
+                null,
+                ContentValues().apply {
+                    put("warmup_key", warmUpKey)
+                    put("completed_at", System.currentTimeMillis())
+                },
+                SQLiteDatabase.CONFLICT_REPLACE,
+            )
+        }
+    }
+
     private data class ChapterInfo(
         val versionCode: String,
         val bookIndex: Int,
@@ -225,7 +279,7 @@ class BibleChapterCache(
 
     private companion object {
         const val DATABASE_NAME = "bible_chapter_cache.db"
-        const val DATABASE_VERSION = 2
+        const val DATABASE_VERSION = 3
         val databaseWriteLock = Any()
     }
 }

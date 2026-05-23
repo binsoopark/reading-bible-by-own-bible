@@ -89,22 +89,27 @@ class FileBibleRepository(
         version: BibleVersion,
         onProgress: suspend (current: Int, total: Int, label: String) -> Unit = { _, _, _ -> },
     ) {
-        val warmUpKey = listOf(
-            version.treeUri?.toString() ?: version.fileRoot?.absolutePath.orEmpty(),
-            version.code,
-            version.sourceType.name,
-            "full",
-        ).joinToString(":")
+        val warmUpKey = warmUpKey(version)
+        if (chapterPersistentCache?.isWarmUpComplete(warmUpKey) == true) return
         if (!warmUpVersions.add(warmUpKey)) return
-        val total = BibleCatalog.books.sumOf { it.chapterCount }
-        var current = 0
-        for (book in BibleCatalog.books) {
-            for (chapter in 1..book.chapterCount) {
-                current += 1
-                if (current == 1 || current == total || chapter == 1 || current % 25 == 0) {
-                    onProgress(current, total, "${book.koreanName} ${chapter}장")
+        var completed = false
+        try {
+            val total = BibleCatalog.books.sumOf { it.chapterCount }
+            var current = 0
+            for (book in BibleCatalog.books) {
+                for (chapter in 1..book.chapterCount) {
+                    current += 1
+                    if (current == 1 || current == total || chapter == 1 || current % 25 == 0) {
+                        onProgress(current, total, "${book.koreanName} ${chapter}장")
+                    }
+                    readChapter(version, book, chapter)
                 }
-                readChapter(version, book, chapter)
+            }
+            chapterPersistentCache?.markWarmUpComplete(warmUpKey)
+            completed = true
+        } finally {
+            if (!completed) {
+                warmUpVersions.remove(warmUpKey)
             }
         }
     }
@@ -117,6 +122,47 @@ class FileBibleRepository(
             safSourceStamp(version, book)
         } else {
             fileSourceStamp(version, book)
+        }
+    }
+
+    private fun warmUpKey(version: BibleVersion): String {
+        return listOf(
+            version.treeUri?.toString() ?: version.fileRoot?.absolutePath.orEmpty(),
+            version.code,
+            version.sourceType.name,
+            versionSourceStamp(version),
+            "full",
+        ).joinToString(":")
+    }
+
+    private fun versionSourceStamp(version: BibleVersion): String {
+        return if (version.treeUri != null) {
+            safVersionSourceStamp(version)
+        } else {
+            fileVersionSourceStamp(version)
+        }
+    }
+
+    private fun fileVersionSourceStamp(version: BibleVersion): String {
+        val root = version.fileRoot ?: return "missing"
+        val files = when (version.sourceType) {
+            BibleSourceType.BdfSplit -> (1..7).map { File(root, "${version.code}$it.bdf") }
+            BibleSourceType.LfaArchive -> listOf(File(root, "${version.code}.lfa"))
+        }
+        return files.joinToString("|") { "${it.name}:${it.lastModified()}:${it.length()}" }
+    }
+
+    private fun safVersionSourceStamp(version: BibleVersion): String {
+        val appContext = context ?: return "saf"
+        val treeUri = version.treeUri ?: return "missing"
+        val root = DocumentFile.fromTreeUri(appContext, treeUri) ?: return "missing"
+        val fileNames = when (version.sourceType) {
+            BibleSourceType.BdfSplit -> (1..7).map { "${version.code}$it.bdf" }
+            BibleSourceType.LfaArchive -> listOf("${version.code}.lfa")
+        }
+        return fileNames.joinToString("|") { fileName ->
+            val file = root.findFile(fileName)
+            "$fileName:${file?.lastModified() ?: 0L}:${file?.length() ?: 0L}"
         }
     }
 

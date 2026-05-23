@@ -109,6 +109,14 @@ com.soobinpark.appcraft.readingbible
 
 ## 11. 작업 로그
 
+### 2026-05-24 캐시 예열 반복 방지
+
+- [x] 전체 역본 캐시 예열 완료 상태를 SQLite `warmups` 테이블에 저장
+- [x] 원본 파일명, 수정 시간, 크기를 포함한 warm-up key로 데이터 변경 시에만 재예열
+- [x] 앱 재실행 시 이미 완료된 역본 전체 예열은 건너뛰도록 수정
+- [x] 예열 중 취소나 예외가 발생하면 같은 실행 안에서도 다시 시도할 수 있도록 in-memory 진행 상태 정리
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-18 GitHub Actions Release Signing 설정
 
 - [x] release signing 정보를 환경변수에서만 읽도록 Gradle 설정 추가

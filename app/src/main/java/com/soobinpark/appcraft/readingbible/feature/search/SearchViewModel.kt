@@ -122,12 +122,13 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
                 searchProgressMessage = "검색 인덱스를 준비하는 중입니다.",
             )
             val results = withContext(Dispatchers.IO) {
-                searchBible(version = version, query = query) { current, total, label ->
-                    _uiState.value = _uiState.value.copy(
-                        searchProgress = current.toFloat() / total.toFloat(),
-                        searchProgressMessage = "$label 검색 준비 중",
-                    )
-                }
+                repository.searchCached(version, query)
+                    ?: searchBible(version = version, query = query) { current, total, label ->
+                        _uiState.value = _uiState.value.copy(
+                            searchProgress = current.toFloat() / total.toFloat(),
+                            searchProgressMessage = "$label 검색 준비 중",
+                        )
+                    }
             }
             _uiState.value = _uiState.value.copy(
                 results = results,

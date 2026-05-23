@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
@@ -29,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.soobinpark.appcraft.readingbible.R
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingPalette
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingStyle
+import com.soobinpark.appcraft.readingbible.feature.library.LibraryRoute
 import kotlin.math.roundToInt
 
 @Composable
@@ -45,6 +47,7 @@ fun SettingsRoute(
 ) {
     val context = LocalContext.current
     var importExportMessage by remember { mutableStateOf<String?>(null) }
+    var showBibleDiagnostics by remember { mutableStateOf(false) }
     val folderPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
     ) { uri ->
@@ -87,6 +90,28 @@ fun SettingsRoute(
         }
     }
 
+    if (showBibleDiagnostics) {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(top = 12.dp),
+        ) {
+            Button(
+                onClick = { showBibleDiagnostics = false },
+                modifier = Modifier
+                    .padding(horizontal = 20.dp)
+                    .fillMaxWidth(),
+            ) {
+                Text("설정으로 돌아가기")
+            }
+            LibraryRoute(
+                dataFolderUri = dataFolderUri,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        return
+    }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -112,9 +137,20 @@ fun SettingsRoute(
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("처음 시작", style = MaterialTheme.typography.titleMedium)
                     Text("1. Lifove Bible 호환 bdf/lfa 파일이 들어 있는 폴더를 선택합니다.")
-                    Text("2. 성경 탭에서 감지된 파일과 누락 파일을 확인합니다.")
-                    Text("3. 읽기 탭에서 역본, 책, 장, 절을 선택해 읽습니다.")
+                    Text("2. 설정의 성경 파일 확인에서 감지된 파일과 누락 파일을 확인합니다.")
+                    Text("3. 읽기 탭에서 역본, 책, 장을 선택해 읽습니다.")
                     Text("이 앱은 성경 본문 데이터를 포함하지 않으며, 사용자가 가진 파일을 읽습니다.")
+                }
+            }
+        }
+        item {
+            Card {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("성경 파일 확인", style = MaterialTheme.typography.titleMedium)
+                    Text("선택한 bdf/lfa 폴더의 역본, 오디오 파일, 누락 파일과 진단 결과를 확인합니다.")
+                    Button(onClick = { showBibleDiagnostics = true }) {
+                        Text("성경 파일 확인하기")
+                    }
                 }
             }
         }

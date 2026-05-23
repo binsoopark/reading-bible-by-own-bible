@@ -14,6 +14,7 @@ import com.soobinpark.appcraft.readingbible.data.parser.decodeLfaText
 import com.soobinpark.appcraft.readingbible.data.parser.parseVerseLine
 import com.soobinpark.appcraft.readingbible.domain.model.BibleBook
 import com.soobinpark.appcraft.readingbible.domain.model.BibleCatalog
+import com.soobinpark.appcraft.readingbible.domain.model.BibleSearchResult
 import com.soobinpark.appcraft.readingbible.domain.model.BibleSourceType
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVerse
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
@@ -115,6 +116,13 @@ class FileBibleRepository(
                 warmUpVersions.remove(warmUpKey)
             }
         }
+    }
+
+    fun searchCached(
+        version: BibleVersion,
+        query: String,
+    ): List<BibleSearchResult>? {
+        return chapterPersistentCache?.searchChapters(chapterCachePrefix(version), query)
     }
 
     private fun readAllChaptersForWarmUp(version: BibleVersion): Map<String, List<BibleVerse>> {
@@ -302,6 +310,14 @@ class FileBibleRepository(
             book.index,
             chapter,
         ).joinToString(":")
+    }
+
+    private fun chapterCachePrefix(version: BibleVersion): String {
+        return listOf(
+            version.treeUri?.toString() ?: version.fileRoot?.absolutePath.orEmpty(),
+            version.code,
+            version.sourceType.name,
+        ).joinToString(":") + ":"
     }
 
     private fun warmUpSourceStampsByBook(version: BibleVersion): Map<Int, String> {

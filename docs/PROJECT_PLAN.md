@@ -168,6 +168,18 @@ com.soobinpark.appcraft.readingbible
 - [x] 검색 결과 본문에서 검색어를 굵게 강조
 - [x] `assembleDebug` 빌드 성공
 
+### 2026-05-24 핀치 줌 피드백과 검색 속도 개선
+
+- [x] 핀치 줌으로 글자 크기를 바꿀 때 현재 글자 크기를 Toast로 즉시 표시
+- [x] 연속 핀치 줌 시 이전 Toast를 취소하고 최신 글자 크기 Toast만 표시
+- [x] 검색 속도 원인 분석: DB 캐시는 있었지만 검색 가능한 평문 컬럼이 없어 검색 시 앱 메모리 인덱스 생성 경로로 빠지던 문제 확인
+- [x] `chapters` 테이블에 `search_text` 컬럼 추가
+- [x] 기존 `verses_blob` 캐시를 DB upgrade 시 `search_text`로 backfill
+- [x] 검색 시 DB `LIKE`로 후보 장을 먼저 찾고, 매칭된 장만 절 단위로 필터링하도록 개선
+- [x] 하단 `성경` 탭 제거
+- [x] 설정 탭 안에 `성경 파일 확인하기` 진입 버튼 추가
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-18 GitHub Actions Release Signing 설정
 
 - [x] release signing 정보를 환경변수에서만 읽도록 Gradle 설정 추가

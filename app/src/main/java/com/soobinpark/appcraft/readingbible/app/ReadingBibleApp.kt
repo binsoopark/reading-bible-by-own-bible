@@ -14,7 +14,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.soobinpark.appcraft.readingbible.feature.library.LibraryRoute
 import com.soobinpark.appcraft.readingbible.feature.reader.ReaderRoute
 import com.soobinpark.appcraft.readingbible.feature.records.RecordsRoute
 import com.soobinpark.appcraft.readingbible.feature.search.SearchRoute
@@ -57,7 +56,6 @@ fun ReadingBibleApp(
                 onFontSizeChanged = appViewModel::setReadingFontSize,
                 modifier = modifier,
             )
-            AppTab.Library -> LibraryRoute(dataFolderUri = dataFolderUri, modifier = modifier)
             AppTab.Search -> SearchRoute(dataFolderUri = dataFolderUri, modifier = modifier)
             AppTab.Records -> RecordsRoute(
                 bookmarks = bookmarks,

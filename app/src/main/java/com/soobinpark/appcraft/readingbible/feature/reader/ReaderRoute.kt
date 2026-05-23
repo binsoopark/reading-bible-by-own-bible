@@ -1,6 +1,7 @@
 package com.soobinpark.appcraft.readingbible.feature.reader
 
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -60,6 +61,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
@@ -133,6 +135,8 @@ private fun ReaderScreen(
     var showVersionSheet by remember { mutableStateOf(false) }
     var showComparisonSheet by remember { mutableStateOf(false) }
     var showBookSheet by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    var fontSizeToast by remember { mutableStateOf<Toast?>(null) }
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val currentBook = BibleCatalog.books[state.bookIndex]
@@ -217,7 +221,15 @@ private fun ReaderScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .readerPinchZoom(readingStyle.fontSizeSp, onFontSizeChanged)
+                    .readerPinchZoom(readingStyle.fontSizeSp) { fontSize ->
+                        fontSizeToast?.cancel()
+                        fontSizeToast = Toast.makeText(
+                            context,
+                            "글자 크기 ${fontSize.roundToInt()}sp",
+                            Toast.LENGTH_SHORT,
+                        ).also { it.show() }
+                        onFontSizeChanged(fontSize)
+                    }
                     .pointerInput(state.bookIndex, state.chapter, previousChapter, nextChapter) {
                         var totalDrag = 0f
                         detectHorizontalDragGestures(

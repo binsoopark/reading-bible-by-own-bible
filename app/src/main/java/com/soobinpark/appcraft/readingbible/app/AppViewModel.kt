@@ -107,17 +107,20 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         _bookmarks.value = next
     }
 
-    fun toggleHighlight(verse: BibleVerse) {
+    fun toggleHighlight(
+        verse: BibleVerse,
+        color: VerseHighlight = VerseHighlight.Yellow,
+    ) {
         val key = VerseBookmark.key(verse.versionCode, verse.bookIndex, verse.chapter, verse.verse)
         val current = _bookmarks.value
         val existing = current.firstOrNull { it.key == key }
         val next = if (existing != null) {
             val updated = existing.copy(
-                highlight = if (existing.highlight == VerseHighlight.None) VerseHighlight.Yellow else VerseHighlight.None,
+                highlight = if (existing.highlight == VerseHighlight.None) color else VerseHighlight.None,
             )
             current.replaceOrRemoveEmpty(updated)
         } else {
-            listOf(verse.toBookmark(isBookmarked = false, highlight = VerseHighlight.Yellow)) + current
+            listOf(verse.toBookmark(isBookmarked = false, highlight = color)) + current
         }
         bookmarkPreferences.setBookmarks(next)
         _bookmarks.value = next

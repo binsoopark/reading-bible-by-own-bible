@@ -23,9 +23,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -43,7 +46,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.withStyle
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -82,59 +88,91 @@ private fun SearchScreen(
     onShowNextPage: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyColumn(
+    var showVersionSheet by androidx.compose.runtime.remember { mutableStateOf(false) }
+    val resultListState = rememberLazyListState()
+    val currentResult by androidx.compose.runtime.remember(state.visibleResults) {
+        derivedStateOf {
+            state.visibleResults.getOrNull(resultListState.firstVisibleItemIndex)
+        }
+    }
+
+    Column(
         modifier = modifier
             .fillMaxSize()
             .padding(20.dp),
-        contentPadding = PaddingValues(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        item {
-            Text("검색", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
-        }
-        item {
-            SearchInputCard(
-                state = state,
-                onQueryChanged = onQueryChanged,
-                onSearch = onSearch,
-                onVersionSelected = onVersionSelected,
-            )
-        }
+        Text("검색", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+        SearchInputCard(
+            state = state,
+            onQueryChanged = onQueryChanged,
+            onSearch = onSearch,
+            onVersionClick = { showVersionSheet = true },
+        )
         if (state.isLoading || state.isSearching) {
-            item {
-                SearchProgress(state)
-            }
+            SearchProgress(state)
         }
         state.message?.let { message ->
-            item {
-                Card {
-                    Text(
-                        text = message,
-                        modifier = Modifier.padding(18.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
+            Card {
+                Text(
+                    text = message,
+                    modifier = Modifier.padding(18.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
             }
         }
         if (state.results.isNotEmpty()) {
-            item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "전체 ${state.results.size}개 중 ${state.visibleResults.size}개 표시",
+                    text = currentResult?.let { "${it.book.koreanName} ${it.verse.chapter}장" }
+                        ?: "전체 ${state.results.size}개 중 ${state.visibleResults.size}개 표시",
                     style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = "총 ${state.results.size}개",
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
-        items(state.visibleResults, key = { "${it.verse.versionCode}-${it.verse.bookIndex}-${it.verse.chapter}-${it.verse.verse}" }) { result ->
-            SearchResultCard(result, state.query)
-        }
-        if (state.visibleResults.size < state.results.size) {
-            item {
-                Button(onClick = onShowNextPage, modifier = Modifier.fillMaxWidth()) {
-                    Text("다음 100개 보기")
+        Box(modifier = Modifier.weight(1f, fill = true)) {
+            LazyColumn(
+                state = resultListState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(end = 30.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(state.visibleResults, key = { "${it.verse.versionCode}-${it.verse.bookIndex}-${it.verse.chapter}-${it.verse.verse}" }) { result ->
+                    SearchResultCard(result, state.query)
+                }
+                if (state.visibleResults.size < state.results.size) {
+                    item {
+                        Button(onClick = onShowNextPage, modifier = Modifier.fillMaxWidth()) {
+                            Text("다음 100개 보기")
+                        }
+                    }
                 }
             }
+            SearchScrollBar(
+                listState = resultListState,
+                itemCount = state.visibleResults.size + if (state.visibleResults.size < state.results.size) 1 else 0,
+                modifier = Modifier.align(Alignment.CenterEnd),
+            )
         }
+    }
+
+    if (showVersionSheet) {
+        SearchVersionPickerSheet(
+            versions = state.versions,
+            selectedVersion = state.selectedVersion,
+            onDismiss = { showVersionSheet = false },
+            onVersionSelected = {
+                onVersionSelected(it)
+                showVersionSheet = false
+            },
+        )
     }
 }
 
@@ -143,11 +181,17 @@ private fun SearchInputCard(
     state: SearchUiState,
     onQueryChanged: (String) -> Unit,
     onSearch: () -> Unit,
-    onVersionSelected: (BibleVersion) -> Unit,
+    onVersionClick: () -> Unit,
 ) {
     Card {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text("본문 검색", style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("본문 검색", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                SuggestionChip(
+                    onClick = onVersionClick,
+                    label = { Text(state.selectedVersion?.displayName ?: "역본 선택") },
+                )
+            }
             OutlinedTextField(
                 value = state.query,
                 onValueChange = onQueryChanged,
@@ -155,15 +199,9 @@ private fun SearchInputCard(
                 singleLine = true,
                 label = { Text("검색어") },
                 placeholder = { Text("두 글자 이상 입력") },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { onSearch() }),
             )
-            if (state.versions.isNotEmpty()) {
-                Text("역본", style = MaterialTheme.typography.labelLarge)
-                VersionSelectorList(
-                    versions = state.versions,
-                    selectedVersion = state.selectedVersion,
-                    onVersionSelected = onVersionSelected,
-                )
-            }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 Button(
                     onClick = onSearch,
@@ -243,6 +281,29 @@ private fun VersionSelectorList(
             itemCount = itemCount,
             modifier = Modifier.align(Alignment.CenterEnd),
         )
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun SearchVersionPickerSheet(
+    versions: List<BibleVersion>,
+    selectedVersion: BibleVersion?,
+    onDismiss: () -> Unit,
+    onVersionSelected: (BibleVersion) -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text("검색 역본 선택", style = MaterialTheme.typography.titleLarge)
+            VersionSelectorList(
+                versions = versions,
+                selectedVersion = selectedVersion,
+                onVersionSelected = onVersionSelected,
+            )
+        }
     }
 }
 

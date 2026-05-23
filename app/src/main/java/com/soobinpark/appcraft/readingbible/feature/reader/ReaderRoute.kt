@@ -2,7 +2,13 @@ package com.soobinpark.appcraft.readingbible.feature.reader
 
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
@@ -90,7 +96,7 @@ fun ReaderRoute(
     bookmarks: List<VerseBookmark>,
     cacheWarmUpState: CacheWarmUpUiState,
     onBookmarkToggle: (BibleVerse) -> Unit,
-    onHighlightToggle: (BibleVerse) -> Unit,
+    onHighlightToggle: (BibleVerse, VerseHighlight) -> Unit,
     onReadToggle: (BibleVerse) -> Unit,
     onFontSizeChanged: (Float) -> Unit,
     modifier: Modifier = Modifier,
@@ -127,7 +133,7 @@ private fun ReaderScreen(
     onComparisonVersionSelected: (BibleVersion?) -> Unit,
     onBookChapterSelected: (Int, Int) -> Unit,
     onBookmarkToggle: (BibleVerse) -> Unit,
-    onHighlightToggle: (BibleVerse) -> Unit,
+    onHighlightToggle: (BibleVerse, VerseHighlight) -> Unit,
     onReadToggle: (BibleVerse) -> Unit,
     onFontSizeChanged: (Float) -> Unit,
     modifier: Modifier = Modifier,
@@ -135,6 +141,9 @@ private fun ReaderScreen(
     var showVersionSheet by remember { mutableStateOf(false) }
     var showComparisonSheet by remember { mutableStateOf(false) }
     var showBookSheet by remember { mutableStateOf(false) }
+    var showHighlightColorSheet by remember { mutableStateOf(false) }
+    var selectedHighlightColor by remember { mutableStateOf(VerseHighlight.Yellow) }
+    var chapterSlideDirection by remember { mutableStateOf(AnimatedContentTransitionScope.SlideDirection.Left) }
     val context = LocalContext.current
     var fontSizeToast by remember { mutableStateOf<Toast?>(null) }
     val listState = rememberLazyListState()
@@ -153,6 +162,11 @@ private fun ReaderScreen(
 
     fun moveTo(target: ChapterTarget?) {
         if (target == null) return
+        chapterSlideDirection = if (target.bookIndex > state.bookIndex || target.chapter > state.chapter) {
+            AnimatedContentTransitionScope.SlideDirection.Left
+        } else {
+            AnimatedContentTransitionScope.SlideDirection.Right
+        }
         onBookChapterSelected(target.bookIndex, target.chapter)
         coroutineScope.launch {
             listState.scrollToItem(0)
@@ -222,12 +236,11 @@ private fun ReaderScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .readerPinchZoom(readingStyle.fontSizeSp) { fontSize ->
-                        fontSizeToast?.cancel()
-                        fontSizeToast = Toast.makeText(
-                            context,
-                            "글자 크기 ${fontSize.roundToInt()}sp",
-                            Toast.LENGTH_SHORT,
-                        ).also { it.show() }
+                        val message = "글자 크기 ${fontSize.roundToInt()}"
+                        val toast = fontSizeToast ?: Toast.makeText(context, message, Toast.LENGTH_SHORT)
+                            .also { fontSizeToast = it }
+                        toast.setText(message)
+                        toast.show()
                         onFontSizeChanged(fontSize)
                     }
                     .pointerInput(state.bookIndex, state.chapter, previousChapter, nextChapter) {
@@ -244,20 +257,30 @@ private fun ReaderScreen(
                         )
                     },
             ) {
-                LazyColumn(
-                    state = listState,
-                    contentPadding = PaddingValues(end = 30.dp, bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(verseSpacing),
+                AnimatedContent(
+                    targetState = "${state.bookIndex}:${state.chapter}",
+                    transitionSpec = {
+                        slideIntoContainer(chapterSlideDirection, tween(180)) togetherWith
+                            slideOutOfContainer(chapterSlideDirection, tween(180))
+                    },
+                    label = "chapter-transition",
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    items(visibleVerses, key = { "${it.versionCode}-${it.bookIndex}-${it.chapter}-${it.verse}" }) { verse ->
+                    LazyColumn(
+                        state = listState,
+                        contentPadding = PaddingValues(end = 30.dp, bottom = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(verseSpacing),
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        items(visibleVerses, key = { "${it.versionCode}-${it.bookIndex}-${it.chapter}-${it.verse}" }) { verse ->
                         val record = recordsByKey[verse.bookmarkKey()]
                         val comparisonVerse = comparisonByVerse[verse.verse]
-                        val isHighlighted = record?.highlight != null && record.highlight != VerseHighlight.None
+                        val highlight = record?.highlight ?: VerseHighlight.None
+                        val isHighlighted = highlight != VerseHighlight.None
                         val isRead = record?.isRead == true
                         Card(
                             colors = CardDefaults.cardColors(
-                                containerColor = if (isHighlighted) palette.highlightContainer else palette.container,
+                                containerColor = if (isHighlighted) highlightContainerColor(highlight) else palette.container,
                                 contentColor = palette.content,
                             ),
                         ) {
@@ -272,12 +295,13 @@ private fun ReaderScreen(
                                     )
                                     ScaledVerseIconButton(
                                         fontSizeSp = readingStyle.fontSizeSp,
-                                        onClick = { onHighlightToggle(verse) },
+                                        onClick = { onHighlightToggle(verse, selectedHighlightColor) },
+                                        onLongClick = { showHighlightColorSheet = true },
                                     ) {
                                         Icon(
                                             imageVector = Icons.Outlined.FormatColorFill,
                                             contentDescription = if (isHighlighted) "하이라이트 해제" else "하이라이트 추가",
-                                            tint = if (isHighlighted) palette.highlightAccent else palette.accent,
+                                            tint = if (isHighlighted) highlightAccentColor(highlight) else palette.accent,
                                             modifier = Modifier.size(dynamicActionIconSize(readingStyle.fontSizeSp)),
                                         )
                                     }
@@ -320,6 +344,7 @@ private fun ReaderScreen(
                                     )
                                 }
                             }
+                        }
                         }
                     }
                 }
@@ -374,6 +399,16 @@ private fun ReaderScreen(
         )
     }
 
+    if (showHighlightColorSheet) {
+        HighlightColorSheet(
+            selected = selectedHighlightColor,
+            onDismiss = { showHighlightColorSheet = false },
+            onSelected = {
+                selectedHighlightColor = it
+                showHighlightColorSheet = false
+            },
+        )
+    }
 }
 
 private fun BibleVerse.bookmarkKey(): String {
@@ -646,6 +681,63 @@ private fun readingPaletteColors(palette: ReadingPalette): ReaderPaletteColors {
             secondaryContent = Color(0xFF6D4F2C),
         )
     }
+
+}
+
+private fun highlightContainerColor(highlight: VerseHighlight): Color {
+    return when (highlight) {
+        VerseHighlight.None -> Color.Transparent
+        VerseHighlight.Yellow -> Color(0xFFFFF2A8)
+        VerseHighlight.Mint -> Color(0xFFD9F7E8)
+        VerseHighlight.Blue -> Color(0xFFDCEBFF)
+        VerseHighlight.Pink -> Color(0xFFFFE0EA)
+        VerseHighlight.Lavender -> Color(0xFFEAE2FF)
+        VerseHighlight.Orange -> Color(0xFFFFE3C2)
+    }
+}
+
+private fun highlightAccentColor(highlight: VerseHighlight): Color {
+    return when (highlight) {
+        VerseHighlight.None -> Color.Unspecified
+        VerseHighlight.Yellow -> Color(0xFF8A6200)
+        VerseHighlight.Mint -> Color(0xFF007A4D)
+        VerseHighlight.Blue -> Color(0xFF1F64C8)
+        VerseHighlight.Pink -> Color(0xFFC73368)
+        VerseHighlight.Lavender -> Color(0xFF6C4BD2)
+        VerseHighlight.Orange -> Color(0xFFB95D00)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HighlightColorSheet(
+    selected: VerseHighlight,
+    onDismiss: () -> Unit,
+    onSelected: (VerseHighlight) -> Unit,
+) {
+    val colors = listOf(VerseHighlight.Yellow, VerseHighlight.Mint, VerseHighlight.Blue, VerseHighlight.Pink, VerseHighlight.Lavender, VerseHighlight.Orange)
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text("하이라이트 색상", style = MaterialTheme.typography.titleLarge)
+            colors.forEach { color ->
+                FilterChip(
+                    selected = selected == color,
+                    onClick = { onSelected(color) },
+                    label = { Text(color.label) },
+                    leadingIcon = {
+                        Box(
+                            modifier = Modifier
+                                .size(18.dp)
+                                .background(highlightContainerColor(color), RoundedCornerShape(99.dp)),
+                        )
+                    },
+                )
+            }
+        }
+    }
 }
 
 private fun Modifier.readerPinchZoom(
@@ -726,16 +818,24 @@ private const val MinReaderFontSizeSp = 12f
 private const val MaxReaderFontSizeSp = 28f
 
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 private fun ScaledVerseIconButton(
     fontSizeSp: Float,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
-    IconButton(
-        onClick = onClick,
-        modifier = Modifier.size(dynamicActionButtonSize(fontSizeSp)),
-        content = content,
-    )
+    Box(
+        modifier = Modifier
+            .size(dynamicActionButtonSize(fontSizeSp))
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        content()
+    }
 }
 
 @Composable

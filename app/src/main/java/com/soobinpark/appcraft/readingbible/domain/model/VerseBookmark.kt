@@ -5,6 +5,11 @@ enum class VerseHighlight(
 ) {
     None("없음"),
     Yellow("노랑"),
+    Mint("민트"),
+    Blue("파랑"),
+    Pink("분홍"),
+    Lavender("라벤더"),
+    Orange("주황"),
 }
 
 data class VerseBookmark(

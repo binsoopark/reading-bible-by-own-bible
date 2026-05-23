@@ -51,7 +51,7 @@ fun ReadingBibleApp(
                 bookmarks = bookmarks,
                 cacheWarmUpState = cacheWarmUpState,
                 onBookmarkToggle = appViewModel::toggleBookmark,
-                onHighlightToggle = appViewModel::toggleHighlight,
+                onHighlightToggle = { verse, color -> appViewModel.toggleHighlight(verse, color) },
                 onReadToggle = appViewModel::toggleRead,
                 onFontSizeChanged = appViewModel::setReadingFontSize,
                 modifier = modifier,

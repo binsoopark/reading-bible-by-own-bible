@@ -144,6 +144,14 @@ com.soobinpark.appcraft.readingbible
 - [x] 각 패널 전체가 스크롤 영역이 되도록 구성해 터치 위치에 따른 스크롤 누락 감소
 - [x] `assembleDebug` 빌드 성공
 
+### 2026-05-24 본문 글자 크기와 핀치 줌 개선
+
+- [x] 본문 각 절 번호를 본문보다 더 크게 표시
+- [x] 본문 화면에서 두 손가락 핀치 줌 인/아웃으로 글자 크기 조절
+- [x] 핀치 줌 범위를 설정과 동일한 12sp-28sp로 제한
+- [x] 글자 크기가 작아질수록 절 간격, 카드 내부 여백, 줄 간격도 함께 축소
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-18 GitHub Actions Release Signing 설정
 
 - [x] release signing 정보를 환경변수에서만 읽도록 Gradle 설정 추가

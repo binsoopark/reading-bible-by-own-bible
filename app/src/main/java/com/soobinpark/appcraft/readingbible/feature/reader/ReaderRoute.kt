@@ -81,7 +81,9 @@ import com.soobinpark.appcraft.readingbible.domain.model.ReadingStyle
 import com.soobinpark.appcraft.readingbible.domain.model.VerseHighlight
 import com.soobinpark.appcraft.readingbible.domain.model.VerseBookmark
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 @Composable
 fun ReaderRoute(
@@ -92,6 +94,7 @@ fun ReaderRoute(
     onBookmarkToggle: (BibleVerse) -> Unit,
     onHighlightToggle: (BibleVerse) -> Unit,
     onReadToggle: (BibleVerse) -> Unit,
+    onFontSizeChanged: (Float) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ReaderViewModel = viewModel(),
 ) {
@@ -110,6 +113,7 @@ fun ReaderRoute(
         onBookmarkToggle = onBookmarkToggle,
         onHighlightToggle = onHighlightToggle,
         onReadToggle = onReadToggle,
+        onFontSizeChanged = onFontSizeChanged,
         modifier = modifier,
     )
 }
@@ -127,6 +131,7 @@ private fun ReaderScreen(
     onBookmarkToggle: (BibleVerse) -> Unit,
     onHighlightToggle: (BibleVerse) -> Unit,
     onReadToggle: (BibleVerse) -> Unit,
+    onFontSizeChanged: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showVersionSheet by remember { mutableStateOf(false) }
@@ -219,9 +224,13 @@ private fun ReaderScreen(
             val visibleVerses = selectedVerseNumber?.let { verseNumber ->
                 state.verses.filter { it.verse == verseNumber }
             } ?: state.verses
+            val effectiveLineHeightMultiplier = dynamicReaderLineHeight(readingStyle.fontSizeSp, readingStyle.lineHeightMultiplier)
+            val verseSpacing = dynamicVerseSpacing(readingStyle.fontSizeSp)
+            val cardPadding = dynamicVersePadding(readingStyle.fontSizeSp)
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .readerPinchZoom(readingStyle.fontSizeSp, onFontSizeChanged)
                     .pointerInput(state.bookIndex, state.chapter, previousChapter, nextChapter) {
                         var totalDrag = 0f
                         detectHorizontalDragGestures(
@@ -239,7 +248,7 @@ private fun ReaderScreen(
                 LazyColumn(
                     state = listState,
                     contentPadding = PaddingValues(end = 30.dp, bottom = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(verseSpacing),
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     items(visibleVerses, key = { "${it.versionCode}-${it.bookIndex}-${it.chapter}-${it.verse}" }) { verse ->
@@ -253,11 +262,12 @@ private fun ReaderScreen(
                                 contentColor = palette.content,
                             ),
                         ) {
-                            Column(Modifier.padding(16.dp)) {
+                            Column(Modifier.padding(cardPadding)) {
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Text(
                                         text = "${verse.verse}",
-                                        style = MaterialTheme.typography.labelLarge,
+                                        fontSize = (readingStyle.fontSizeSp + 2f).coerceIn(16f, 30f).sp,
+                                        fontWeight = FontWeight.Bold,
                                         color = palette.accent,
                                         modifier = Modifier.weight(1f),
                                     )
@@ -287,14 +297,14 @@ private fun ReaderScreen(
                                 Text(
                                     text = verse.text,
                                     fontSize = readingStyle.fontSizeSp.sp,
-                                    lineHeight = (readingStyle.fontSizeSp * readingStyle.lineHeightMultiplier).sp,
+                                    lineHeight = (readingStyle.fontSizeSp * effectiveLineHeightMultiplier).sp,
                                 )
                                 if (comparisonVerse != null) {
                                     Text(
                                         text = comparisonVerse.text,
                                         color = palette.secondaryContent,
                                         fontSize = (readingStyle.fontSizeSp - 1f).coerceAtLeast(12f).sp,
-                                        lineHeight = (readingStyle.fontSizeSp * readingStyle.lineHeightMultiplier).sp,
+                                        lineHeight = (readingStyle.fontSizeSp * effectiveLineHeightMultiplier).sp,
                                         modifier = Modifier.padding(top = 10.dp),
                                     )
                                 }
@@ -649,6 +659,73 @@ private fun readingPaletteColors(palette: ReadingPalette): ReaderPaletteColors {
         )
     }
 }
+
+private fun Modifier.readerPinchZoom(
+    currentFontSizeSp: Float,
+    onFontSizeChanged: (Float) -> Unit,
+): Modifier {
+    return pointerInput(currentFontSizeSp) {
+        var previousDistance: Float? = null
+        awaitPointerEventScope {
+            while (true) {
+                val event = awaitPointerEvent()
+                val pressed = event.changes.filter { it.pressed }
+                if (pressed.size >= 2) {
+                    val first = pressed[0].position
+                    val second = pressed[1].position
+                    val distance = pointerDistance(first, second)
+                    val previous = previousDistance
+                    if (previous != null && previous > 0f) {
+                        val zoom = distance / previous
+                        val nextFontSize = ((currentFontSizeSp * zoom).coerceIn(MinReaderFontSizeSp, MaxReaderFontSizeSp) * 4f)
+                            .roundToInt() / 4f
+                        if (abs(nextFontSize - currentFontSizeSp) >= 0.25f) {
+                            onFontSizeChanged(nextFontSize)
+                            pressed.forEach { it.consume() }
+                        }
+                    }
+                    previousDistance = distance
+                } else {
+                    previousDistance = null
+                }
+            }
+        }
+    }
+}
+
+private fun pointerDistance(
+    first: Offset,
+    second: Offset,
+): Float {
+    val dx = first.x - second.x
+    val dy = first.y - second.y
+    return sqrt(dx * dx + dy * dy)
+}
+
+private fun dynamicReaderLineHeight(
+    fontSizeSp: Float,
+    preferredMultiplier: Float,
+): Float {
+    val scale = readerFontScale(fontSizeSp)
+    return (preferredMultiplier * (0.88f + 0.12f * scale)).coerceIn(1.08f, 2.2f)
+}
+
+private fun dynamicVerseSpacing(fontSizeSp: Float): Dp {
+    val scale = readerFontScale(fontSizeSp)
+    return (6f + 6f * scale).dp
+}
+
+private fun dynamicVersePadding(fontSizeSp: Float): Dp {
+    val scale = readerFontScale(fontSizeSp)
+    return (12f + 5f * scale).dp
+}
+
+private fun readerFontScale(fontSizeSp: Float): Float {
+    return ((fontSizeSp - MinReaderFontSizeSp) / (MaxReaderFontSizeSp - MinReaderFontSizeSp)).coerceIn(0f, 1f)
+}
+
+private const val MinReaderFontSizeSp = 12f
+private const val MaxReaderFontSizeSp = 28f
 
 @Composable
 private fun CompactIconButton(

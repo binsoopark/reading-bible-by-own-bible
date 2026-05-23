@@ -454,65 +454,107 @@ private fun BookChapterPickerSheet(
     onBookChapterSelected: (Int, Int) -> Unit,
 ) {
     var activeBookIndex by remember(selectedBookIndex) { mutableStateOf(selectedBookIndex) }
-    var testament by remember(selectedBookIndex) { mutableStateOf(if (selectedBookIndex < 39) "구약" else "신약") }
     val activeBook = BibleCatalog.books[activeBookIndex]
     val chapters = remember(activeBookIndex) { (1..activeBook.chapterCount).toList() }
-    val visibleBooks = remember(testament) {
-        if (testament == "구약") BibleCatalog.books.take(39) else BibleCatalog.books.drop(39)
+    val bookListState = rememberLazyListState(
+        initialFirstVisibleItemIndex = (selectedBookIndex - 3).coerceAtLeast(0),
+    )
+    val chapterListState = rememberLazyListState(
+        initialFirstVisibleItemIndex = (selectedChapter - 4).coerceAtLeast(0),
+    )
+
+    LaunchedEffect(activeBookIndex) {
+        val targetChapter = if (activeBookIndex == selectedBookIndex) selectedChapter - 1 else 0
+        chapterListState.scrollToItem(targetChapter.coerceAtLeast(0))
     }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
-            modifier = Modifier.padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("책과 장 선택", style = MaterialTheme.typography.titleLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = testament == "구약",
-                    onClick = { testament = "구약" },
-                    label = { Text("구약") },
-                )
-                FilterChip(
-                    selected = testament == "신약",
-                    onClick = { testament = "신약" },
-                    label = { Text("신약") },
-                )
-            }
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 92.dp),
-                modifier = Modifier.heightIn(max = 220.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 420.dp, max = 560.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                items(visibleBooks, key = { it.index }) { book ->
-                    FilterChip(
-                        selected = book.index == activeBookIndex,
-                        onClick = { activeBookIndex = book.index },
-                        label = { Text(book.koreanName) },
-                    )
+                PickerListPanel(
+                    title = "성경",
+                    listState = bookListState,
+                    itemCount = BibleCatalog.books.size,
+                    modifier = Modifier.weight(1.15f),
+                ) {
+                    items(BibleCatalog.books, key = { it.index }) { book ->
+                        FilterChip(
+                            selected = book.index == activeBookIndex,
+                            onClick = { activeBookIndex = book.index },
+                            label = {
+                                Column {
+                                    Text(book.koreanName)
+                                    Text(
+                                        text = if (book.index < 39) "구약" else "신약",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+                PickerListPanel(
+                    title = "${activeBook.koreanName} ${activeBook.chapterCount}장",
+                    listState = chapterListState,
+                    itemCount = chapters.size,
+                    modifier = Modifier.weight(0.85f),
+                ) {
+                    items(chapters, key = { it }) { chapter ->
+                        FilterChip(
+                            selected = activeBookIndex == selectedBookIndex && chapter == selectedChapter,
+                            onClick = { onBookChapterSelected(activeBookIndex, chapter) },
+                            label = { Text("${chapter}장") },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
             }
-            Text(
-                text = "${activeBook.koreanName} ${activeBook.chapterCount}장",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
+        }
+    }
+}
+
+@Composable
+private fun PickerListPanel(
+    title: String,
+    listState: LazyListState,
+    itemCount: Int,
+    modifier: Modifier = Modifier,
+    content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
+) {
+    Column(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+        )
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(end = 24.dp, bottom = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                content = content,
             )
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 56.dp),
-                modifier = Modifier.heightIn(max = 320.dp),
-                contentPadding = PaddingValues(bottom = 32.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(chapters, key = { it }) { chapter ->
-                    FilterChip(
-                        selected = activeBookIndex == selectedBookIndex && chapter == selectedChapter,
-                        onClick = { onBookChapterSelected(activeBookIndex, chapter) },
-                        label = { Text("${chapter}장") },
-                    )
-                }
-            }
+            FastVerseScrollBar(
+                listState = listState,
+                itemCount = itemCount,
+                modifier = Modifier.align(Alignment.CenterEnd),
+            )
         }
     }
 }

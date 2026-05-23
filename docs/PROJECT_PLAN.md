@@ -136,6 +136,14 @@ com.soobinpark.appcraft.readingbible
 - [x] SAF/LFA cache key 생성 시 동일 파일 metadata를 1,189번 반복 조회하지 않고 파일당 1회 조회하도록 수정
 - [x] `assembleDebug` 빌드 성공
 
+### 2026-05-24 책/장 선택 다이얼로그 개선
+
+- [x] 책/장 선택을 위아래 grid에서 좌우 2단 목록 구조로 변경
+- [x] 왼쪽에는 성경 66권 목록, 오른쪽에는 선택한 책의 장 목록 배치
+- [x] 책 목록과 장 목록에 각각 독립적인 세로 스크롤바 추가
+- [x] 각 패널 전체가 스크롤 영역이 되도록 구성해 터치 위치에 따른 스크롤 누락 감소
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-18 GitHub Actions Release Signing 설정
 
 - [x] release signing 정보를 환경변수에서만 읽도록 Gradle 설정 추가

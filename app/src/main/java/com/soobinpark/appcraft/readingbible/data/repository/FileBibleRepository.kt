@@ -226,9 +226,10 @@ class FileBibleRepository(
     }
 
     private fun Map<ChapterTarget, List<BibleVerse>>.toCacheMap(version: BibleVersion): Map<String, List<BibleVerse>> {
+        val sourceStamps = warmUpSourceStampsByBook(version)
         return mapKeys { (target, _) ->
             val book = BibleCatalog.books[target.bookIndex]
-            chapterCacheKey(version, book, target.chapter)
+            chapterCacheKey(version, book, target.chapter, sourceStamps[book.index] ?: sourceStamp(version, book))
         }.mapValues { (_, verses) -> verses.sortedBy { it.verse } }
     }
 
@@ -284,14 +285,72 @@ class FileBibleRepository(
         book: BibleBook,
         chapter: Int,
     ): String {
+        return chapterCacheKey(version, book, chapter, sourceStamp(version, book))
+    }
+
+    private fun chapterCacheKey(
+        version: BibleVersion,
+        book: BibleBook,
+        chapter: Int,
+        sourceStamp: String,
+    ): String {
         return listOf(
             version.treeUri?.toString() ?: version.fileRoot?.absolutePath.orEmpty(),
             version.code,
             version.sourceType.name,
-            sourceStamp(version, book),
+            sourceStamp,
             book.index,
             chapter,
         ).joinToString(":")
+    }
+
+    private fun warmUpSourceStampsByBook(version: BibleVersion): Map<Int, String> {
+        return when (version.sourceType) {
+            BibleSourceType.LfaArchive -> {
+                val stamp = lfaSourceStamp(version)
+                BibleCatalog.books.associate { it.index to stamp }
+            }
+            BibleSourceType.BdfSplit -> {
+                val stampsByFileIndex = (1..7).associateWith { fileIndex -> bdfSourceStamp(version, fileIndex) }
+                BibleCatalog.books.associate { book ->
+                    book.index to stampsByFileIndex.getValue(BibleCatalog.fileIndexForBook(book.index))
+                }
+            }
+        }
+    }
+
+    private fun lfaSourceStamp(version: BibleVersion): String {
+        return if (version.treeUri != null) {
+            safFileSourceStamp(version, "${version.code}.lfa")
+        } else {
+            val root = version.fileRoot ?: return "missing"
+            val file = File(root, "${version.code}.lfa")
+            "${file.lastModified()}:${file.length()}"
+        }
+    }
+
+    private fun bdfSourceStamp(
+        version: BibleVersion,
+        fileIndex: Int,
+    ): String {
+        return if (version.treeUri != null) {
+            safFileSourceStamp(version, "${version.code}$fileIndex.bdf")
+        } else {
+            val root = version.fileRoot ?: return "missing"
+            val file = File(root, "${version.code}$fileIndex.bdf")
+            "${file.lastModified()}:${file.length()}"
+        }
+    }
+
+    private fun safFileSourceStamp(
+        version: BibleVersion,
+        fileName: String,
+    ): String {
+        val appContext = context ?: return "saf"
+        val treeUri = version.treeUri ?: return "missing"
+        val root = DocumentFile.fromTreeUri(appContext, treeUri) ?: return "missing"
+        val file = root.findFile(fileName) ?: return "missing"
+        return "${file.lastModified()}:${file.length()}"
     }
 
     private fun sourceStamp(

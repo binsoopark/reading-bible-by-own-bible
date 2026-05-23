@@ -5,11 +5,13 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.net.Uri
+import android.util.Base64
 import com.soobinpark.appcraft.readingbible.data.biblefile.BibleVersionNames
 import com.soobinpark.appcraft.readingbible.domain.model.BibleSourceType
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVerse
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
 import java.io.File
+import java.nio.charset.StandardCharsets
 
 class BibleChapterCache(
     context: Context,
@@ -22,7 +24,8 @@ class BibleChapterCache(
                 version_code TEXT NOT NULL,
                 book_index INTEGER NOT NULL,
                 chapter INTEGER NOT NULL,
-                cached_at INTEGER NOT NULL
+                cached_at INTEGER NOT NULL,
+                verses_blob TEXT
             )
             """.trimIndent(),
         )
@@ -53,6 +56,9 @@ class BibleChapterCache(
         if (oldVersion < 3) {
             createWarmUpsTable(db)
         }
+        if (oldVersion < 4) {
+            addVersesBlobColumn(db)
+        }
         if (oldVersion > newVersion) {
             db.execSQL("DROP TABLE IF EXISTS warmups")
             db.execSQL("DROP TABLE IF EXISTS versions")
@@ -75,6 +81,12 @@ class BibleChapterCache(
             )
             """.trimIndent(),
         )
+    }
+
+    private fun addVersesBlobColumn(db: SQLiteDatabase) {
+        runCatching {
+            db.execSQL("ALTER TABLE chapters ADD COLUMN verses_blob TEXT")
+        }
     }
 
     private fun createWarmUpsTable(db: SQLiteDatabase) {
@@ -157,7 +169,7 @@ class BibleChapterCache(
         val db = readableDatabase
         val chapterCursor = db.query(
             "chapters",
-            arrayOf("version_code", "book_index", "chapter"),
+            arrayOf("version_code", "book_index", "chapter", "verses_blob"),
             "cache_key = ?",
             arrayOf(cacheKey),
             null,
@@ -171,7 +183,11 @@ class BibleChapterCache(
                 versionCode = cursor.getString(0),
                 bookIndex = cursor.getInt(1),
                 chapter = cursor.getInt(2),
+                versesBlob = cursor.getString(3),
             )
+        }
+        chapterInfo.versesBlob?.takeIf { it.isNotBlank() }?.let { blob ->
+            decodeVersesBlob(chapterInfo, blob)?.let { return it }
         }
 
         val verseCursor = db.query(
@@ -220,21 +236,10 @@ class BibleChapterCache(
                         put("book_index", first.bookIndex)
                         put("chapter", first.chapter)
                         put("cached_at", System.currentTimeMillis())
+                        put("verses_blob", encodeVersesBlob(verses))
                     },
                     SQLiteDatabase.CONFLICT_REPLACE,
                 )
-                verses.forEach { verse ->
-                    db.insertWithOnConflict(
-                        "verses",
-                        null,
-                        ContentValues().apply {
-                            put("cache_key", cacheKey)
-                            put("verse", verse.verse)
-                            put("text", verse.text)
-                        },
-                        SQLiteDatabase.CONFLICT_REPLACE,
-                    )
-                }
                 db.setTransactionSuccessful()
             } finally {
                 db.endTransaction()
@@ -249,7 +254,6 @@ class BibleChapterCache(
             db.beginTransaction()
             try {
                 val deleteVerses = db.compileStatement("DELETE FROM verses WHERE cache_key = ?")
-                val deleteChapter = db.compileStatement("DELETE FROM chapters WHERE cache_key = ?")
                 val insertChapter = db.compileStatement(
                     """
                     INSERT OR REPLACE INTO chapters (
@@ -257,17 +261,9 @@ class BibleChapterCache(
                         version_code,
                         book_index,
                         chapter,
-                        cached_at
-                    ) VALUES (?, ?, ?, ?, ?)
-                    """.trimIndent(),
-                )
-                val insertVerse = db.compileStatement(
-                    """
-                    INSERT OR REPLACE INTO verses (
-                        cache_key,
-                        verse,
-                        text
-                    ) VALUES (?, ?, ?)
+                        cached_at,
+                        verses_blob
+                    ) VALUES (?, ?, ?, ?, ?, ?)
                     """.trimIndent(),
                 )
                 val now = System.currentTimeMillis()
@@ -277,25 +273,14 @@ class BibleChapterCache(
                     deleteVerses.executeUpdateDelete()
                     deleteVerses.clearBindings()
 
-                    deleteChapter.bindString(1, cacheKey)
-                    deleteChapter.executeUpdateDelete()
-                    deleteChapter.clearBindings()
-
                     insertChapter.bindString(1, cacheKey)
                     insertChapter.bindString(2, first.versionCode)
                     insertChapter.bindLong(3, first.bookIndex.toLong())
                     insertChapter.bindLong(4, first.chapter.toLong())
                     insertChapter.bindLong(5, now)
+                    insertChapter.bindString(6, encodeVersesBlob(verses))
                     insertChapter.executeInsert()
                     insertChapter.clearBindings()
-
-                    verses.forEach { verse ->
-                        insertVerse.bindString(1, cacheKey)
-                        insertVerse.bindLong(2, verse.verse.toLong())
-                        insertVerse.bindString(3, verse.text)
-                        insertVerse.executeInsert()
-                        insertVerse.clearBindings()
-                    }
                 }
                 db.setTransactionSuccessful()
             } finally {
@@ -337,11 +322,42 @@ class BibleChapterCache(
         val versionCode: String,
         val bookIndex: Int,
         val chapter: Int,
+        val versesBlob: String?,
     )
 
     private companion object {
         const val DATABASE_NAME = "bible_chapter_cache.db"
-        const val DATABASE_VERSION = 3
+        const val DATABASE_VERSION = 4
         val databaseWriteLock = Any()
+
+        fun encodeVersesBlob(verses: List<BibleVerse>): String {
+            return verses.joinToString("\n") { verse ->
+                val text = Base64.encodeToString(verse.text.toByteArray(StandardCharsets.UTF_8), Base64.NO_WRAP)
+                "${verse.verse}\t$text"
+            }
+        }
+
+        fun decodeVersesBlob(
+            chapterInfo: ChapterInfo,
+            blob: String,
+        ): List<BibleVerse>? {
+            return runCatching {
+                blob.lineSequence()
+                    .filter { it.isNotBlank() }
+                    .mapNotNull { line ->
+                        val verse = line.substringBefore("\t").toIntOrNull() ?: return@mapNotNull null
+                        val encodedText = line.substringAfter("\t", missingDelimiterValue = "")
+                        val text = Base64.decode(encodedText, Base64.NO_WRAP).toString(StandardCharsets.UTF_8)
+                        BibleVerse(
+                            versionCode = chapterInfo.versionCode,
+                            bookIndex = chapterInfo.bookIndex,
+                            chapter = chapterInfo.chapter,
+                            verse = verse,
+                            text = text,
+                        )
+                    }
+                    .toList()
+            }.getOrNull()
+        }
     }
 }

@@ -127,6 +127,15 @@ com.soobinpark.appcraft.readingbible
 - [x] SAF 파일 정보 확인과 cache key 생성을 절 단위가 아니라 장 단위로 제한
 - [x] `assembleDebug` 빌드 성공
 
+### 2026-05-24 캐시 저장 알고리즘 재설계
+
+- [x] 원인 분석: 한 역본 전체 캐시 저장 시 약 31,000개 절을 SQLite row로 개별 insert하는 구조가 주 병목임을 확인
+- [x] `chapters` 테이블에 장 단위 `verses_blob` payload를 추가해 한 장을 한 row로 저장
+- [x] 전체 예열 DB write 수를 절 단위 약 31,000건에서 장 단위 1,189건으로 축소
+- [x] 기존 절 단위 캐시는 읽기 fallback으로 유지해 이전 DB와 호환
+- [x] SAF/LFA cache key 생성 시 동일 파일 metadata를 1,189번 반복 조회하지 않고 파일당 1회 조회하도록 수정
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-18 GitHub Actions Release Signing 설정
 
 - [x] release signing 정보를 환경변수에서만 읽도록 Gradle 설정 추가

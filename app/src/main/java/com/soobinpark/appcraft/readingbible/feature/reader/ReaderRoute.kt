@@ -9,6 +9,7 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -302,33 +303,50 @@ private fun ReaderScreen(
                         items(visibleVerses, key = { "${it.versionCode}-${it.bookIndex}-${it.chapter}-${it.verse}" }) { verse ->
                             val verseKey = verse.bookmarkKey()
                             val record = recordsByKey[verse.bookmarkKey()]
-                        val comparisonVerse = comparisonByVerse[verse.verse]
-                        val highlight = record?.highlight ?: VerseHighlight.None
-                        val isHighlighted = highlight != VerseHighlight.None
-                        val isRead = record?.isRead == true
+                            val comparisonVerse = comparisonByVerse[verse.verse]
+                            val highlight = record?.highlight ?: VerseHighlight.None
+                            val isHighlighted = highlight != VerseHighlight.None
+                            val isSelected = selectedVerseKeys.contains(verseKey)
+                            val isRead = record?.isRead == true
                             Card(
-                                modifier = Modifier.combinedClickable(
-                                    onClick = {
-                                        if (selectedVerseKeys.isNotEmpty()) {
+                                modifier = Modifier
+                                    .then(
+                                        if (isSelected) {
+                                            Modifier.border(
+                                                width = 2.dp,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                shape = RoundedCornerShape(12.dp),
+                                            )
+                                        } else {
+                                            Modifier
+                                        },
+                                    )
+                                    .combinedClickable(
+                                        onClick = {
+                                            if (selectedVerseKeys.isNotEmpty()) {
+                                                selectedVerseKeys = selectedVerseKeys.toggle(verseKey)
+                                            }
+                                        },
+                                        onLongClick = {
                                             selectedVerseKeys = selectedVerseKeys.toggle(verseKey)
-                                        }
-                                    },
-                                    onLongClick = {
-                                        selectedVerseKeys = selectedVerseKeys.toggle(verseKey)
-                                    },
-                                ),
+                                        },
+                                    ),
                                 colors = CardDefaults.cardColors(
-                                containerColor = if (isHighlighted) highlightContainerColor(highlight) else palette.container,
-                                contentColor = palette.content,
-                            ),
-                        ) {
+                                    containerColor = when {
+                                        isSelected -> MaterialTheme.colorScheme.primaryContainer
+                                        isHighlighted -> highlightContainerColor(highlight)
+                                        else -> palette.container
+                                    },
+                                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else palette.content,
+                                ),
+                            ) {
                             Column(Modifier.padding(cardPadding)) {
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                     Text(
                                         text = "${verse.verse}",
                                         fontSize = (readingStyle.fontSizeSp + 2f).coerceIn(16f, 30f).sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = palette.accent,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else palette.accent,
                                         modifier = Modifier.weight(1f),
                                     )
                                     ScaledVerseIconButton(
@@ -459,10 +477,11 @@ private fun Set<String>.toggle(key: String): Set<String> {
 }
 
 private fun List<BibleVerse>.selectionText(bookName: String): String {
-    return sortedWith(compareBy({ it.bookIndex }, { it.chapter }, { it.verse }))
-        .joinToString("\n") { verse ->
-            "$bookName ${verse.chapter}:${verse.verse} ${verse.text}"
-        }
+    val sorted = sortedWith(compareBy({ it.bookIndex }, { it.chapter }, { it.verse }))
+    val first = sorted.firstOrNull() ?: return ""
+    val header = "$bookName ${first.chapter}장"
+    val body = sorted.joinToString("\n") { verse -> "${verse.verse}절 ${verse.text}" }
+    return "$header\n$body"
 }
 
 @Composable

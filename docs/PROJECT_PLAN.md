@@ -213,6 +213,14 @@ com.soobinpark.appcraft.readingbible
 - [x] 검색 결과는 캐시된 장과 새로 읽은 장을 합친 뒤 성경 순서로 정렬
 - [x] `assembleDebug` 빌드 성공
 
+### 2026-05-24 절 선택 표시와 공유 형식 개선
+
+- [x] 길게 눌러 선택한 절에 테두리와 선택 배경 표시
+- [x] 선택한 절 번호 색상도 선택 상태에 맞게 변경
+- [x] 복사/공유 텍스트에서 성경 권/장은 맨 위에 한 번만 표시
+- [x] 각 절은 `n절 본문` 형식으로 정리
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-18 GitHub Actions Release Signing 설정
 
 - [x] release signing 정보를 환경변수에서만 읽도록 Gradle 설정 추가

@@ -10,6 +10,8 @@ import com.soobinpark.appcraft.readingbible.data.parser.BdfBibleFileParser
 import com.soobinpark.appcraft.readingbible.data.parser.LfaBibleFileParser
 import com.soobinpark.appcraft.readingbible.data.parser.SafBdfBibleFileParser
 import com.soobinpark.appcraft.readingbible.data.parser.SafLfaBibleFileParser
+import com.soobinpark.appcraft.readingbible.data.parser.decodeLfaText
+import com.soobinpark.appcraft.readingbible.data.parser.parseVerseLine
 import com.soobinpark.appcraft.readingbible.domain.model.BibleBook
 import com.soobinpark.appcraft.readingbible.domain.model.BibleCatalog
 import com.soobinpark.appcraft.readingbible.domain.model.BibleSourceType
@@ -17,7 +19,10 @@ import com.soobinpark.appcraft.readingbible.domain.model.BibleVerse
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
 import com.soobinpark.appcraft.readingbible.domain.repository.BibleRepository
 import java.io.File
+import java.nio.charset.Charset
 import java.util.concurrent.ConcurrentHashMap
+import java.util.zip.ZipFile
+import java.util.zip.ZipInputStream
 
 class FileBibleRepository(
     private val scanner: BibleFileScanner = BibleFileScanner(),
@@ -58,14 +63,7 @@ class FileBibleRepository(
         book: BibleBook,
         chapter: Int,
     ): List<BibleVerse> {
-        val key = listOf(
-            version.treeUri?.toString() ?: version.fileRoot?.absolutePath.orEmpty(),
-            version.code,
-            version.sourceType.name,
-            sourceStamp(version, book),
-            book.index,
-            chapter,
-        ).joinToString(":")
+        val key = chapterCacheKey(version, book, chapter)
         return chapterCache.getOrPut(key) {
             chapterPersistentCache?.readChapter(key)?.takeIf { it.isNotEmpty() }?.let { return@getOrPut it }
             runCatching {
@@ -96,15 +94,20 @@ class FileBibleRepository(
         try {
             val total = BibleCatalog.books.sumOf { it.chapterCount }
             var current = 0
-            for (book in BibleCatalog.books) {
-                for (chapter in 1..book.chapterCount) {
+            val chapters = readAllChaptersForWarmUp(version).onEach { (_, verses) ->
+                val first = verses.firstOrNull()
+                if (first != null) {
                     current += 1
-                    if (current == 1 || current == total || chapter == 1 || current % 25 == 0) {
-                        onProgress(current, total, "${book.koreanName} ${chapter}장")
+                    val book = BibleCatalog.books[first.bookIndex]
+                    if (current == 1 || current == total || first.chapter == 1 || current % 25 == 0) {
+                        onProgress(current, total, "${book.koreanName} ${first.chapter}장")
                     }
-                    readChapter(version, book, chapter)
                 }
             }
+            onProgress(current.coerceAtLeast(1), total, "DB 캐시에 저장하는 중입니다")
+            chapterPersistentCache?.writeChapters(chapters)
+            chapterCache.putAll(chapters)
+            onProgress(total, total, "캐시 저장 완료")
             chapterPersistentCache?.markWarmUpComplete(warmUpKey)
             completed = true
         } finally {
@@ -112,6 +115,183 @@ class FileBibleRepository(
                 warmUpVersions.remove(warmUpKey)
             }
         }
+    }
+
+    private fun readAllChaptersForWarmUp(version: BibleVersion): Map<String, List<BibleVerse>> {
+        return runCatching {
+            if (version.treeUri != null) {
+                when (version.sourceType) {
+                    BibleSourceType.BdfSplit -> readAllSafBdfChapters(version)
+                    BibleSourceType.LfaArchive -> readAllSafLfaChapters(version)
+                }
+            } else {
+                when (version.sourceType) {
+                    BibleSourceType.BdfSplit -> readAllBdfChapters(version)
+                    BibleSourceType.LfaArchive -> readAllLfaChapters(version)
+                }
+            }
+        }.getOrDefault(emptyMap())
+    }
+
+    private fun readAllBdfChapters(version: BibleVersion): Map<String, List<BibleVerse>> {
+        val root = version.fileRoot ?: return emptyMap()
+        val chapters = mutableMapOf<ChapterTarget, MutableList<BibleVerse>>()
+        for (fileIndex in 1..7) {
+            val file = File(root, "${version.code}$fileIndex.bdf")
+            if (!file.exists()) continue
+            parseBdfText(version, file.readBytes().decodeBibleText(), fileIndex, chapters)
+        }
+        return chapters.toCacheMap(version)
+    }
+
+    private fun readAllSafBdfChapters(version: BibleVersion): Map<String, List<BibleVerse>> {
+        val appContext = context ?: return emptyMap()
+        val treeUri = version.treeUri ?: return emptyMap()
+        val root = DocumentFile.fromTreeUri(appContext, treeUri) ?: return emptyMap()
+        val chapters = mutableMapOf<ChapterTarget, MutableList<BibleVerse>>()
+        for (fileIndex in 1..7) {
+            val file = root.findFile("${version.code}$fileIndex.bdf") ?: continue
+            val bytes = appContext.contentResolver.openInputStream(file.uri)?.use { it.readBytes() } ?: continue
+            parseBdfText(version, bytes.decodeBibleText(), fileIndex, chapters)
+        }
+        return chapters.toCacheMap(version)
+    }
+
+    private fun parseBdfText(
+        version: BibleVersion,
+        text: String,
+        fileIndex: Int,
+        chapters: MutableMap<ChapterTarget, MutableList<BibleVerse>>,
+    ) {
+        val books = BibleCatalog.books.filter { BibleCatalog.fileIndexForBook(it.index) == fileIndex }
+        val bookByNumber = books.associateBy { BibleCatalog.bookNumber(it.index) }
+        text.lineSequence().forEach { line ->
+            val verse = parseAnyVerseLine(version.code, bookByNumber, line) ?: return@forEach
+            chapters.getOrPut(ChapterTarget(verse.bookIndex, verse.chapter)) { mutableListOf() }.add(verse)
+        }
+    }
+
+    private fun readAllLfaChapters(version: BibleVersion): Map<String, List<BibleVerse>> {
+        val root = version.fileRoot ?: return emptyMap()
+        val archive = File(root, "${version.code}.lfa")
+        if (!archive.exists()) return emptyMap()
+        val chapters = mutableMapOf<ChapterTarget, MutableList<BibleVerse>>()
+        ZipFile(archive).use { zip ->
+            val entries = zip.entries()
+            while (entries.hasMoreElements()) {
+                val entry = entries.nextElement()
+                val target = parseLfaEntryName(version.code, entry.name) ?: continue
+                val text = decodeLfaText(zip.getInputStream(entry).readBytes())
+                parseLfaText(version, target, text, chapters)
+            }
+        }
+        return chapters.toCacheMap(version)
+    }
+
+    private fun readAllSafLfaChapters(version: BibleVersion): Map<String, List<BibleVerse>> {
+        val appContext = context ?: return emptyMap()
+        val treeUri = version.treeUri ?: return emptyMap()
+        val root = DocumentFile.fromTreeUri(appContext, treeUri) ?: return emptyMap()
+        val archive = root.findFile("${version.code}.lfa") ?: return emptyMap()
+        val chapters = mutableMapOf<ChapterTarget, MutableList<BibleVerse>>()
+        val input = appContext.contentResolver.openInputStream(archive.uri) ?: return emptyMap()
+        input.use { stream ->
+            ZipInputStream(stream.buffered()).use { zip ->
+                while (true) {
+                    val entry = runCatching { zip.nextEntry }.getOrNull() ?: break
+                    val target = parseLfaEntryName(version.code, entry.name) ?: continue
+                    val text = runCatching { decodeLfaText(zip.readBytes()) }.getOrNull() ?: continue
+                    parseLfaText(version, target, text, chapters)
+                }
+            }
+        }
+        return chapters.toCacheMap(version)
+    }
+
+    private fun parseLfaText(
+        version: BibleVersion,
+        target: ChapterTarget,
+        text: String,
+        chapters: MutableMap<ChapterTarget, MutableList<BibleVerse>>,
+    ) {
+        val book = BibleCatalog.books[target.bookIndex]
+        val bookNumber = BibleCatalog.bookNumber(book.index)
+        val chapterNeedle = " ${target.chapter}:"
+        val verses = text.lineSequence()
+            .mapNotNull { line -> parseVerseLine(version.code, book.index, target.chapter, bookNumber, chapterNeedle, line) }
+            .toList()
+        if (verses.isNotEmpty()) {
+            chapters.getOrPut(target) { mutableListOf() }.addAll(verses)
+        }
+    }
+
+    private fun Map<ChapterTarget, List<BibleVerse>>.toCacheMap(version: BibleVersion): Map<String, List<BibleVerse>> {
+        return mapKeys { (target, _) ->
+            val book = BibleCatalog.books[target.bookIndex]
+            chapterCacheKey(version, book, target.chapter)
+        }.mapValues { (_, verses) -> verses.sortedBy { it.verse } }
+    }
+
+    private fun parseLfaEntryName(
+        versionCode: String,
+        entryName: String,
+    ): ChapterTarget? {
+        if (!entryName.startsWith(versionCode) || !entryName.endsWith(".lfb", ignoreCase = true)) return null
+        val token = entryName.removePrefix(versionCode).removeSuffix(".lfb")
+        val bookNumber = token.substringBefore("_")
+        val chapter = token.substringAfter("_", missingDelimiterValue = "").toIntOrNull() ?: return null
+        val bookIndex = bookNumber.toIntOrNull()?.minus(1) ?: return null
+        if (bookIndex !in BibleCatalog.books.indices) return null
+        if (chapter !in 1..BibleCatalog.books[bookIndex].chapterCount) return null
+        return ChapterTarget(bookIndex, chapter)
+    }
+
+    private fun parseAnyVerseLine(
+        versionCode: String,
+        bookByNumber: Map<String, BibleBook>,
+        line: String,
+    ): BibleVerse? {
+        val bookNumber = line.take(2)
+        val book = bookByNumber[bookNumber] ?: return null
+        val afterBook = line.drop(2).trimStart()
+        val chapter = afterBook.substringBefore(":", missingDelimiterValue = "").trim().toIntOrNull() ?: return null
+        if (chapter !in 1..book.chapterCount) return null
+        val afterColon = afterBook.substringAfter(":", missingDelimiterValue = "").trim()
+        val verseNumber = afterColon.substringBefore(" ").toIntOrNull() ?: return null
+        val text = afterColon.substringAfter(" ", missingDelimiterValue = "").trim()
+        if (text.isBlank()) return null
+        return BibleVerse(
+            versionCode = versionCode,
+            bookIndex = book.index,
+            chapter = chapter,
+            verse = verseNumber,
+            text = text,
+        )
+    }
+
+    private fun ByteArray.decodeBibleText(): String {
+        val charsets = listOf("MS949", "UTF-8", "UTF-16", "ISO-8859-7")
+        for (charsetName in charsets) {
+            runCatching {
+                return toString(Charset.forName(charsetName))
+            }
+        }
+        return decodeToString()
+    }
+
+    private fun chapterCacheKey(
+        version: BibleVersion,
+        book: BibleBook,
+        chapter: Int,
+    ): String {
+        return listOf(
+            version.treeUri?.toString() ?: version.fileRoot?.absolutePath.orEmpty(),
+            version.code,
+            version.sourceType.name,
+            sourceStamp(version, book),
+            book.index,
+            chapter,
+        ).joinToString(":")
     }
 
     private fun sourceStamp(
@@ -217,4 +397,9 @@ class FileBibleRepository(
         private val chapterCache = ConcurrentHashMap<String, List<BibleVerse>>()
         private val warmUpVersions = ConcurrentHashMap.newKeySet<String>()
     }
+
+    private data class ChapterTarget(
+        val bookIndex: Int,
+        val chapter: Int,
+    )
 }

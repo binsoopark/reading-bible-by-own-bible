@@ -242,6 +242,68 @@ class BibleChapterCache(
         }
     }
 
+    fun writeChapters(chapters: Map<String, List<BibleVerse>>) {
+        if (chapters.isEmpty()) return
+        synchronized(databaseWriteLock) {
+            val db = writableDatabase
+            db.beginTransaction()
+            try {
+                val deleteVerses = db.compileStatement("DELETE FROM verses WHERE cache_key = ?")
+                val deleteChapter = db.compileStatement("DELETE FROM chapters WHERE cache_key = ?")
+                val insertChapter = db.compileStatement(
+                    """
+                    INSERT OR REPLACE INTO chapters (
+                        cache_key,
+                        version_code,
+                        book_index,
+                        chapter,
+                        cached_at
+                    ) VALUES (?, ?, ?, ?, ?)
+                    """.trimIndent(),
+                )
+                val insertVerse = db.compileStatement(
+                    """
+                    INSERT OR REPLACE INTO verses (
+                        cache_key,
+                        verse,
+                        text
+                    ) VALUES (?, ?, ?)
+                    """.trimIndent(),
+                )
+                val now = System.currentTimeMillis()
+                chapters.forEach { (cacheKey, verses) ->
+                    val first = verses.firstOrNull() ?: return@forEach
+                    deleteVerses.bindString(1, cacheKey)
+                    deleteVerses.executeUpdateDelete()
+                    deleteVerses.clearBindings()
+
+                    deleteChapter.bindString(1, cacheKey)
+                    deleteChapter.executeUpdateDelete()
+                    deleteChapter.clearBindings()
+
+                    insertChapter.bindString(1, cacheKey)
+                    insertChapter.bindString(2, first.versionCode)
+                    insertChapter.bindLong(3, first.bookIndex.toLong())
+                    insertChapter.bindLong(4, first.chapter.toLong())
+                    insertChapter.bindLong(5, now)
+                    insertChapter.executeInsert()
+                    insertChapter.clearBindings()
+
+                    verses.forEach { verse ->
+                        insertVerse.bindString(1, cacheKey)
+                        insertVerse.bindLong(2, verse.verse.toLong())
+                        insertVerse.bindString(3, verse.text)
+                        insertVerse.executeInsert()
+                        insertVerse.clearBindings()
+                    }
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
+        }
+    }
+
     @Synchronized
     fun isWarmUpComplete(warmUpKey: String): Boolean {
         val cursor = readableDatabase.query(

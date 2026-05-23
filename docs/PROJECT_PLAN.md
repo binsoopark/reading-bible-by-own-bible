@@ -117,6 +117,16 @@ com.soobinpark.appcraft.readingbible
 - [x] 예열 중 취소나 예외가 발생하면 같은 실행 안에서도 다시 시도할 수 있도록 in-memory 진행 상태 정리
 - [x] `assembleDebug` 빌드 성공
 
+### 2026-05-24 캐시 최초 저장 성능 개선
+
+- [x] 장마다 SQLite transaction을 열던 구조를 여러 장을 한 번에 저장하는 bulk transaction 구조로 변경
+- [x] SQLite insert/delete를 compiled statement로 실행해 반복 ContentValues 생성 비용 감소
+- [x] BDF 전체 예열 시 같은 파일을 장마다 다시 읽지 않고 7개 분할 파일을 한 번씩만 읽어 파싱
+- [x] LFA 전체 예열 시 ZIP archive를 장마다 다시 열지 않고 archive를 한 번만 순회
+- [x] SAF LFA 전체 예열 시 `ZipInputStream`을 매 장마다 처음부터 탐색하지 않고 한 번의 stream 순회로 처리
+- [x] SAF 파일 정보 확인과 cache key 생성을 절 단위가 아니라 장 단위로 제한
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-18 GitHub Actions Release Signing 설정
 
 - [x] release signing 정보를 환경변수에서만 읽도록 Gradle 설정 추가

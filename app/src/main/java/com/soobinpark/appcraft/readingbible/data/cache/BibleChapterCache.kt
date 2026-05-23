@@ -333,36 +333,22 @@ class BibleChapterCache(
     fun searchChapters(
         cacheKeyPrefix: String,
         query: String,
-        expectedChapterCount: Int,
-    ): List<BibleSearchResult>? {
+    ): CachedSearchResult {
         val normalizedQuery = query.trim()
-        if (normalizedQuery.length < 2) return emptyList()
-
-        val searchableCursor = readableDatabase.query(
-            "chapters",
-            arrayOf("COUNT(*)"),
-            "cache_key LIKE ? AND search_text IS NOT NULL",
-            arrayOf("$cacheKeyPrefix%"),
-            null,
-            null,
-            null,
-        )
-        val searchableChapterCount = searchableCursor.use {
-            if (it.moveToFirst()) it.getInt(0) else 0
-        }
-        if (searchableChapterCount < expectedChapterCount) return null
+        if (normalizedQuery.length < 2) return CachedSearchResult()
 
         val cursor = readableDatabase.query(
             "chapters",
-            arrayOf("version_code", "book_index", "chapter", "verses_blob"),
-            "cache_key LIKE ? AND search_text LIKE ?",
-            arrayOf("$cacheKeyPrefix%", "%$normalizedQuery%"),
+            arrayOf("version_code", "book_index", "chapter", "verses_blob", "search_text"),
+            "cache_key LIKE ? AND search_text IS NOT NULL",
+            arrayOf("$cacheKeyPrefix%"),
             null,
             null,
             "book_index ASC, chapter ASC",
         )
         return cursor.use {
-            buildList {
+            val searchedChapters = mutableSetOf<ChapterRef>()
+            val results = buildList {
                 while (it.moveToNext()) {
                     val chapterInfo = ChapterInfo(
                         versionCode = it.getString(0),
@@ -370,6 +356,9 @@ class BibleChapterCache(
                         chapter = it.getInt(2),
                         versesBlob = it.getString(3),
                     )
+                    searchedChapters += ChapterRef(chapterInfo.bookIndex, chapterInfo.chapter)
+                    val searchText = it.getString(4).orEmpty()
+                    if (!searchText.contains(normalizedQuery, ignoreCase = true)) continue
                     val book = BibleCatalog.books.getOrNull(chapterInfo.bookIndex) ?: continue
                     decodeVersesBlob(chapterInfo, chapterInfo.versesBlob.orEmpty())
                         ?.filter { verse -> verse.text.contains(normalizedQuery, ignoreCase = true) }
@@ -384,8 +373,22 @@ class BibleChapterCache(
                         }
                 }
             }
+            CachedSearchResult(
+                results = results,
+                searchedChapters = searchedChapters,
+            )
         }
     }
+
+    data class CachedSearchResult(
+        val results: List<BibleSearchResult> = emptyList(),
+        val searchedChapters: Set<ChapterRef> = emptySet(),
+    )
+
+    data class ChapterRef(
+        val bookIndex: Int,
+        val chapter: Int,
+    )
 
     @Synchronized
     fun isWarmUpComplete(warmUpKey: String): Boolean {

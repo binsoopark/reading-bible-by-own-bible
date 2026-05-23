@@ -122,10 +122,49 @@ class FileBibleRepository(
         version: BibleVersion,
         query: String,
     ): List<BibleSearchResult>? {
-        return chapterPersistentCache?.searchChapters(
+        val cached = chapterPersistentCache?.searchChapters(
             cacheKeyPrefix = chapterCachePrefix(version),
             query = query,
-            expectedChapterCount = BibleCatalog.books.sumOf { it.chapterCount },
+        ) ?: return null
+        if (cached.searchedChapters.isEmpty()) return null
+        return cached.results
+    }
+
+    suspend fun searchOptimized(
+        version: BibleVersion,
+        query: String,
+        onProgress: suspend (current: Int, total: Int, label: String) -> Unit = { _, _, _ -> },
+    ): List<BibleSearchResult> {
+        val normalizedQuery = query.trim()
+        if (normalizedQuery.length < 2) return emptyList()
+
+        val cached = chapterPersistentCache?.searchChapters(chapterCachePrefix(version), normalizedQuery)
+        val results = cached?.results.orEmpty().toMutableList()
+        val searchedChapters = cached?.searchedChapters.orEmpty()
+        val allChapters = BibleCatalog.books.flatMap { book ->
+            (1..book.chapterCount).map { chapter -> book to chapter }
+        }
+        val missingChapters = allChapters.filterNot { (book, chapter) ->
+            BibleChapterCache.ChapterRef(book.index, chapter) in searchedChapters
+        }
+        missingChapters.forEachIndexed { index, (book, chapter) ->
+            if (index == 0 || index == missingChapters.lastIndex || chapter == 1 || index % 25 == 0) {
+                onProgress(index + 1, missingChapters.size.coerceAtLeast(1), "${book.koreanName} ${chapter}장")
+            }
+            readChapter(version, book, chapter)
+                .filter { verse -> verse.text.contains(normalizedQuery, ignoreCase = true) }
+                .forEach { verse ->
+                    results += BibleSearchResult(
+                        verse = verse,
+                        book = book,
+                        snippet = verse.text,
+                    )
+                }
+        }
+        return results.sortedWith(
+            compareBy<BibleSearchResult> { it.verse.bookIndex }
+                .thenBy { it.verse.chapter }
+                .thenBy { it.verse.verse },
         )
     }
 

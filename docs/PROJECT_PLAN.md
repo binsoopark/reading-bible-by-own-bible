@@ -205,6 +205,14 @@ com.soobinpark.appcraft.readingbible
 - [x] 읽기 팔레트가 본문뿐 아니라 앱 전체 Material color scheme에 적용되도록 변경
 - [x] `assembleDebug` 빌드 성공
 
+### 2026-05-24 검색 속도 재개선
+
+- [x] 전체 캐시가 완성되지 않으면 DB 검색을 통째로 포기하던 조건 제거
+- [x] DB에 캐시된 장은 `search_text`로 즉시 검색
+- [x] DB에 아직 없는 장만 원본/장 캐시 경로로 읽어 검색하도록 하이브리드 검색 구현
+- [x] 검색 결과는 캐시된 장과 새로 읽은 장을 합친 뒤 성경 순서로 정렬
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-18 GitHub Actions Release Signing 설정
 
 - [x] release signing 정보를 환경변수에서만 읽도록 Gradle 설정 추가

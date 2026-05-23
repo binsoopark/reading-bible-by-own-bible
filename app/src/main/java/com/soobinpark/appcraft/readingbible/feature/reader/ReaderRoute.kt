@@ -21,9 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
@@ -37,7 +34,6 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -137,8 +133,6 @@ private fun ReaderScreen(
     var showVersionSheet by remember { mutableStateOf(false) }
     var showComparisonSheet by remember { mutableStateOf(false) }
     var showBookSheet by remember { mutableStateOf(false) }
-    var showVerseSheet by remember { mutableStateOf(false) }
-    var selectedVerseNumber by remember(state.bookIndex, state.chapter) { mutableStateOf<Int?>(null) }
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val currentBook = BibleCatalog.books[state.bookIndex]
@@ -149,13 +143,12 @@ private fun ReaderScreen(
         adjacentChapter(state.bookIndex, state.chapter, direction = 1)
     }
 
-    LaunchedEffect(state.bookIndex, state.chapter, selectedVerseNumber) {
+    LaunchedEffect(state.bookIndex, state.chapter) {
         listState.scrollToItem(0)
     }
 
     fun moveTo(target: ChapterTarget?) {
         if (target == null) return
-        selectedVerseNumber = null
         onBookChapterSelected(target.bookIndex, target.chapter)
         coroutineScope.launch {
             listState.scrollToItem(0)
@@ -204,10 +197,6 @@ private fun ReaderScreen(
                 label = { Text(state.comparisonVersion?.let { "비교 ${it.displayName}" } ?: "비교 없음") },
                 modifier = Modifier.weight(1f),
             )
-            SuggestionChip(
-                onClick = { showVerseSheet = true },
-                label = { Text(selectedVerseNumber?.let { "${it}절" } ?: "전체 절") },
-            )
         }
         if (cacheWarmUpState.isActive) {
             CacheWarmUpBanner(cacheWarmUpState)
@@ -221,9 +210,7 @@ private fun ReaderScreen(
             val palette = readingPaletteColors(readingStyle.palette)
             val recordsByKey = bookmarks.associateBy { it.key }
             val comparisonByVerse = state.comparisonVerses.associateBy { it.verse }
-            val visibleVerses = selectedVerseNumber?.let { verseNumber ->
-                state.verses.filter { it.verse == verseNumber }
-            } ?: state.verses
+            val visibleVerses = state.verses
             val effectiveLineHeightMultiplier = dynamicReaderLineHeight(readingStyle.fontSizeSp, readingStyle.lineHeightMultiplier)
             val verseSpacing = dynamicVerseSpacing(readingStyle.fontSizeSp)
             val cardPadding = dynamicVersePadding(readingStyle.fontSizeSp)
@@ -271,26 +258,38 @@ private fun ReaderScreen(
                                         color = palette.accent,
                                         modifier = Modifier.weight(1f),
                                     )
-                                    IconButton(onClick = { onHighlightToggle(verse) }) {
+                                    ScaledVerseIconButton(
+                                        fontSizeSp = readingStyle.fontSizeSp,
+                                        onClick = { onHighlightToggle(verse) },
+                                    ) {
                                         Icon(
                                             imageVector = Icons.Outlined.FormatColorFill,
                                             contentDescription = if (isHighlighted) "하이라이트 해제" else "하이라이트 추가",
                                             tint = if (isHighlighted) palette.highlightAccent else palette.accent,
+                                            modifier = Modifier.size(dynamicActionIconSize(readingStyle.fontSizeSp)),
                                         )
                                     }
-                                    IconButton(onClick = { onReadToggle(verse) }) {
+                                    ScaledVerseIconButton(
+                                        fontSizeSp = readingStyle.fontSizeSp,
+                                        onClick = { onReadToggle(verse) },
+                                    ) {
                                         Icon(
                                             imageVector = if (isRead) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
                                             contentDescription = if (isRead) "읽음 해제" else "읽음 표시",
                                             tint = if (isRead) palette.highlightAccent else palette.accent,
+                                            modifier = Modifier.size(dynamicActionIconSize(readingStyle.fontSizeSp)),
                                         )
                                     }
-                                    IconButton(onClick = { onBookmarkToggle(verse) }) {
+                                    ScaledVerseIconButton(
+                                        fontSizeSp = readingStyle.fontSizeSp,
+                                        onClick = { onBookmarkToggle(verse) },
+                                    ) {
                                         val selected = record?.isBookmarked == true
                                         Icon(
                                             imageVector = if (selected) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
                                             contentDescription = if (selected) "북마크 해제" else "북마크 추가",
                                             tint = palette.accent,
+                                            modifier = Modifier.size(dynamicActionIconSize(readingStyle.fontSizeSp)),
                                         )
                                     }
                                 }
@@ -363,25 +362,30 @@ private fun ReaderScreen(
         )
     }
 
-    if (showVerseSheet) {
-        VersePickerSheet(
-            verses = state.verses.map { it.verse },
-            selectedVerse = selectedVerseNumber,
-            onDismiss = { showVerseSheet = false },
-            onVerseSelected = {
-                selectedVerseNumber = it
-                showVerseSheet = false
-            },
-            onShowAll = {
-                selectedVerseNumber = null
-                showVerseSheet = false
-            },
-        )
-    }
 }
 
 private fun BibleVerse.bookmarkKey(): String {
     return VerseBookmark.key(versionCode, bookIndex, chapter, verse)
+}
+
+private fun BibleVersion.languageGroup(): String {
+    val key = "${code.lowercase()} ${displayName.lowercase()}"
+    return when {
+        key.contains("kor") || key.contains("개역") || key.contains("한글") || key.contains("한국") -> "한국어"
+        key.contains("eng") || key.contains("niv") || key.contains("kjv") || key.contains("nasb") ||
+            key.contains("english") -> "영어"
+        key.contains("jpn") || key.contains("japanese") || key.contains("일본") -> "일본어"
+        key.contains("chn") || key.contains("chi") || key.contains("chinese") || key.contains("중국") -> "중국어"
+        key.contains("grk") || key.contains("greek") || key.contains("헬라") -> "원어/그리스어"
+        key.contains("heb") || key.contains("hebrew") || key.contains("히브리") -> "원어/히브리어"
+        else -> "기타"
+    }
+}
+
+private object VersionLanguageGroup {
+    private val order = listOf("한국어", "영어", "일본어", "중국어", "원어/그리스어", "원어/히브리어", "기타")
+
+    fun orderOf(group: String): Int = order.indexOf(group).takeIf { it >= 0 } ?: order.size
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -394,17 +398,14 @@ private fun VersionPickerSheet(
     onCleared: () -> Unit = {},
     onVersionSelected: (BibleVersion) -> Unit,
 ) {
-    var query by remember { mutableStateOf("") }
-    val visibleVersions = remember(versions, query) {
+    val groupedVersions = remember(versions) {
         versions
-            .filter { version ->
-                query.isBlank() ||
-                    version.code.contains(query, ignoreCase = true) ||
-                    version.displayName.contains(query, ignoreCase = true) ||
-                    version.sourceType.name.contains(query, ignoreCase = true)
-            }
             .sortedWith(compareBy({ it.sourceType.name }, { it.displayName.lowercase() }, { it.code.lowercase() }))
+            .groupBy { it.languageGroup() }
+            .toSortedMap(compareBy { VersionLanguageGroup.orderOf(it) })
     }
+    val listState = rememberLazyListState()
+    val itemCount = groupedVersions.values.sumOf { it.size } + groupedVersions.keys.size
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -417,38 +418,50 @@ private fun VersionPickerSheet(
                     Text("비교 역본 끄기")
                 }
             }
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                label = { Text("역본 검색") },
-                placeholder = { Text("예: kor, niv, bdf") },
-            )
-            if (visibleVersions.isEmpty()) {
-                Text("검색 결과가 없습니다.", style = MaterialTheme.typography.bodyMedium)
+            if (groupedVersions.isEmpty()) {
+                Text("선택할 역본이 없습니다.", style = MaterialTheme.typography.bodyMedium)
             } else {
-                LazyColumn(
-                    modifier = Modifier.heightIn(max = 420.dp),
-                    contentPadding = PaddingValues(bottom = 32.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(visibleVersions, key = { "${it.sourceType}-${it.code}" }) { version ->
-                        FilterChip(
-                            selected = selectedVersion == version,
-                            onClick = { onVersionSelected(version) },
-                            label = {
-                                Column {
-                                    Text(version.displayName)
-                                    Text(
-                                        text = "${version.code} · ${version.sourceType}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                            },
-                        )
+                Box(modifier = Modifier.heightIn(max = 460.dp)) {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(end = 28.dp, bottom = 32.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        groupedVersions.forEach { (group, groupVersions) ->
+                            item(key = "header-$group") {
+                                Text(
+                                    text = group,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier.padding(top = 6.dp),
+                                )
+                            }
+                            items(groupVersions, key = { "${it.sourceType}-${it.code}" }) { version ->
+                                FilterChip(
+                                    selected = selectedVersion == version,
+                                    onClick = { onVersionSelected(version) },
+                                    label = {
+                                        Column {
+                                            Text(version.displayName)
+                                            Text(
+                                                text = "${version.code} · ${version.sourceType}",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
+                            }
+                        }
                     }
+                    FastVerseScrollBar(
+                        listState = listState,
+                        itemCount = itemCount,
+                        modifier = Modifier.align(Alignment.CenterEnd),
+                    )
                 }
             }
         }
@@ -569,43 +582,6 @@ private fun PickerListPanel(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun VersePickerSheet(
-    verses: List<Int>,
-    selectedVerse: Int?,
-    onDismiss: () -> Unit,
-    onVerseSelected: (Int) -> Unit,
-    onShowAll: () -> Unit,
-) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier.padding(horizontal = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Text("절 선택", style = MaterialTheme.typography.titleLarge)
-            TextButton(onClick = onShowAll) {
-                Text("전체 절 보기")
-            }
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 56.dp),
-                modifier = Modifier.heightIn(max = 360.dp),
-                contentPadding = PaddingValues(bottom = 32.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(verses, key = { it }) { verse ->
-                    FilterChip(
-                        selected = selectedVerse == verse,
-                        onClick = { onVerseSelected(verse) },
-                        label = { Text("${verse}절") },
-                    )
-                }
-            }
-        }
-    }
-}
-
 private data class ReaderPaletteColors(
     val container: Color,
     val content: Color,
@@ -712,12 +688,22 @@ private fun dynamicReaderLineHeight(
 
 private fun dynamicVerseSpacing(fontSizeSp: Float): Dp {
     val scale = readerFontScale(fontSizeSp)
-    return (6f + 6f * scale).dp
+    return (2f + 6f * scale).dp
 }
 
 private fun dynamicVersePadding(fontSizeSp: Float): Dp {
     val scale = readerFontScale(fontSizeSp)
-    return (12f + 5f * scale).dp
+    return (8f + 7f * scale).dp
+}
+
+private fun dynamicActionButtonSize(fontSizeSp: Float): Dp {
+    val scale = readerFontScale(fontSizeSp)
+    return (28f + 12f * scale).dp
+}
+
+private fun dynamicActionIconSize(fontSizeSp: Float): Dp {
+    val scale = readerFontScale(fontSizeSp)
+    return (16f + 8f * scale).dp
 }
 
 private fun readerFontScale(fontSizeSp: Float): Float {
@@ -726,6 +712,19 @@ private fun readerFontScale(fontSizeSp: Float): Float {
 
 private const val MinReaderFontSizeSp = 12f
 private const val MaxReaderFontSizeSp = 28f
+
+@Composable
+private fun ScaledVerseIconButton(
+    fontSizeSp: Float,
+    onClick: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier.size(dynamicActionButtonSize(fontSizeSp)),
+        content = content,
+    )
+}
 
 @Composable
 private fun CompactIconButton(

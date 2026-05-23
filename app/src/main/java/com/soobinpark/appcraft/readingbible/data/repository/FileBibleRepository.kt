@@ -122,7 +122,11 @@ class FileBibleRepository(
         version: BibleVersion,
         query: String,
     ): List<BibleSearchResult>? {
-        return chapterPersistentCache?.searchChapters(chapterCachePrefix(version), query)
+        return chapterPersistentCache?.searchChapters(
+            cacheKeyPrefix = chapterCachePrefix(version),
+            query = query,
+            expectedChapterCount = BibleCatalog.books.sumOf { it.chapterCount },
+        )
     }
 
     private fun readAllChaptersForWarmUp(version: BibleVersion): Map<String, List<BibleVerse>> {

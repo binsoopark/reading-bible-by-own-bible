@@ -48,6 +48,12 @@ fun SettingsRoute(
     val context = LocalContext.current
     var importExportMessage by remember { mutableStateOf<String?>(null) }
     var showBibleDiagnostics by remember { mutableStateOf(false) }
+    val appVersion = remember {
+        runCatching {
+            val info = context.packageManager.getPackageInfo(context.packageName, 0)
+            info.versionName ?: "알 수 없음"
+        }.getOrDefault("알 수 없음")
+    }
     val folderPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
     ) { uri ->
@@ -183,6 +189,7 @@ fun SettingsRoute(
             Card {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("앱 정보", style = MaterialTheme.typography.titleMedium)
+                    Text("버전 $appVersion")
                     Text(stringResource(R.string.app_info_lifove_compat))
                 }
             }

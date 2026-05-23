@@ -1,6 +1,8 @@
 package com.soobinpark.appcraft.readingbible.feature.reader
 
 import android.net.Uri
+import android.content.ClipData
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
@@ -33,6 +35,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -60,6 +63,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
@@ -122,7 +126,7 @@ fun ReaderRoute(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun ReaderScreen(
     state: ReaderUiState,
@@ -146,6 +150,7 @@ private fun ReaderScreen(
     var chapterSlideDirection by remember { mutableStateOf(AnimatedContentTransitionScope.SlideDirection.Left) }
     val context = LocalContext.current
     var fontSizeToast by remember { mutableStateOf<Toast?>(null) }
+    var selectedVerseKeys by remember(state.bookIndex, state.chapter) { mutableStateOf(setOf<String>()) }
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val currentBook = BibleCatalog.books[state.bookIndex]
@@ -229,6 +234,7 @@ private fun ReaderScreen(
             val recordsByKey = bookmarks.associateBy { it.key }
             val comparisonByVerse = state.comparisonVerses.associateBy { it.verse }
             val visibleVerses = state.verses
+            val selectedVerses = visibleVerses.filter { selectedVerseKeys.contains(it.bookmarkKey()) }
             val effectiveLineHeightMultiplier = dynamicReaderLineHeight(readingStyle.fontSizeSp, readingStyle.lineHeightMultiplier)
             val verseSpacing = dynamicVerseSpacing(readingStyle.fontSizeSp)
             val cardPadding = dynamicVersePadding(readingStyle.fontSizeSp)
@@ -257,6 +263,27 @@ private fun ReaderScreen(
                         )
                     },
             ) {
+                Column(Modifier.fillMaxSize()) {
+                    if (selectedVerses.isNotEmpty()) {
+                        SelectedVersesBar(
+                            count = selectedVerses.size,
+                            onClear = { selectedVerseKeys = emptySet() },
+                            onCopy = {
+                                val text = selectedVerses.selectionText(currentBook.koreanName)
+                                val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                clipboard.setPrimaryClip(ClipData.newPlainText("성경 구절", text))
+                                Toast.makeText(context, "선택한 구절을 복사했습니다", Toast.LENGTH_SHORT).show()
+                            },
+                            onShare = {
+                                val text = selectedVerses.selectionText(currentBook.koreanName)
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, text)
+                                }
+                                context.startActivity(Intent.createChooser(intent, "구절 공유"))
+                            },
+                        )
+                    }
                 AnimatedContent(
                     targetState = "${state.bookIndex}:${state.chapter}",
                     transitionSpec = {
@@ -264,7 +291,7 @@ private fun ReaderScreen(
                             slideOutOfContainer(chapterSlideDirection, tween(180))
                     },
                     label = "chapter-transition",
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.weight(1f),
                 ) {
                     LazyColumn(
                         state = listState,
@@ -273,13 +300,24 @@ private fun ReaderScreen(
                         modifier = Modifier.fillMaxSize(),
                     ) {
                         items(visibleVerses, key = { "${it.versionCode}-${it.bookIndex}-${it.chapter}-${it.verse}" }) { verse ->
-                        val record = recordsByKey[verse.bookmarkKey()]
+                            val verseKey = verse.bookmarkKey()
+                            val record = recordsByKey[verse.bookmarkKey()]
                         val comparisonVerse = comparisonByVerse[verse.verse]
                         val highlight = record?.highlight ?: VerseHighlight.None
                         val isHighlighted = highlight != VerseHighlight.None
                         val isRead = record?.isRead == true
-                        Card(
-                            colors = CardDefaults.cardColors(
+                            Card(
+                                modifier = Modifier.combinedClickable(
+                                    onClick = {
+                                        if (selectedVerseKeys.isNotEmpty()) {
+                                            selectedVerseKeys = selectedVerseKeys.toggle(verseKey)
+                                        }
+                                    },
+                                    onLongClick = {
+                                        selectedVerseKeys = selectedVerseKeys.toggle(verseKey)
+                                    },
+                                ),
+                                colors = CardDefaults.cardColors(
                                 containerColor = if (isHighlighted) highlightContainerColor(highlight) else palette.container,
                                 contentColor = palette.content,
                             ),
@@ -348,6 +386,7 @@ private fun ReaderScreen(
                         }
                     }
                 }
+                }
                 FastVerseScrollBar(
                     listState = listState,
                     itemCount = visibleVerses.size,
@@ -413,6 +452,45 @@ private fun ReaderScreen(
 
 private fun BibleVerse.bookmarkKey(): String {
     return VerseBookmark.key(versionCode, bookIndex, chapter, verse)
+}
+
+private fun Set<String>.toggle(key: String): Set<String> {
+    return if (contains(key)) this - key else this + key
+}
+
+private fun List<BibleVerse>.selectionText(bookName: String): String {
+    return sortedWith(compareBy({ it.bookIndex }, { it.chapter }, { it.verse }))
+        .joinToString("\n") { verse ->
+            "$bookName ${verse.chapter}:${verse.verse} ${verse.text}"
+        }
+}
+
+@Composable
+private fun SelectedVersesBar(
+    count: Int,
+    onClear: () -> Unit,
+    onCopy: () -> Unit,
+    onShare: () -> Unit,
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "${count}개 선택",
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onClear) { Text("해제") }
+            Button(onClick = onCopy) { Text("복사") }
+            Button(onClick = onShare) { Text("공유") }
+        }
+    }
 }
 
 private fun BibleVersion.languageGroup(): String {
@@ -740,11 +818,14 @@ private fun HighlightColorSheet(
     }
 }
 
+@Composable
 private fun Modifier.readerPinchZoom(
     currentFontSizeSp: Float,
     onFontSizeChanged: (Float) -> Unit,
 ): Modifier {
-    return pointerInput(currentFontSizeSp) {
+    val currentFontSize by rememberUpdatedState(currentFontSizeSp)
+    val onFontSizeChange by rememberUpdatedState(onFontSizeChanged)
+    return pointerInput(Unit) {
         var previousDistance: Float? = null
         awaitPointerEventScope {
             while (true) {
@@ -757,10 +838,10 @@ private fun Modifier.readerPinchZoom(
                     val previous = previousDistance
                     if (previous != null && previous > 0f) {
                         val zoom = distance / previous
-                        val nextFontSize = ((currentFontSizeSp * zoom).coerceIn(MinReaderFontSizeSp, MaxReaderFontSizeSp) * 4f)
+                        val nextFontSize = ((currentFontSize * zoom).coerceIn(MinReaderFontSizeSp, MaxReaderFontSizeSp) * 4f)
                             .roundToInt() / 4f
-                        if (abs(nextFontSize - currentFontSizeSp) >= 0.25f) {
-                            onFontSizeChanged(nextFontSize)
+                        if (abs(nextFontSize - currentFontSize) >= 0.25f) {
+                            onFontSizeChange(nextFontSize)
                             pressed.forEach { it.consume() }
                         }
                     }

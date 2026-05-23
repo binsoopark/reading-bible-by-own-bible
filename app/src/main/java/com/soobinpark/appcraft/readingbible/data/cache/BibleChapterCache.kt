@@ -333,22 +333,24 @@ class BibleChapterCache(
     fun searchChapters(
         cacheKeyPrefix: String,
         query: String,
+        expectedChapterCount: Int,
     ): List<BibleSearchResult>? {
         val normalizedQuery = query.trim()
         if (normalizedQuery.length < 2) return emptyList()
 
         val searchableCursor = readableDatabase.query(
             "chapters",
-            arrayOf("cache_key"),
+            arrayOf("COUNT(*)"),
             "cache_key LIKE ? AND search_text IS NOT NULL",
             arrayOf("$cacheKeyPrefix%"),
             null,
             null,
             null,
-            "1",
         )
-        val hasSearchableCache = searchableCursor.use { it.moveToFirst() }
-        if (!hasSearchableCache) return null
+        val searchableChapterCount = searchableCursor.use {
+            if (it.moveToFirst()) it.getInt(0) else 0
+        }
+        if (searchableChapterCount < expectedChapterCount) return null
 
         val cursor = readableDatabase.query(
             "chapters",

@@ -90,77 +90,94 @@ private fun SearchScreen(
 ) {
     var showVersionSheet by androidx.compose.runtime.remember { mutableStateOf(false) }
     val resultListState = rememberLazyListState()
-    val currentResult by androidx.compose.runtime.remember(state.visibleResults) {
+    val resultStartIndex = 2 +
+        if (state.isLoading || state.isSearching) 1 else 0 +
+        if (state.message != null) 1 else 0 +
+        if (state.results.isNotEmpty()) 1 else 0
+    val currentResult by androidx.compose.runtime.remember(state.visibleResults, resultStartIndex) {
         derivedStateOf {
-            state.visibleResults.getOrNull(resultListState.firstVisibleItemIndex)
+            state.visibleResults.getOrNull((resultListState.firstVisibleItemIndex - resultStartIndex).coerceAtLeast(0))
         }
     }
+    val totalListItems = resultStartIndex +
+        state.visibleResults.size +
+        if (state.visibleResults.size < state.results.size) 1 else 0
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("검색", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
-        SearchInputCard(
-            state = state,
-            onQueryChanged = onQueryChanged,
-            onSearch = onSearch,
-            onVersionClick = { showVersionSheet = true },
-        )
-        if (state.isLoading || state.isSearching) {
-            SearchProgress(state)
-        }
-        state.message?.let { message ->
-            Card {
-                Text(
-                    text = message,
-                    modifier = Modifier.padding(18.dp),
-                    style = MaterialTheme.typography.bodyMedium,
+        LazyColumn(
+            state = resultListState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(end = 30.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            item {
+                Text("검색", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+            }
+            item {
+                SearchInputCard(
+                    state = state,
+                    onQueryChanged = onQueryChanged,
+                    onSearch = onSearch,
+                    onVersionClick = { showVersionSheet = true },
                 )
             }
-        }
-        if (state.results.isNotEmpty()) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = currentResult?.let { "${it.book.koreanName} ${it.verse.chapter}장" }
-                        ?: "전체 ${state.results.size}개 중 ${state.visibleResults.size}개 표시",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    text = "총 ${state.results.size}개",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            if (state.isLoading || state.isSearching) {
+                item { SearchProgress(state) }
             }
-        }
-        Box(modifier = Modifier.weight(1f, fill = true)) {
-            LazyColumn(
-                state = resultListState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(end = 30.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(state.visibleResults, key = { "${it.verse.versionCode}-${it.verse.bookIndex}-${it.verse.chapter}-${it.verse.verse}" }) { result ->
-                    SearchResultCard(result, state.query)
-                }
-                if (state.visibleResults.size < state.results.size) {
-                    item {
-                        Button(onClick = onShowNextPage, modifier = Modifier.fillMaxWidth()) {
-                            Text("다음 100개 보기")
-                        }
+            state.message?.let { message ->
+                item {
+                    Card {
+                        Text(
+                            text = message,
+                            modifier = Modifier.padding(18.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
                     }
                 }
             }
-            SearchScrollBar(
-                listState = resultListState,
-                itemCount = state.visibleResults.size + if (state.visibleResults.size < state.results.size) 1 else 0,
-                modifier = Modifier.align(Alignment.CenterEnd),
-            )
+            if (state.results.isNotEmpty()) {
+                item {
+                    Text(
+                        text = "전체 ${state.results.size}개 중 ${state.visibleResults.size}개 표시",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            items(state.visibleResults, key = { "${it.verse.versionCode}-${it.verse.bookIndex}-${it.verse.chapter}-${it.verse.verse}" }) { result ->
+                SearchResultCard(result, state.query)
+            }
+            if (state.visibleResults.size < state.results.size) {
+                item {
+                    Button(onClick = onShowNextPage, modifier = Modifier.fillMaxWidth()) {
+                        Text("다음 100개 보기")
+                    }
+                }
+            }
         }
+        if (state.results.isNotEmpty()) {
+            Card(modifier = Modifier.align(Alignment.TopCenter)) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = currentResult?.let { "${it.book.koreanName} ${it.verse.chapter}장" }.orEmpty(),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        }
+        SearchScrollBar(
+            listState = resultListState,
+            itemCount = totalListItems,
+            modifier = Modifier.align(Alignment.CenterEnd),
+        )
     }
 
     if (showVersionSheet) {

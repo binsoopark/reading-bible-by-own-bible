@@ -14,6 +14,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.soobinpark.appcraft.readingbible.core.design.ReadingBibleTheme
 import com.soobinpark.appcraft.readingbible.feature.reader.ReaderRoute
 import com.soobinpark.appcraft.readingbible.feature.records.RecordsRoute
 import com.soobinpark.appcraft.readingbible.feature.search.SearchRoute
@@ -29,53 +30,55 @@ fun ReadingBibleApp(
     val bookmarks by appViewModel.bookmarks.collectAsState()
     val cacheWarmUpState by appViewModel.cacheWarmUpState.collectAsState()
 
-    Scaffold(
-        bottomBar = {
-            NavigationBar {
-                AppTab.entries.forEach { tab ->
-                    NavigationBarItem(
-                        selected = selectedTab == tab,
-                        onClick = { selectedTab = tab },
-                        icon = { Icon(tab.icon, contentDescription = tab.label) },
-                        label = { Text(tab.label) },
-                    )
+    ReadingBibleTheme(palette = readingStyle.palette) {
+        Scaffold(
+            bottomBar = {
+                NavigationBar {
+                    AppTab.entries.forEach { tab ->
+                        NavigationBarItem(
+                            selected = selectedTab == tab,
+                            onClick = { selectedTab = tab },
+                            icon = { Icon(tab.icon, contentDescription = tab.label) },
+                            label = { Text(tab.label) },
+                        )
+                    }
                 }
+            },
+        ) { innerPadding ->
+            val modifier = Modifier.padding(innerPadding)
+            when (selectedTab) {
+                AppTab.Reader -> ReaderRoute(
+                    dataFolderUri = dataFolderUri,
+                    readingStyle = readingStyle,
+                    bookmarks = bookmarks,
+                    cacheWarmUpState = cacheWarmUpState,
+                    onBookmarkToggle = appViewModel::toggleBookmark,
+                    onHighlightToggle = { verse, color -> appViewModel.toggleHighlight(verse, color) },
+                    onReadToggle = appViewModel::toggleRead,
+                    onFontSizeChanged = appViewModel::setReadingFontSize,
+                    modifier = modifier,
+                )
+                AppTab.Search -> SearchRoute(dataFolderUri = dataFolderUri, modifier = modifier)
+                AppTab.Records -> RecordsRoute(
+                    bookmarks = bookmarks,
+                    onNoteChanged = appViewModel::updateBookmarkNote,
+                    modifier = modifier,
+                )
+                AppTab.Settings -> SettingsRoute(
+                    dataFolderUri = dataFolderUri,
+                    readingStyle = readingStyle,
+                    onDataFolderSelected = {
+                        appViewModel.setDataFolderUri(it)
+                        selectedTab = AppTab.Reader
+                    },
+                    onFontSizeChanged = appViewModel::setReadingFontSize,
+                    onLineHeightChanged = appViewModel::setReadingLineHeight,
+                    onPaletteSelected = appViewModel::setReadingPalette,
+                    onExportRecords = appViewModel::exportRecordsJson,
+                    onImportRecords = appViewModel::importRecordsJson,
+                    modifier = modifier,
+                )
             }
-        },
-    ) { innerPadding ->
-        val modifier = Modifier.padding(innerPadding)
-        when (selectedTab) {
-            AppTab.Reader -> ReaderRoute(
-                dataFolderUri = dataFolderUri,
-                readingStyle = readingStyle,
-                bookmarks = bookmarks,
-                cacheWarmUpState = cacheWarmUpState,
-                onBookmarkToggle = appViewModel::toggleBookmark,
-                onHighlightToggle = { verse, color -> appViewModel.toggleHighlight(verse, color) },
-                onReadToggle = appViewModel::toggleRead,
-                onFontSizeChanged = appViewModel::setReadingFontSize,
-                modifier = modifier,
-            )
-            AppTab.Search -> SearchRoute(dataFolderUri = dataFolderUri, modifier = modifier)
-            AppTab.Records -> RecordsRoute(
-                bookmarks = bookmarks,
-                onNoteChanged = appViewModel::updateBookmarkNote,
-                modifier = modifier,
-            )
-            AppTab.Settings -> SettingsRoute(
-                dataFolderUri = dataFolderUri,
-                readingStyle = readingStyle,
-                onDataFolderSelected = {
-                    appViewModel.setDataFolderUri(it)
-                    selectedTab = AppTab.Reader
-                },
-                onFontSizeChanged = appViewModel::setReadingFontSize,
-                onLineHeightChanged = appViewModel::setReadingLineHeight,
-                onPaletteSelected = appViewModel::setReadingPalette,
-                onExportRecords = appViewModel::exportRecordsJson,
-                onImportRecords = appViewModel::importRecordsJson,
-                modifier = modifier,
-            )
         }
     }
 }

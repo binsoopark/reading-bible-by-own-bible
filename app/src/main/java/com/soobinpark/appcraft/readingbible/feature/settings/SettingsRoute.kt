@@ -16,12 +16,14 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -41,6 +43,10 @@ fun SettingsRoute(
     onFontSizeChanged: (Float) -> Unit,
     onLineHeightChanged: (Float) -> Unit,
     onPaletteSelected: (ReadingPalette) -> Unit,
+    onKeepScreenOnChanged: (Boolean) -> Unit,
+    onMultitouchZoomEnabledChanged: (Boolean) -> Unit,
+    onBoldTextEnabledChanged: (Boolean) -> Unit,
+    onShowNotesInReaderChanged: (Boolean) -> Unit,
     onExportRecords: () -> String,
     onImportRecords: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -183,6 +189,10 @@ fun SettingsRoute(
                 onFontSizeChanged = onFontSizeChanged,
                 onLineHeightChanged = onLineHeightChanged,
                 onPaletteSelected = onPaletteSelected,
+                onKeepScreenOnChanged = onKeepScreenOnChanged,
+                onMultitouchZoomEnabledChanged = onMultitouchZoomEnabledChanged,
+                onBoldTextEnabledChanged = onBoldTextEnabledChanged,
+                onShowNotesInReaderChanged = onShowNotesInReaderChanged,
             )
         }
         item {
@@ -203,10 +213,38 @@ private fun ReadingStyleCard(
     onFontSizeChanged: (Float) -> Unit,
     onLineHeightChanged: (Float) -> Unit,
     onPaletteSelected: (ReadingPalette) -> Unit,
+    onKeepScreenOnChanged: (Boolean) -> Unit,
+    onMultitouchZoomEnabledChanged: (Boolean) -> Unit,
+    onBoldTextEnabledChanged: (Boolean) -> Unit,
+    onShowNotesInReaderChanged: (Boolean) -> Unit,
 ) {
     Card {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
             Text("읽기 스타일", style = MaterialTheme.typography.titleMedium)
+            ToggleSettingRow(
+                title = "화면 꺼지지 않도록 유지",
+                description = "본문을 읽는 동안 화면 자동 꺼짐을 막습니다.",
+                checked = readingStyle.keepScreenOn,
+                onCheckedChange = onKeepScreenOnChanged,
+            )
+            ToggleSettingRow(
+                title = "멀티터치 줌 사용",
+                description = "본문에서 두 손가락으로 글자 크기를 조절합니다.",
+                checked = readingStyle.multitouchZoomEnabled,
+                onCheckedChange = onMultitouchZoomEnabledChanged,
+            )
+            ToggleSettingRow(
+                title = "볼드체 적용",
+                description = "본문 성경 구절을 굵게 표시합니다.",
+                checked = readingStyle.boldTextEnabled,
+                onCheckedChange = onBoldTextEnabledChanged,
+            )
+            ToggleSettingRow(
+                title = "본문 메모 아이콘 표시",
+                description = "메모가 작성된 절 옆에 표시를 보여줍니다.",
+                checked = readingStyle.showNotesInReader,
+                onCheckedChange = onShowNotesInReaderChanged,
+            )
             SettingSlider(
                 title = "글자 크기",
                 valueLabel = "${readingStyle.fontSizeSp.roundToInt()}sp",
@@ -216,7 +254,7 @@ private fun ReadingStyleCard(
                 onValueChange = onFontSizeChanged,
             )
             SettingSlider(
-                title = "줄 간격",
+                title = "본문 줄 간격",
                 valueLabel = "${(readingStyle.lineHeightMultiplier * 100).roundToInt()}%",
                 value = readingStyle.lineHeightMultiplier,
                 valueRange = 1.2f..2.2f,
@@ -243,6 +281,29 @@ private fun ReadingStyleCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun ToggleSettingRow(
+    title: String,
+    description: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, style = MaterialTheme.typography.labelLarge)
+            Text(description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
     }
 }
 

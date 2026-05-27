@@ -54,6 +54,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.FormatColorFill
 import androidx.compose.runtime.Composable
@@ -242,14 +243,20 @@ private fun ReaderScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .readerPinchZoom(readingStyle.fontSizeSp) { fontSize ->
-                        val message = "글자 크기 ${fontSize.roundToInt()}"
-                        val toast = fontSizeToast ?: Toast.makeText(context, message, Toast.LENGTH_SHORT)
-                            .also { fontSizeToast = it }
-                        toast.setText(message)
-                        toast.show()
-                        onFontSizeChanged(fontSize)
-                    }
+                    .then(
+                        if (readingStyle.multitouchZoomEnabled) {
+                            Modifier.readerPinchZoom(readingStyle.fontSizeSp) { fontSize ->
+                                val message = "글자 크기 ${fontSize.roundToInt()}"
+                                val toast = fontSizeToast ?: Toast.makeText(context, message, Toast.LENGTH_SHORT)
+                                    .also { fontSizeToast = it }
+                                toast.setText(message)
+                                toast.show()
+                                onFontSizeChanged(fontSize)
+                            }
+                        } else {
+                            Modifier
+                        },
+                    )
                     .pointerInput(state.bookIndex, state.chapter, previousChapter, nextChapter) {
                         var totalDrag = 0f
                         detectHorizontalDragGestures(
@@ -349,6 +356,14 @@ private fun ReaderScreen(
                                         color = if (isSelected) MaterialTheme.colorScheme.primary else palette.accent,
                                         modifier = Modifier.weight(1f),
                                     )
+                                    if (readingStyle.showNotesInReader && record?.note?.isNotBlank() == true) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Description,
+                                            contentDescription = "메모 있음",
+                                            tint = palette.highlightAccent,
+                                            modifier = Modifier.size(dynamicActionIconSize(readingStyle.fontSizeSp)),
+                                        )
+                                    }
                                     ScaledVerseIconButton(
                                         fontSizeSp = readingStyle.fontSizeSp,
                                         onClick = { onHighlightToggle(verse, selectedHighlightColor) },
@@ -389,6 +404,7 @@ private fun ReaderScreen(
                                     text = verse.text,
                                     fontSize = readingStyle.fontSizeSp.sp,
                                     lineHeight = (readingStyle.fontSizeSp * effectiveLineHeightMultiplier).sp,
+                                    fontWeight = if (readingStyle.boldTextEnabled) FontWeight.Bold else FontWeight.Normal,
                                 )
                                 if (comparisonVerse != null) {
                                     Text(
@@ -396,6 +412,7 @@ private fun ReaderScreen(
                                         color = palette.secondaryContent,
                                         fontSize = (readingStyle.fontSizeSp - 1f).coerceAtLeast(12f).sp,
                                         lineHeight = (readingStyle.fontSizeSp * effectiveLineHeightMultiplier).sp,
+                                        fontWeight = if (readingStyle.boldTextEnabled) FontWeight.Bold else FontWeight.Normal,
                                         modifier = Modifier.padding(top = 10.dp),
                                     )
                                 }

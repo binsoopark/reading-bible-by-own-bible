@@ -77,6 +77,22 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         setReadingStyle(_readingStyle.value.copy(palette = palette))
     }
 
+    fun setKeepScreenOn(enabled: Boolean) {
+        setReadingStyle(_readingStyle.value.copy(keepScreenOn = enabled))
+    }
+
+    fun setMultitouchZoomEnabled(enabled: Boolean) {
+        setReadingStyle(_readingStyle.value.copy(multitouchZoomEnabled = enabled))
+    }
+
+    fun setBoldTextEnabled(enabled: Boolean) {
+        setReadingStyle(_readingStyle.value.copy(boldTextEnabled = enabled))
+    }
+
+    fun setShowNotesInReader(enabled: Boolean) {
+        setReadingStyle(_readingStyle.value.copy(showNotesInReader = enabled))
+    }
+
     private fun setReadingStyle(style: ReadingStyle) {
         readingStylePreferences.setStyle(style)
         _readingStyle.value = style

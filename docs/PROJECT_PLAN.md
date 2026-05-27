@@ -109,6 +109,16 @@ com.soobinpark.appcraft.readingbible
 
 ## 11. 작업 로그
 
+### 2026-05-28 읽기 설정 확장
+
+- [x] 설정에 `화면 꺼지지 않도록 유지` on/off 추가
+- [x] 화면 유지 설정을 Android window keep-screen-on flag와 연결
+- [x] 설정에 `멀티터치 줌 사용` on/off 추가
+- [x] 설정에 `볼드체 적용` on/off 추가
+- [x] `본문 줄 간격` 조절 메뉴를 읽기 스타일 안에 정리
+- [x] 메모가 작성된 절을 본문에서 아이콘으로 표시하는 on/off 추가
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-24 캐시 예열 반복 방지
 
 - [x] 전체 역본 캐시 예열 완료 상태를 SQLite `warmups` 테이블에 저장

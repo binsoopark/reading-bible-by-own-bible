@@ -109,6 +109,14 @@ com.soobinpark.appcraft.readingbible
 
 ## 11. 작업 로그
 
+### 2026-05-28 검색 캐시 조회 속도 개선
+
+- [x] 원인 분석: DB 캐시 검색 시 모든 장의 `verses_blob`을 앱으로 읽은 뒤 Kotlin `contains()`로 검사해 불필요한 디코딩이 많았음
+- [x] 전체 캐시 여부 판단에는 얇은 `book_index`, `chapter` 컬럼만 조회하도록 분리
+- [x] 실제 본문 blob은 SQLite `LIKE`로 검색어가 포함된 장만 후보로 가져오도록 변경
+- [x] `LIKE` 패턴의 `%`, `_`, `\` 문자를 escape해 URI/cache key와 검색어 오동작 가능성 감소
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-28 검색 결과에서 본문 이동
 
 - [x] 검색 결과 카드를 길게 누르면 읽기 탭으로 전환

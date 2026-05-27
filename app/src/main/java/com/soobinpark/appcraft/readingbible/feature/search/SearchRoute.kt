@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -185,6 +187,10 @@ private fun SearchScreen(
         SearchScrollBar(
             listState = resultListState,
             itemCount = totalListItems,
+            labelForIndex = { index ->
+                state.visibleResults.getOrNull(index - resultStartIndex)
+                    ?.let { "${it.book.koreanName} ${it.verse.chapter}장" }
+            },
             modifier = Modifier.align(Alignment.CenterEnd),
         )
     }
@@ -408,11 +414,14 @@ private object VersionLanguageGroup {
 private fun SearchScrollBar(
     listState: LazyListState,
     itemCount: Int,
+    labelForIndex: ((Int) -> String?)? = null,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
     val coroutineScope = androidx.compose.runtime.rememberCoroutineScope()
     var trackSize by androidx.compose.runtime.remember { mutableStateOf(IntSize.Zero) }
+    var isDragging by androidx.compose.runtime.remember { mutableStateOf(false) }
+    var previewFirstIndex by androidx.compose.runtime.remember { mutableStateOf<Int?>(null) }
     val visibleCount by androidx.compose.runtime.remember {
         derivedStateOf { listState.layoutInfo.visibleItemsInfo.size.coerceAtLeast(1) }
     }
@@ -426,30 +435,66 @@ private fun SearchScrollBar(
     }
     val maxFirstIndex = (itemCount - visibleCount).coerceAtLeast(1)
     val firstIndex = listState.firstVisibleItemIndex.coerceIn(0, maxFirstIndex)
+    val labelIndex = (previewFirstIndex ?: firstIndex).coerceIn(0, itemCount - 1)
+    val dragLabel = if (isDragging) labelForIndex?.invoke(labelIndex) else null
     val thumbOffsetPx = ((trackHeightPx - thumbHeightPx) * firstIndex / maxFirstIndex)
         .coerceIn(0f, (trackHeightPx - thumbHeightPx).coerceAtLeast(0f))
 
-    fun scrollToPosition(y: Float) {
+    fun targetIndexForPosition(y: Float): Int {
         val movable = (trackHeightPx - thumbHeightPx).coerceAtLeast(1f)
         val ratio = ((y - thumbHeightPx / 2f) / movable).coerceIn(0f, 1f)
+        return (ratio * maxFirstIndex).roundToInt().coerceIn(0, itemCount - 1)
+    }
+
+    fun scrollToPosition(y: Float) {
+        val targetIndex = targetIndexForPosition(y)
+        previewFirstIndex = targetIndex
         coroutineScope.launch {
-            listState.scrollToItem((ratio * maxFirstIndex).roundToInt().coerceIn(0, itemCount - 1))
+            listState.scrollToItem(targetIndex)
         }
     }
 
     Box(
         modifier = modifier
-            .width(24.dp)
-            .fillMaxSize()
+            .width(if (labelForIndex == null) 24.dp else 154.dp)
+            .fillMaxHeight()
             .onSizeChanged { trackSize = it }
             .pointerInput(itemCount, trackSize) {
                 detectVerticalDragGestures(
-                    onDragStart = { offset: Offset -> scrollToPosition(offset.y) },
+                    onDragStart = { offset: Offset ->
+                        isDragging = true
+                        scrollToPosition(offset.y)
+                    },
                     onVerticalDrag = { change, _ -> scrollToPosition(change.position.y) },
+                    onDragEnd = {
+                        isDragging = false
+                        previewFirstIndex = null
+                    },
+                    onDragCancel = {
+                        isDragging = false
+                        previewFirstIndex = null
+                    },
                 )
             },
         contentAlignment = Alignment.TopEnd,
     ) {
+        dragLabel?.let { label ->
+            Box(
+                modifier = Modifier
+                    .offset(y = with(density) { thumbOffsetPx.toDp() })
+                    .padding(end = 18.dp)
+                    .background(MaterialTheme.colorScheme.inverseSurface, RoundedCornerShape(18.dp))
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .align(Alignment.TopEnd),
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.inverseOnSurface,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        }
         Box(
             modifier = Modifier
                 .width(5.dp)

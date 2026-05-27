@@ -2,6 +2,8 @@ package com.soobinpark.appcraft.readingbible.feature.search
 
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -61,6 +63,7 @@ import kotlin.math.roundToInt
 @Composable
 fun SearchRoute(
     dataFolderUri: Uri?,
+    onResultLongPressed: (BibleSearchResult) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = viewModel(),
 ) {
@@ -75,6 +78,7 @@ fun SearchRoute(
         onSearch = viewModel::search,
         onVersionSelected = viewModel::selectVersion,
         onShowNextPage = viewModel::showNextPage,
+        onResultLongPressed = onResultLongPressed,
         modifier = modifier,
     )
 }
@@ -86,6 +90,7 @@ private fun SearchScreen(
     onSearch: () -> Unit,
     onVersionSelected: (BibleVersion) -> Unit,
     onShowNextPage: () -> Unit,
+    onResultLongPressed: (BibleSearchResult) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var showVersionSheet by androidx.compose.runtime.remember { mutableStateOf(false) }
@@ -149,7 +154,11 @@ private fun SearchScreen(
                 }
             }
             items(state.visibleResults, key = { "${it.verse.versionCode}-${it.verse.bookIndex}-${it.verse.chapter}-${it.verse.verse}" }) { result ->
-                SearchResultCard(result, state.query)
+                SearchResultCard(
+                    result = result,
+                    query = state.query,
+                    onLongPress = { onResultLongPressed(result) },
+                )
             }
             if (state.visibleResults.size < state.results.size) {
                 item {
@@ -325,11 +334,18 @@ private fun SearchVersionPickerSheet(
 }
 
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 private fun SearchResultCard(
     result: BibleSearchResult,
     query: String,
+    onLongPress: () -> Unit,
 ) {
-    Card {
+    Card(
+        modifier = Modifier.combinedClickable(
+            onClick = {},
+            onLongClick = onLongPress,
+        ),
+    ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 text = "${result.book.koreanName} ${result.verse.chapter}:${result.verse.verse}",

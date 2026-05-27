@@ -163,8 +163,11 @@ private fun ReaderScreen(
         adjacentChapter(state.bookIndex, state.chapter, direction = 1)
     }
 
-    LaunchedEffect(state.bookIndex, state.chapter) {
-        listState.scrollToItem(0)
+    LaunchedEffect(state.bookIndex, state.chapter, state.focusVerse, state.verses) {
+        val focusIndex = state.focusVerse?.let { focusVerse ->
+            state.verses.indexOfFirst { it.verse == focusVerse }.takeIf { it >= 0 }
+        }
+        listState.scrollToItem(focusIndex ?: 0)
     }
 
     fun moveTo(target: ChapterTarget?) {

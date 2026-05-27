@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.soobinpark.appcraft.readingbible.core.design.ReadingBibleTheme
 import com.soobinpark.appcraft.readingbible.feature.reader.ReaderRoute
+import com.soobinpark.appcraft.readingbible.feature.reader.ReaderViewModel
 import com.soobinpark.appcraft.readingbible.feature.records.RecordsRoute
 import com.soobinpark.appcraft.readingbible.feature.search.SearchRoute
 import com.soobinpark.appcraft.readingbible.feature.settings.SettingsRoute
@@ -27,6 +28,7 @@ import com.soobinpark.appcraft.readingbible.feature.settings.SettingsRoute
 @Composable
 fun ReadingBibleApp(
     appViewModel: AppViewModel = viewModel(),
+    readerViewModel: ReaderViewModel = viewModel(),
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(AppTab.Reader) }
     val dataFolderUri by appViewModel.dataFolderUri.collectAsState()
@@ -74,8 +76,16 @@ fun ReadingBibleApp(
                     onReadToggle = appViewModel::toggleRead,
                     onFontSizeChanged = appViewModel::setReadingFontSize,
                     modifier = modifier,
+                    viewModel = readerViewModel,
                 )
-                AppTab.Search -> SearchRoute(dataFolderUri = dataFolderUri, modifier = modifier)
+                AppTab.Search -> SearchRoute(
+                    dataFolderUri = dataFolderUri,
+                    onResultLongPressed = { result ->
+                        readerViewModel.openSearchResult(result.verse)
+                        selectedTab = AppTab.Reader
+                    },
+                    modifier = modifier,
+                )
                 AppTab.Records -> RecordsRoute(
                     bookmarks = bookmarks,
                     onNoteChanged = appViewModel::updateBookmarkNote,

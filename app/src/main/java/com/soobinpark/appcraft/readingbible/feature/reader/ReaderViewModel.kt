@@ -26,6 +26,7 @@ data class ReaderUiState(
     val comparisonVersion: BibleVersion? = null,
     val bookIndex: Int = 0,
     val chapter: Int = 1,
+    val focusVerse: Int? = null,
     val verses: List<BibleVerse> = emptyList(),
     val comparisonVerses: List<BibleVerse> = emptyList(),
     val isLoading: Boolean = true,
@@ -158,6 +159,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
             _uiState.value = state.copy(
                 bookIndex = safeBookIndex,
                 chapter = safeChapter,
+                focusVerse = null,
                 verses = verses,
                 comparisonVerses = comparisonVerses,
                 message = if (state.selectedVersion != null && verses.isEmpty()) {
@@ -168,6 +170,58 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                 },
             )
             saveProgress(state.selectedVersion, safeBookIndex, safeChapter)
+        }
+    }
+
+    fun openSearchResult(verse: BibleVerse) {
+        viewModelScope.launch {
+            val state = _uiState.value
+            val versions = if (state.versions.isNotEmpty()) {
+                state.versions
+            } else {
+                withContext(Dispatchers.IO) {
+                    dataFolderUri?.let { repository.scanVersions(it) }
+                        ?.takeIf { it.isNotEmpty() }
+                        ?: repository.scanVersions(state.dataRoot)
+                }
+            }
+            val safeBookIndex = verse.bookIndex.coerceIn(BibleCatalog.books.indices)
+            val safeChapter = verse.chapter.coerceIn(1, BibleCatalog.books[safeBookIndex].chapterCount)
+            val targetVersion = versions.firstOrNull { it.code.equals(verse.versionCode, ignoreCase = true) }
+                ?: state.selectedVersion
+                ?: versions.firstOrNull()
+            val comparison = state.comparisonVersion
+                ?.takeUnless { it.code == targetVersion?.code }
+                ?: versions.firstOrNull { it.code != targetVersion?.code }
+            val (verses, comparisonVerses) = withContext(Dispatchers.IO) {
+                val targetVerses = targetVersion?.let {
+                    repository.readChapter(it, BibleCatalog.books[safeBookIndex], safeChapter)
+                }.orEmpty()
+                val targetComparisonVerses = comparison?.let {
+                    repository.readChapter(it, BibleCatalog.books[safeBookIndex], safeChapter)
+                }.orEmpty()
+                targetVerses to targetComparisonVerses
+            }
+            _uiState.value = state.copy(
+                versions = versions,
+                selectedVersion = targetVersion,
+                comparisonVersion = comparison,
+                bookIndex = safeBookIndex,
+                chapter = safeChapter,
+                focusVerse = verse.verse,
+                verses = verses,
+                comparisonVerses = comparisonVerses,
+                isLoading = false,
+                loadingMessage = "",
+                message = if (targetVersion != null && verses.isEmpty()) {
+                    val book = BibleCatalog.books[safeBookIndex]
+                    "${targetVersion.displayName} ${book.koreanName} ${safeChapter}장을 읽지 못했습니다. LFA/BDF 파일 형식 또는 손상 여부를 확인해 주세요."
+                } else {
+                    null
+                },
+            )
+            saveProgress(targetVersion, safeBookIndex, safeChapter)
+            targetVersion?.let { warmUpSelectedVersion(it) }
         }
     }
 

@@ -34,6 +34,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -125,6 +127,7 @@ fun ReadingBibleApp(
                         modifier = modifier,
                     )
                 }
+                BottomContentFade(Modifier.align(Alignment.BottomCenter))
                 FloatingBottomTabs(
                     selectedTab = selectedTab,
                     onTabSelected = { selectedTab = it },
@@ -133,6 +136,27 @@ fun ReadingBibleApp(
             }
         }
     }
+}
+
+@Composable
+private fun BottomContentFade(
+    modifier: Modifier = Modifier,
+) {
+    val background = MaterialTheme.colorScheme.background
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(136.dp)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color.Transparent,
+                        background.copy(alpha = 0.62f),
+                        background,
+                    ),
+                ),
+            ),
+    )
 }
 
 @Composable
@@ -145,22 +169,22 @@ private fun FloatingBottomTabs(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 18.dp, vertical = 10.dp),
+            .padding(horizontal = 42.dp, vertical = 9.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Surface(
             modifier = Modifier
-                .widthIn(max = 430.dp)
+                .widthIn(max = 336.dp)
                 .fillMaxWidth()
-                .height(64.dp),
-            shape = RoundedCornerShape(32.dp),
-            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                .height(54.dp),
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
             tonalElevation = 8.dp,
             shadowElevation = 14.dp,
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 8.dp, vertical = 7.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 AppTab.entries.forEach { tab ->
@@ -198,15 +222,15 @@ private fun FloatingBottomTabItem(
     val interactionSource = remember { MutableInteractionSource() }
     Column(
         modifier = modifier
-            .height(50.dp)
-            .clip(RoundedCornerShape(25.dp))
+            .height(42.dp)
+            .clip(RoundedCornerShape(21.dp))
             .background(containerColor)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick,
             )
-            .padding(horizontal = 6.dp, vertical = 5.dp),
+            .padding(horizontal = 4.dp, vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -214,7 +238,7 @@ private fun FloatingBottomTabItem(
             imageVector = tab.icon,
             contentDescription = tab.label,
             tint = contentColor,
-            modifier = Modifier.size(22.dp),
+            modifier = Modifier.size(19.dp),
         )
         Text(
             text = tab.label,

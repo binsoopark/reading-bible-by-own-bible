@@ -116,6 +116,8 @@ com.soobinpark.appcraft.readingbible
 - [x] 선택된 탭은 내부 pill 배경과 굵은 라벨로 강조
 - [x] 시스템 내비게이션 영역을 피하도록 하단 inset 처리
 - [x] floating tab을 `Scaffold.bottomBar`가 아닌 overlay로 배치해 리스트가 탭 영역 뒤까지 이어지도록 수정
+- [x] bottom tab을 더 작은 알약형 pill 크기로 조정
+- [x] 리스트 하단이 탭 뒤에서 자연스럽게 사라지도록 bottom fade overlay 추가
 - [x] `assembleDebug` 빌드 성공
 
 ### 2026-05-31 GitHub Release 성경 데이터 다운로드

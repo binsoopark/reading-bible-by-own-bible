@@ -109,6 +109,14 @@ com.soobinpark.appcraft.readingbible
 
 ## 11. 작업 로그
 
+### 2026-05-31 Floating Bottom Tab 스타일 적용
+
+- [x] 기본 Material `NavigationBar`를 커스텀 floating bottom tab으로 교체
+- [x] One UI 8.5 계열의 pill-shaped floating bar 느낌에 맞춰 둥근 컨테이너, 그림자, 컴팩트 탭 구성 적용
+- [x] 선택된 탭은 내부 pill 배경과 굵은 라벨로 강조
+- [x] 시스템 내비게이션 영역을 피하도록 하단 inset 처리
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-31 GitHub Release 성경 데이터 다운로드
 
 - [x] `/Users/soobinpark/Downloads/bible/bible.zip` 파일 SHA-256 확인

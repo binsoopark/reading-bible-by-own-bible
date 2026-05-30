@@ -7,8 +7,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -70,63 +72,63 @@ fun ReadingBibleApp(
             }
         }
 
-        Scaffold(
-            bottomBar = {
+        Scaffold { innerPadding ->
+            Box(Modifier.fillMaxSize()) {
+                val modifier = Modifier.padding(innerPadding)
+                when (selectedTab) {
+                    AppTab.Reader -> ReaderRoute(
+                        dataFolderUri = dataFolderUri,
+                        localDataRoot = localDataRoot,
+                        readingStyle = readingStyle,
+                        bookmarks = bookmarks,
+                        cacheWarmUpState = cacheWarmUpState,
+                        onBookmarkToggle = appViewModel::toggleBookmark,
+                        onHighlightToggle = { verse, color -> appViewModel.toggleHighlight(verse, color) },
+                        onReadToggle = appViewModel::toggleRead,
+                        onFontSizeChanged = appViewModel::setReadingFontSize,
+                        modifier = modifier,
+                        viewModel = readerViewModel,
+                    )
+                    AppTab.Search -> SearchRoute(
+                        dataFolderUri = dataFolderUri,
+                        localDataRoot = localDataRoot,
+                        onResultLongPressed = { result ->
+                            readerViewModel.openSearchResult(result.verse)
+                            selectedTab = AppTab.Reader
+                        },
+                        modifier = modifier,
+                    )
+                    AppTab.Records -> RecordsRoute(
+                        bookmarks = bookmarks,
+                        onNoteChanged = appViewModel::updateBookmarkNote,
+                        modifier = modifier,
+                    )
+                    AppTab.Settings -> SettingsRoute(
+                        dataFolderUri = dataFolderUri,
+                        localDataRoot = localDataRoot,
+                        dataDownloadState = dataDownloadState,
+                        readingStyle = readingStyle,
+                        onDataFolderSelected = {
+                            appViewModel.setDataFolderUri(it)
+                            selectedTab = AppTab.Reader
+                        },
+                        onFontSizeChanged = appViewModel::setReadingFontSize,
+                        onLineHeightChanged = appViewModel::setReadingLineHeight,
+                        onPaletteSelected = appViewModel::setReadingPalette,
+                        onKeepScreenOnChanged = appViewModel::setKeepScreenOn,
+                        onMultitouchZoomEnabledChanged = appViewModel::setMultitouchZoomEnabled,
+                        onBoldTextEnabledChanged = appViewModel::setBoldTextEnabled,
+                        onShowNotesInReaderChanged = appViewModel::setShowNotesInReader,
+                        onExportRecords = appViewModel::exportRecordsJson,
+                        onImportRecords = appViewModel::importRecordsJson,
+                        onDownloadBibleData = appViewModel::downloadSampleBibleData,
+                        modifier = modifier,
+                    )
+                }
                 FloatingBottomTabs(
                     selectedTab = selectedTab,
                     onTabSelected = { selectedTab = it },
-                )
-            },
-        ) { innerPadding ->
-            val modifier = Modifier.padding(innerPadding)
-            when (selectedTab) {
-                AppTab.Reader -> ReaderRoute(
-                    dataFolderUri = dataFolderUri,
-                    localDataRoot = localDataRoot,
-                    readingStyle = readingStyle,
-                    bookmarks = bookmarks,
-                    cacheWarmUpState = cacheWarmUpState,
-                    onBookmarkToggle = appViewModel::toggleBookmark,
-                    onHighlightToggle = { verse, color -> appViewModel.toggleHighlight(verse, color) },
-                    onReadToggle = appViewModel::toggleRead,
-                    onFontSizeChanged = appViewModel::setReadingFontSize,
-                    modifier = modifier,
-                    viewModel = readerViewModel,
-                )
-                AppTab.Search -> SearchRoute(
-                    dataFolderUri = dataFolderUri,
-                    localDataRoot = localDataRoot,
-                    onResultLongPressed = { result ->
-                        readerViewModel.openSearchResult(result.verse)
-                        selectedTab = AppTab.Reader
-                    },
-                    modifier = modifier,
-                )
-                AppTab.Records -> RecordsRoute(
-                    bookmarks = bookmarks,
-                    onNoteChanged = appViewModel::updateBookmarkNote,
-                    modifier = modifier,
-                )
-                AppTab.Settings -> SettingsRoute(
-                    dataFolderUri = dataFolderUri,
-                    localDataRoot = localDataRoot,
-                    dataDownloadState = dataDownloadState,
-                    readingStyle = readingStyle,
-                    onDataFolderSelected = {
-                        appViewModel.setDataFolderUri(it)
-                        selectedTab = AppTab.Reader
-                    },
-                    onFontSizeChanged = appViewModel::setReadingFontSize,
-                    onLineHeightChanged = appViewModel::setReadingLineHeight,
-                    onPaletteSelected = appViewModel::setReadingPalette,
-                    onKeepScreenOnChanged = appViewModel::setKeepScreenOn,
-                    onMultitouchZoomEnabledChanged = appViewModel::setMultitouchZoomEnabled,
-                    onBoldTextEnabledChanged = appViewModel::setBoldTextEnabled,
-                    onShowNotesInReaderChanged = appViewModel::setShowNotesInReader,
-                    onExportRecords = appViewModel::exportRecordsJson,
-                    onImportRecords = appViewModel::importRecordsJson,
-                    onDownloadBibleData = appViewModel::downloadSampleBibleData,
-                    modifier = modifier,
+                    modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
         }
@@ -137,9 +139,10 @@ fun ReadingBibleApp(
 private fun FloatingBottomTabs(
     selectedTab: AppTab,
     onTabSelected: (AppTab) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
             .padding(horizontal = 18.dp, vertical = 10.dp),

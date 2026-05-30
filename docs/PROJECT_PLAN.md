@@ -115,6 +115,7 @@ com.soobinpark.appcraft.readingbible
 - [x] One UI 8.5 계열의 pill-shaped floating bar 느낌에 맞춰 둥근 컨테이너, 그림자, 컴팩트 탭 구성 적용
 - [x] 선택된 탭은 내부 pill 배경과 굵은 라벨로 강조
 - [x] 시스템 내비게이션 영역을 피하도록 하단 inset 처리
+- [x] floating tab을 `Scaffold.bottomBar`가 아닌 overlay로 배치해 리스트가 탭 영역 뒤까지 이어지도록 수정
 - [x] `assembleDebug` 빌드 성공
 
 ### 2026-05-31 GitHub Release 성경 데이터 다운로드

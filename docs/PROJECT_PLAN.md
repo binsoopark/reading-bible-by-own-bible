@@ -109,6 +109,15 @@ com.soobinpark.appcraft.readingbible
 
 ## 11. 작업 로그
 
+### 2026-05-31 GitHub Release 성경 데이터 다운로드
+
+- [x] `/Users/soobinpark/Downloads/bible/bible.zip` 파일 SHA-256 확인
+- [x] GitHub Release `bible-data-2026.05.31` 생성 및 `bible.zip` asset 업로드
+- [x] 설정 탭에 `성경 데이터 다운로드` 카드 추가
+- [x] 앱에서 GitHub Release의 `bible.zip` 다운로드, SHA-256 검증, 압축 해제, 앱 전용 데이터 폴더 적용 구현
+- [x] SAF 폴더 선택과 앱 내부 다운로드 폴더를 함께 지원하도록 Reader/Search/성경 파일 확인 경로 확장
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-28 검색 결과 스크롤 위치 표시
 
 - [x] 검색 결과 스크롤바를 드래그하는 동안 현재 탐색 중인 성경 권/장 말풍선 표시

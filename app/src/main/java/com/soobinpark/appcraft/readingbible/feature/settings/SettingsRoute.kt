@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -30,14 +31,18 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.soobinpark.appcraft.readingbible.R
+import com.soobinpark.appcraft.readingbible.app.BibleDataDownloadUiState
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingPalette
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingStyle
 import com.soobinpark.appcraft.readingbible.feature.library.LibraryRoute
+import java.io.File
 import kotlin.math.roundToInt
 
 @Composable
 fun SettingsRoute(
     dataFolderUri: Uri?,
+    localDataRoot: File?,
+    dataDownloadState: BibleDataDownloadUiState,
     readingStyle: ReadingStyle,
     onDataFolderSelected: (Uri?) -> Unit,
     onFontSizeChanged: (Float) -> Unit,
@@ -49,6 +54,7 @@ fun SettingsRoute(
     onShowNotesInReaderChanged: (Boolean) -> Unit,
     onExportRecords: () -> String,
     onImportRecords: (String) -> Unit,
+    onDownloadBibleData: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -118,6 +124,7 @@ fun SettingsRoute(
             }
             LibraryRoute(
                 dataFolderUri = dataFolderUri,
+                localDataRoot = localDataRoot,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -137,12 +144,22 @@ fun SettingsRoute(
             Card {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("성경 데이터 폴더", style = MaterialTheme.typography.titleMedium)
-                    Text(dataFolderUri?.toString() ?: "아직 선택한 폴더가 없습니다. 선택하지 않으면 기본 /sdcard/bible 폴더를 시도합니다.")
+                    Text(
+                        dataFolderUri?.toString()
+                            ?: localDataRoot?.absolutePath
+                            ?: "아직 선택한 폴더가 없습니다. 선택하지 않으면 기본 /sdcard/bible 폴더를 시도합니다.",
+                    )
                     Button(onClick = { folderPicker.launch(null) }) {
                         Text("bdf/lfa 폴더 선택")
                     }
                 }
             }
+        }
+        item {
+            BibleDataDownloadCard(
+                state = dataDownloadState,
+                onDownloadBibleData = onDownloadBibleData,
+            )
         }
         item {
             Card {
@@ -202,6 +219,35 @@ fun SettingsRoute(
                     Text("버전 $appVersion")
                     Text(stringResource(R.string.app_info_lifove_compat))
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BibleDataDownloadCard(
+    state: BibleDataDownloadUiState,
+    onDownloadBibleData: () -> Unit,
+) {
+    Card {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("성경 데이터 다운로드", style = MaterialTheme.typography.titleMedium)
+            Text("GitHub Release에서 약 49MB의 bible.zip 파일을 내려받아 앱 전용 폴더에 압축 해제하고 바로 적용합니다.")
+            state.installedRoot?.let {
+                Text("적용된 폴더: ${it.absolutePath}", style = MaterialTheme.typography.bodySmall)
+            }
+            state.message.takeIf { it.isNotBlank() }?.let { Text(it) }
+            state.progress?.let { progress ->
+                LinearProgressIndicator(
+                    progress = { progress.coerceIn(0f, 1f) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            Button(
+                onClick = onDownloadBibleData,
+                enabled = !state.isActive,
+            ) {
+                Text(if (state.installedRoot == null) "다운로드 및 적용" else "다시 다운로드")
             }
         }
     }

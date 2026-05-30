@@ -91,6 +91,7 @@ import com.soobinpark.appcraft.readingbible.domain.model.ReadingStyle
 import com.soobinpark.appcraft.readingbible.domain.model.VerseHighlight
 import com.soobinpark.appcraft.readingbible.domain.model.VerseBookmark
 import kotlinx.coroutines.launch
+import java.io.File
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -98,6 +99,7 @@ import kotlin.math.sqrt
 @Composable
 fun ReaderRoute(
     dataFolderUri: Uri?,
+    localDataRoot: File?,
     readingStyle: ReadingStyle,
     bookmarks: List<VerseBookmark>,
     cacheWarmUpState: CacheWarmUpUiState,
@@ -109,8 +111,8 @@ fun ReaderRoute(
     viewModel: ReaderViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    LaunchedEffect(dataFolderUri) {
-        viewModel.setDataFolderUri(dataFolderUri)
+    LaunchedEffect(dataFolderUri, localDataRoot) {
+        viewModel.setDataFolder(dataFolderUri, localDataRoot)
     }
     ReaderScreen(
         state = uiState,

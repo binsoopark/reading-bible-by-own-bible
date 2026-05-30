@@ -33,7 +33,21 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
 
     fun setDataFolderUri(uri: Uri?) {
         if (_uiState.value.dataFolderUri == uri) return
-        _uiState.value = _uiState.value.copy(dataFolderUri = uri)
+        _uiState.value = _uiState.value.copy(
+            dataFolderUri = uri,
+            dataRoot = File(Environment.getExternalStorageDirectory(), "bible"),
+        )
+        refresh()
+    }
+
+    fun setDataFolder(
+        uri: Uri?,
+        localRoot: File?,
+    ) {
+        val nextRoot = localRoot ?: File(Environment.getExternalStorageDirectory(), "bible")
+        val state = _uiState.value
+        if (state.dataFolderUri == uri && state.dataRoot == nextRoot) return
+        _uiState.value = state.copy(dataFolderUri = uri, dataRoot = nextRoot)
         refresh()
     }
 

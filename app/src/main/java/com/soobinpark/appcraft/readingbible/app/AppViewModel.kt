@@ -21,12 +21,25 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.io.BufferedInputStream
 import java.io.File
+import java.io.FileOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import java.security.MessageDigest
+import java.util.zip.ZipInputStream
 
 data class CacheWarmUpUiState(
     val isActive: Boolean = false,
     val message: String = "",
     val progress: Float? = null,
+)
+
+data class BibleDataDownloadUiState(
+    val isActive: Boolean = false,
+    val message: String = "",
+    val progress: Float? = null,
+    val installedRoot: File? = null,
 )
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
@@ -36,16 +49,22 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val readingProgressPreferences = ReadingProgressPreferences(application)
     private val repository = FileBibleRepository(application)
     private val _dataFolderUri = MutableStateFlow(dataFolderPreferences.getTreeUri())
+    private val _localDataRoot = MutableStateFlow(dataFolderPreferences.getLocalRoot())
     private val _readingStyle = MutableStateFlow(readingStylePreferences.getStyle())
     private val _bookmarks = MutableStateFlow(bookmarkPreferences.getBookmarks())
     private val _cacheWarmUpState = MutableStateFlow(CacheWarmUpUiState())
+    private val _dataDownloadState = MutableStateFlow(
+        BibleDataDownloadUiState(installedRoot = dataFolderPreferences.getLocalRoot()),
+    )
     val dataFolderUri: StateFlow<Uri?> = _dataFolderUri.asStateFlow()
+    val localDataRoot: StateFlow<File?> = _localDataRoot.asStateFlow()
     val readingStyle: StateFlow<ReadingStyle> = _readingStyle.asStateFlow()
     val bookmarks: StateFlow<List<VerseBookmark>> = _bookmarks.asStateFlow()
     val cacheWarmUpState: StateFlow<CacheWarmUpUiState> = _cacheWarmUpState.asStateFlow()
+    val dataDownloadState: StateFlow<BibleDataDownloadUiState> = _dataDownloadState.asStateFlow()
 
     init {
-        warmUpBibleCache(_dataFolderUri.value)
+        warmUpBibleCache(_dataFolderUri.value, _localDataRoot.value)
     }
 
     fun exportRecordsJson(): String = bookmarkPreferences.toJson(_bookmarks.value)
@@ -62,7 +81,68 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun setDataFolderUri(uri: Uri?) {
         dataFolderPreferences.setTreeUri(uri)
         _dataFolderUri.value = uri
-        warmUpBibleCache(uri)
+        _localDataRoot.value = null
+        _dataDownloadState.value = _dataDownloadState.value.copy(installedRoot = null)
+        warmUpBibleCache(uri, null)
+    }
+
+    fun downloadSampleBibleData() {
+        if (_dataDownloadState.value.isActive) return
+        viewModelScope.launch(Dispatchers.IO) {
+            val application = getApplication<Application>()
+            val downloadFile = File(application.cacheDir, "bible.zip")
+            val installBase = File(application.getExternalFilesDir(null) ?: application.filesDir, "downloaded-bible")
+            val stageDir = File(installBase.parentFile ?: application.filesDir, "downloaded-bible-stage")
+            try {
+                _dataDownloadState.value = BibleDataDownloadUiState(
+                    isActive = true,
+                    message = "성경 데이터 파일을 다운로드하는 중입니다.",
+                    progress = 0f,
+                    installedRoot = _localDataRoot.value,
+                )
+                downloadFile.parentFile?.mkdirs()
+                downloadFile(downloadFile)
+                _dataDownloadState.value = BibleDataDownloadUiState(
+                    isActive = true,
+                    message = "다운로드 파일을 확인하는 중입니다.",
+                    progress = 0.72f,
+                    installedRoot = _localDataRoot.value,
+                )
+                check(downloadFile.sha256() == BibleZipSha256) { "다운로드한 파일의 체크섬이 일치하지 않습니다." }
+
+                stageDir.deleteRecursively()
+                stageDir.mkdirs()
+                _dataDownloadState.value = BibleDataDownloadUiState(
+                    isActive = true,
+                    message = "성경 데이터 압축을 해제하는 중입니다.",
+                    progress = 0.82f,
+                    installedRoot = _localDataRoot.value,
+                )
+                unzipBibleData(downloadFile, stageDir)
+                installBase.deleteRecursively()
+                check(stageDir.renameTo(installBase)) { "압축 해제한 폴더를 적용하지 못했습니다." }
+                val root = File(installBase, "bible").takeIf { it.isDirectory } ?: installBase
+                dataFolderPreferences.setLocalRoot(root)
+                _dataFolderUri.value = null
+                _localDataRoot.value = root
+                _dataDownloadState.value = BibleDataDownloadUiState(
+                    isActive = false,
+                    message = "성경 데이터를 다운로드하고 적용했습니다.",
+                    progress = 1f,
+                    installedRoot = root,
+                )
+                warmUpBibleCache(null, root)
+            } catch (error: Throwable) {
+                _dataDownloadState.value = BibleDataDownloadUiState(
+                    isActive = false,
+                    message = "성경 데이터 다운로드에 실패했습니다. ${error.message.orEmpty()}",
+                    installedRoot = _localDataRoot.value,
+                )
+            } finally {
+                downloadFile.delete()
+                stageDir.deleteRecursively()
+            }
+        }
     }
 
     fun setReadingFontSize(sizeSp: Float) {
@@ -184,7 +264,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun warmUpBibleCache(uri: Uri?) {
+    private fun warmUpBibleCache(
+        uri: Uri?,
+        localRoot: File?,
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 _cacheWarmUpState.value = CacheWarmUpUiState(
@@ -194,6 +277,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val root = File(Environment.getExternalStorageDirectory(), "bible")
                 val versions = uri?.let { repository.scanVersions(it) }
                     ?.takeIf { it.isNotEmpty() }
+                    ?: localRoot?.let { repository.scanVersions(it) }?.takeIf { it.isNotEmpty() }
                     ?: repository.scanVersions(root)
                 if (versions.isEmpty()) {
                     _cacheWarmUpState.value = CacheWarmUpUiState()
@@ -233,5 +317,76 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 _cacheWarmUpState.value = CacheWarmUpUiState()
             }
         }
+    }
+
+    private fun downloadFile(destination: File) {
+        val connection = (URL(BibleZipUrl).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 15_000
+            readTimeout = 30_000
+        }
+        try {
+            val total = connection.contentLengthLong.takeIf { it > 0L } ?: BibleZipSizeBytes
+            BufferedInputStream(connection.inputStream).use { input ->
+                FileOutputStream(destination).use { output ->
+                    val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                    var read: Int
+                    var downloaded = 0L
+                    while (input.read(buffer).also { read = it } >= 0) {
+                        output.write(buffer, 0, read)
+                        downloaded += read
+                        _dataDownloadState.value = BibleDataDownloadUiState(
+                            isActive = true,
+                            message = "성경 데이터 파일을 다운로드하는 중입니다.",
+                            progress = (downloaded.toFloat() / total.toFloat()).coerceIn(0f, 0.7f),
+                            installedRoot = _localDataRoot.value,
+                        )
+                    }
+                }
+            }
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    private fun unzipBibleData(
+        zipFile: File,
+        destination: File,
+    ) {
+        val canonicalDestination = destination.canonicalFile
+        ZipInputStream(BufferedInputStream(zipFile.inputStream())).use { zip ->
+            var entry = zip.nextEntry
+            while (entry != null) {
+                val target = File(destination, entry.name).canonicalFile
+                check(target.path == canonicalDestination.path || target.path.startsWith(canonicalDestination.path + File.separator)) {
+                    "안전하지 않은 압축 경로입니다."
+                }
+                if (entry.isDirectory) {
+                    target.mkdirs()
+                } else {
+                    target.parentFile?.mkdirs()
+                    FileOutputStream(target).use { output -> zip.copyTo(output) }
+                }
+                zip.closeEntry()
+                entry = zip.nextEntry
+            }
+        }
+    }
+
+    private fun File.sha256(): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        inputStream().use { input ->
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            var read: Int
+            while (input.read(buffer).also { read = it } >= 0) {
+                digest.update(buffer, 0, read)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    private companion object {
+        const val BibleZipUrl = "https://github.com/binsoopark/reading-bible-by-own-bible/releases/download/bible-data-2026.05.31/bible.zip"
+        const val BibleZipSha256 = "071576aeac0514b4010ddc71e86cafd9e24ab3a47876415cf359d5ccd8c4ddc4"
+        const val BibleZipSizeBytes = 50_929_083L
     }
 }

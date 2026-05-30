@@ -41,6 +41,7 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
     private var dataFolderUri: Uri? = null
+    private var localDataRoot: File? = null
     private var searchJob: Job? = null
 
     init {
@@ -50,6 +51,18 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
     fun setDataFolderUri(uri: Uri?) {
         if (dataFolderUri == uri) return
         dataFolderUri = uri
+        localDataRoot = null
+        refreshVersions()
+    }
+
+    fun setDataFolder(
+        uri: Uri?,
+        localRoot: File?,
+    ) {
+        if (dataFolderUri == uri && localDataRoot == localRoot) return
+        dataFolderUri = uri
+        localDataRoot = localRoot
+        _uiState.value = _uiState.value.copy(dataRoot = localRoot ?: File(Environment.getExternalStorageDirectory(), "bible"))
         refreshVersions()
     }
 
@@ -74,6 +87,7 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
             val versions = withContext(Dispatchers.IO) {
                 dataFolderUri?.let { repository.scanVersions(it) }
                     ?.takeIf { it.isNotEmpty() }
+                    ?: localDataRoot?.let { repository.scanVersions(it) }?.takeIf { it.isNotEmpty() }
                     ?: repository.scanVersions(root)
             }
             val savedVersionCode = progressPreferences.getProgress().versionCode

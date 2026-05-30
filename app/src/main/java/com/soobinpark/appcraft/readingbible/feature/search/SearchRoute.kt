@@ -59,19 +59,21 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.soobinpark.appcraft.readingbible.domain.model.BibleSearchResult
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
+import java.io.File
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
 fun SearchRoute(
     dataFolderUri: Uri?,
+    localDataRoot: File?,
     onResultLongPressed: (BibleSearchResult) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    LaunchedEffect(dataFolderUri) {
-        viewModel.setDataFolderUri(dataFolderUri)
+    LaunchedEffect(dataFolderUri, localDataRoot) {
+        viewModel.setDataFolder(dataFolderUri, localDataRoot)
     }
 
     SearchScreen(

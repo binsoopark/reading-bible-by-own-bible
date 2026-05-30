@@ -34,12 +34,13 @@ import com.soobinpark.appcraft.readingbible.domain.model.BibleFileIssueSeverity
 @Composable
 fun LibraryRoute(
     dataFolderUri: Uri?,
+    localDataRoot: java.io.File?,
     modifier: Modifier = Modifier,
     viewModel: LibraryViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    LaunchedEffect(dataFolderUri) {
-        viewModel.setDataFolderUri(dataFolderUri)
+    LaunchedEffect(dataFolderUri, localDataRoot) {
+        viewModel.setDataFolder(dataFolderUri, localDataRoot)
     }
 
     LibraryScreen(

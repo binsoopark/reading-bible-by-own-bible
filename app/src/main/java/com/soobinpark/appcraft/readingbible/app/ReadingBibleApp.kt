@@ -32,9 +32,11 @@ fun ReadingBibleApp(
 ) {
     var selectedTab by rememberSaveable { mutableStateOf(AppTab.Reader) }
     val dataFolderUri by appViewModel.dataFolderUri.collectAsState()
+    val localDataRoot by appViewModel.localDataRoot.collectAsState()
     val readingStyle by appViewModel.readingStyle.collectAsState()
     val bookmarks by appViewModel.bookmarks.collectAsState()
     val cacheWarmUpState by appViewModel.cacheWarmUpState.collectAsState()
+    val dataDownloadState by appViewModel.dataDownloadState.collectAsState()
 
     ReadingBibleTheme(palette = readingStyle.palette) {
         val view = LocalView.current
@@ -68,6 +70,7 @@ fun ReadingBibleApp(
             when (selectedTab) {
                 AppTab.Reader -> ReaderRoute(
                     dataFolderUri = dataFolderUri,
+                    localDataRoot = localDataRoot,
                     readingStyle = readingStyle,
                     bookmarks = bookmarks,
                     cacheWarmUpState = cacheWarmUpState,
@@ -80,6 +83,7 @@ fun ReadingBibleApp(
                 )
                 AppTab.Search -> SearchRoute(
                     dataFolderUri = dataFolderUri,
+                    localDataRoot = localDataRoot,
                     onResultLongPressed = { result ->
                         readerViewModel.openSearchResult(result.verse)
                         selectedTab = AppTab.Reader
@@ -93,6 +97,8 @@ fun ReadingBibleApp(
                 )
                 AppTab.Settings -> SettingsRoute(
                     dataFolderUri = dataFolderUri,
+                    localDataRoot = localDataRoot,
+                    dataDownloadState = dataDownloadState,
                     readingStyle = readingStyle,
                     onDataFolderSelected = {
                         appViewModel.setDataFolderUri(it)
@@ -107,6 +113,7 @@ fun ReadingBibleApp(
                     onShowNotesInReaderChanged = appViewModel::setShowNotesInReader,
                     onExportRecords = appViewModel::exportRecordsJson,
                     onImportRecords = appViewModel::importRecordsJson,
+                    onDownloadBibleData = appViewModel::downloadSampleBibleData,
                     modifier = modifier,
                 )
             }

@@ -308,7 +308,7 @@ private fun ReaderScreen(
                 ) {
                     LazyColumn(
                         state = listState,
-                        contentPadding = PaddingValues(end = 30.dp, bottom = 24.dp),
+                        contentPadding = PaddingValues(end = 30.dp, bottom = 132.dp),
                         verticalArrangement = Arrangement.spacedBy(verseSpacing),
                         modifier = Modifier.fillMaxSize(),
                     ) {

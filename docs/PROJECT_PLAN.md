@@ -118,6 +118,8 @@ com.soobinpark.appcraft.readingbible
 - [x] floating tab을 `Scaffold.bottomBar`가 아닌 overlay로 배치해 리스트가 탭 영역 뒤까지 이어지도록 수정
 - [x] bottom tab을 더 작은 알약형 pill 크기로 조정
 - [x] 리스트 하단이 탭 뒤에서 자연스럽게 사라지도록 bottom fade overlay 추가
+- [x] 메인 스크롤 목록의 하단 padding을 늘려 마지막 항목이 floating tab 위까지 올라오도록 수정
+- [x] bottom tab 폭과 탭 내부 간격을 더 줄여 아이콘 간격을 조밀하게 조정
 - [x] `assembleDebug` 빌드 성공
 
 ### 2026-05-31 GitHub Release 성경 데이터 다운로드

@@ -169,12 +169,12 @@ private fun FloatingBottomTabs(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 42.dp, vertical = 9.dp),
+            .padding(horizontal = 58.dp, vertical = 9.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Surface(
             modifier = Modifier
-                .widthIn(max = 336.dp)
+                .widthIn(max = 296.dp)
                 .fillMaxWidth()
                 .height(54.dp),
             shape = RoundedCornerShape(28.dp),
@@ -183,8 +183,8 @@ private fun FloatingBottomTabs(
             shadowElevation = 14.dp,
         ) {
             Row(
-                modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                modifier = Modifier.padding(horizontal = 5.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(0.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 AppTab.entries.forEach { tab ->

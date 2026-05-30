@@ -60,7 +60,7 @@ private fun LibraryScreen(
         modifier = modifier
             .fillMaxSize()
             .padding(20.dp),
-        contentPadding = PaddingValues(bottom = 24.dp),
+        contentPadding = PaddingValues(bottom = 132.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {

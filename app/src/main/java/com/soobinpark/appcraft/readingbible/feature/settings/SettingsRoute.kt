@@ -6,6 +6,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -135,6 +136,7 @@ fun SettingsRoute(
         modifier = modifier
             .fillMaxSize()
             .padding(20.dp),
+        contentPadding = PaddingValues(bottom = 112.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {

@@ -4,9 +4,13 @@ import android.net.Uri
 import android.content.ClipData
 import android.content.Intent
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,6 +50,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SuggestionChip
+import androidx.compose.ui.window.Dialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -437,7 +442,7 @@ private fun ReaderScreen(
     }
 
     if (showVersionSheet) {
-        VersionPickerSheet(
+        VersionPickerDialog(
             versions = state.versions,
             selectedVersion = state.selectedVersion,
             onDismiss = { showVersionSheet = false },
@@ -450,7 +455,7 @@ private fun ReaderScreen(
     }
 
     if (showComparisonSheet) {
-        VersionPickerSheet(
+        VersionPickerDialog(
             versions = state.versions.filter { it.code != state.selectedVersion?.code },
             selectedVersion = state.comparisonVersion,
             onDismiss = { showComparisonSheet = false },
@@ -467,7 +472,7 @@ private fun ReaderScreen(
     }
 
     if (showBookSheet) {
-        BookChapterPickerSheet(
+        BookChapterPickerDialog(
             selectedBookIndex = state.bookIndex,
             selectedChapter = state.chapter,
             onDismiss = { showBookSheet = false },
@@ -554,9 +559,8 @@ private object VersionLanguageGroup {
     fun orderOf(group: String): Int = order.indexOf(group).takeIf { it >= 0 } ?: order.size
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun VersionPickerSheet(
+private fun VersionPickerDialog(
     versions: List<BibleVersion>,
     selectedVersion: BibleVersion?,
     onDismiss: () -> Unit,
@@ -573,9 +577,9 @@ private fun VersionPickerSheet(
     val listState = rememberLazyListState()
     val itemCount = groupedVersions.values.sumOf { it.size } + groupedVersions.keys.size
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    AnimatedPickerDialog(onDismiss = onDismiss) {
         Column(
-            modifier = Modifier.padding(horizontal = 20.dp),
+            modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("역본 선택", style = MaterialTheme.typography.titleLarge)
@@ -634,9 +638,8 @@ private fun VersionPickerSheet(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BookChapterPickerSheet(
+private fun BookChapterPickerDialog(
     selectedBookIndex: Int,
     selectedChapter: Int,
     onDismiss: () -> Unit,
@@ -657,9 +660,9 @@ private fun BookChapterPickerSheet(
         chapterListState.scrollToItem(targetChapter.coerceAtLeast(0))
     }
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    AnimatedPickerDialog(onDismiss = onDismiss) {
         Column(
-            modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 18.dp),
+            modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("책과 장 선택", style = MaterialTheme.typography.titleLarge)
@@ -708,6 +711,33 @@ private fun BookChapterPickerSheet(
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AnimatedPickerDialog(
+    onDismiss: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        AnimatedVisibility(
+            visible = true,
+            enter = fadeIn(animationSpec = tween(120)) +
+                scaleIn(
+                    initialScale = 0.96f,
+                    animationSpec = tween(durationMillis = 160, easing = FastOutSlowInEasing),
+                ),
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 620.dp),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            ) {
+                content()
             }
         }
     }

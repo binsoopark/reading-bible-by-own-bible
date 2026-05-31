@@ -109,6 +109,16 @@ com.soobinpark.appcraft.readingbible
 
 ## 11. 작업 로그
 
+### 2026-05-31 선택 다이얼로그 스크롤 UX 개선
+
+- [x] Reader 역본 선택을 bottom sheet에서 일반 Dialog로 변경
+- [x] Reader 비교 역본 선택을 일반 Dialog로 변경
+- [x] Reader 책/장 선택을 일반 Dialog로 변경
+- [x] Search 역본 선택을 일반 Dialog로 변경
+- [x] Dialog 등장 시 리소스 부담이 적은 fade + scale transition 적용
+- [x] 기존 목록 스크롤바와 책/장 2단 선택 구조 유지
+- [x] `assembleDebug` 빌드 성공
+
 ### 2026-05-31 Floating Bottom Tab 스타일 적용
 
 - [x] 기본 Material `NavigationBar`를 커스텀 floating bottom tab으로 교체

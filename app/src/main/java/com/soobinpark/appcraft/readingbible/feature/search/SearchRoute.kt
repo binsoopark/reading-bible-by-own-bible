@@ -1,6 +1,11 @@
 package com.soobinpark.appcraft.readingbible.feature.search
 
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -27,10 +32,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
@@ -56,6 +59,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.soobinpark.appcraft.readingbible.domain.model.BibleSearchResult
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
@@ -198,7 +202,7 @@ private fun SearchScreen(
     }
 
     if (showVersionSheet) {
-        SearchVersionPickerSheet(
+        SearchVersionPickerDialog(
             versions = state.versions,
             selectedVersion = state.selectedVersion,
             onDismiss = { showVersionSheet = false },
@@ -319,16 +323,15 @@ private fun VersionSelectorList(
 }
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
-private fun SearchVersionPickerSheet(
+private fun SearchVersionPickerDialog(
     versions: List<BibleVersion>,
     selectedVersion: BibleVersion?,
     onDismiss: () -> Unit,
     onVersionSelected: (BibleVersion) -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    AnimatedPickerDialog(onDismiss = onDismiss) {
         Column(
-            modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
+            modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("검색 역본 선택", style = MaterialTheme.typography.titleLarge)
@@ -337,6 +340,32 @@ private fun SearchVersionPickerSheet(
                 selectedVersion = selectedVersion,
                 onVersionSelected = onVersionSelected,
             )
+        }
+    }
+}
+
+@Composable
+private fun AnimatedPickerDialog(
+    onDismiss: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        AnimatedVisibility(
+            visible = true,
+            enter = fadeIn(animationSpec = tween(120)) +
+                scaleIn(
+                    initialScale = 0.96f,
+                    animationSpec = tween(durationMillis = 160, easing = FastOutSlowInEasing),
+                ),
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 520.dp),
+                shape = RoundedCornerShape(24.dp),
+            ) {
+                content()
+            }
         }
     }
 }

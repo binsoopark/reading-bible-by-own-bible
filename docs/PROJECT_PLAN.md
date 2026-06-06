@@ -109,6 +109,14 @@ com.soobinpark.appcraft.readingbible
 
 ## 11. 작업 로그
 
+### 2026-06-07 1.0.0 정식 배포 준비
+
+- [x] `versionName`을 `1.0.0`으로 변경
+- [x] `versionCode`를 `10000`으로 변경
+- [x] `assembleDebug` 빌드 성공
+- [ ] GitHub Actions release 빌드 성공
+- [ ] 서명된 AAB/APK 산출물 확인
+
 ### 2026-06-07 Play Store 이미지 에셋 준비
 
 - [x] Play Store 앱 아이콘용 `512x512` PNG 생성

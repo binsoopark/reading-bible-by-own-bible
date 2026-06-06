@@ -109,6 +109,13 @@ com.soobinpark.appcraft.readingbible
 
 ## 11. 작업 로그
 
+### 2026-06-07 Play Store 이미지 에셋 준비
+
+- [x] Play Store 앱 아이콘용 `512x512` PNG 생성
+- [x] Play Store 그래픽 이미지용 `1024x500` PNG 생성
+- [x] 기존 앱 아이콘의 책/북마크 콘셉트를 스토어 이미지에 맞게 확장
+- [x] 재생성 가능한 Swift 렌더링 스크립트 추가
+
 ### 2026-05-31 선택 다이얼로그 스크롤 UX 개선
 
 - [x] Reader 역본 선택을 bottom sheet에서 일반 Dialog로 변경

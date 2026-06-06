@@ -114,8 +114,9 @@ com.soobinpark.appcraft.readingbible
 - [x] `versionName`을 `1.0.0`으로 변경
 - [x] `versionCode`를 `10000`으로 변경
 - [x] `assembleDebug` 빌드 성공
-- [ ] GitHub Actions release 빌드 성공
-- [ ] 서명된 AAB/APK 산출물 확인
+- [x] GitHub Actions release 빌드 성공
+- [x] 서명된 AAB/APK 산출물 확인
+- [x] GitHub Release `v1.0.0`에 AAB/APK 업로드
 
 ### 2026-06-07 Play Store 이미지 에셋 준비
 

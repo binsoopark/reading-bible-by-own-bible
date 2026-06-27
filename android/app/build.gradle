@@ -21,8 +21,8 @@ android {
         applicationId "com.soobinpark.appcraft.readingbible"
         minSdk 26
         targetSdk 35
-        versionCode 10001
-        versionName "1.1.0"
+        versionCode 10002
+        versionName "1.1.1"
     }
 
     signingConfigs {

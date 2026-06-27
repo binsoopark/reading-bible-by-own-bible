@@ -128,6 +128,11 @@ com.soobinpark.appcraft.readingbible
 
 > iOS 동일 기능은 워크스페이스 `ios/`에 구현됨. 저장소는 Android·iOS 모노레포.
 
+### 2026-06-28 1.1.1 — 모노레포 배포
+
+- [x] `versionName` `1.1.1`, `versionCode` `10002`
+- [x] 모노레포(`android/` 하위) 구조에서 GitHub Actions 릴리스 빌드
+
 ### 2026-06-28 모노레포 구조 전환
 
 - [x] Git 저장소 루트를 워크스페이스 최상위(`bible/`)로 이동

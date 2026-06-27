@@ -4,9 +4,9 @@
 
 새 Android 앱 `내 성경 읽기`는 기존 Lifove Bible에서 사용하던 `.bdf`, `.lfa`, `.lfb` 성경 데이터 파일을 보유한 사용자가 자신의 파일을 불러와 읽을 수 있도록 만드는 독립적인 성경 리더입니다.
 
-> **워크스페이스 위치**: `android/`
+> **워크스페이스 위치**: `android/` (모노레포)
 >
-> **크로스플랫폼 요구사항**: `../../docs/REQUIREMENTS.md`
+> **크로스플랫폼 요구사항**: `../docs/REQUIREMENTS.md`
 
 영문 앱 이름은 `Reading My Bible`입니다.
 
@@ -126,7 +126,14 @@ com.soobinpark.appcraft.readingbible
 - [x] `versionName` `1.1.0`, `versionCode` `10001`
 - [x] `assembleDebug` / `compileDebugKotlin` 빌드 성공
 
-> iOS 동일 기능은 워크스페이스 `../ios/`에 구현됨 (본 Git 저장소는 Android 앱 루트).
+> iOS 동일 기능은 워크스페이스 `ios/`에 구현됨. 저장소는 Android·iOS 모노레포.
+
+### 2026-06-28 모노레포 구조 전환
+
+- [x] Git 저장소 루트를 워크스페이스 최상위(`bible/`)로 이동
+- [x] Android 프로젝트를 `android/` 하위로 재배치
+- [x] iOS 프로젝트 `ios/` 및 크로스플랫폼 `docs/` 추가
+- [x] GitHub Actions 빌드 경로 `android/` 기준으로 수정
 
 ### 2026-06-07 1.0.0 정식 배포 준비
 

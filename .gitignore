@@ -1,21 +1,26 @@
-# Gradle
-.gradle/
-.gradle-home/
-build/
-**/build/
+# 로컬 전용 대용량/참고 자료 (GitHub Release bible.zip 또는 로컬 복사 사용)
+reference/
+data/
 
-# Kotlin / Android Studio
-.kotlin/
-.idea/
-*.iml
+# Android
+android/.gradle/
+android/.gradle-home/
+android/build/
+android/**/build/
+android/.kotlin/
+android/.idea/
+android/*.iml
+android/local.properties
+android/*.apk
+android/*.ap_
+android/*.aab
+android/release-artifacts/
 
-# Local machine config
-local.properties
+# iOS
+ios/DerivedData/
+ios/.build/
+ios/*.xcuserstate
+ios/xcuserdata/
 
-# Android outputs
-*.apk
-*.ap_
-*.aab
-
-# OS files
+# OS
 .DS_Store

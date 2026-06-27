@@ -1,0 +1,200 @@
+import Foundation
+
+enum HelpGuideContent {
+    static let intro = """
+    이 앱은 Lifove Bible과 호환되는 bdf/lfa 성경 데이터 파일을 사용자가 직접 불러와 읽는 앱입니다.
+    앱 안에 성경 본문이 포함되어 있지 않으므로, 먼저 설정에서 데이터 폴더를 선택하거나 샘플 데이터를 내려받아 주세요.
+    """
+
+    static let sections: [HelpSection] = [
+        HelpSection(
+            title: "하단 탭",
+            items: [
+                HelpItem(
+                    title: "읽기",
+                    detail: "성경 본문을 읽고, 북마크·형광펜·읽음 표시를 할 수 있습니다."
+                ),
+                HelpItem(
+                    title: "검색",
+                    detail: "현재 역본에서 구절을 검색합니다. 결과를 길게 누르면 읽기 탭으로 이동합니다."
+                ),
+                HelpItem(
+                    title: "메모",
+                    detail: "북마크, 형광펜, 읽음, 구절 메모를 종류별로 나눠 볼 수 있습니다."
+                ),
+                HelpItem(
+                    title: "개인메모",
+                    detail: "성경 구절과 무관한 자유 메모를 작성합니다. + 버튼으로 추가하고, 스와이프로 수정·삭제할 수 있습니다."
+                ),
+                HelpItem(
+                    title: "설정",
+                    detail: "데이터 폴더, 읽기 스타일, 기록 백업, 이 도움말을 확인할 수 있습니다."
+                ),
+            ]
+        ),
+        HelpSection(
+            title: "읽기 탭 — 기본",
+            items: [
+                HelpItem(
+                    title: "책·장 선택",
+                    detail: "상단의 책 이름을 누르면 구약/신약, 책, 장을 고를 수 있습니다. 장을 탭하면 바로 이동합니다."
+                ),
+                HelpItem(
+                    title: "이전/다음 장",
+                    detail: "◀ ▶ 버튼 또는 본문을 좌우로 스와이프하면 장을 넘길 수 있습니다."
+                ),
+                HelpItem(
+                    title: "역본·비교",
+                    detail: "역본 버튼으로 읽을 번역본을 바꿉니다. 비교 버튼으로 다른 역본을 함께 볼 수 있습니다."
+                ),
+            ]
+        ),
+        HelpSection(
+            title: "읽기 탭 — 제스처",
+            items: [
+                HelpItem(
+                    title: "좌우 스와이프",
+                    detail: "본문 영역에서 손가락을 좌우로 밀면 이전 장·다음 장으로 이동합니다."
+                ),
+                HelpItem(
+                    title: "핀치 줌 (두 손가락)",
+                    detail: "설정에서 '멀티터치 줌 사용'이 켜져 있을 때, 두 손가락으로 벌리거나 오므려 글자 크기를 조절합니다."
+                ),
+                HelpItem(
+                    title: "키보드 내리기",
+                    detail: "입력 중 빈 곳을 탭하거나, 목록을 스크롤하거나, 다른 탭으로 이동하면 키보드가 내려갑니다."
+                ),
+            ]
+        ),
+        HelpSection(
+            title: "읽기 탭 — 절 아이콘",
+            items: [
+                HelpItem(
+                    title: "북마크",
+                    detail: "책갈피 아이콘을 누르면 북마크를 켜거나 끕니다. 메모 탭의 '북마크' 필터에서 볼 수 있습니다."
+                ),
+                HelpItem(
+                    title: "형광펜",
+                    detail: "형광펜 아이콘을 짧게 누르면 선택한 색으로 표시하거나 해제합니다. 길게 누르면 색상(노랑·민트·파랑 등)을 고를 수 있습니다."
+                ),
+                HelpItem(
+                    title: "읽음 체크",
+                    detail: "동그라미 아이콘으로 읽은 절을 표시합니다. 메모 탭의 '읽음' 필터에서 모아 볼 수 있습니다."
+                ),
+                HelpItem(
+                    title: "구절 메모",
+                    detail: "메모 아이콘(📝)을 누르면 해당 절에 메모를 작성·수정할 수 있습니다. 메모 탭의 '메모' 필터에서 모아 볼 수 있습니다."
+                ),
+                HelpItem(
+                    title: "메모 아이콘",
+                    detail: "설정에서 '메모 아이콘 표시'가 켜져 있으면, 메모가 있는 절 옆에 아이콘이 보입니다."
+                ),
+            ]
+        ),
+        HelpSection(
+            title: "읽기 탭 — 여러 절 선택",
+            items: [
+                HelpItem(
+                    title: "선택 시작",
+                    detail: "절 카드를 길게 누르면 선택 모드가 시작됩니다."
+                ),
+                HelpItem(
+                    title: "선택 추가/해제",
+                    detail: "선택 모드에서 다른 절을 탭하면 선택에 추가하거나 빼낼 수 있습니다."
+                ),
+                HelpItem(
+                    title: "복사·공유",
+                    detail: "선택한 절이 있으면 상단에 '복사'와 '공유' 버튼이 나타납니다. 여러 절을 한 번에 복사하거나 다른 앱으로 보낼 수 있습니다."
+                ),
+            ]
+        ),
+        HelpSection(
+            title: "검색 탭",
+            items: [
+                HelpItem(
+                    title: "검색하기",
+                    detail: "두 글자 이상 입력 후 검색 버튼 또는 키보드의 검색(↵)을 누르세요."
+                ),
+                HelpItem(
+                    title: "결과 더 보기",
+                    detail: "결과가 많으면 목록 아래 '더 보기'로 추가 결과를 불러옵니다."
+                ),
+                HelpItem(
+                    title: "읽기로 이동",
+                    detail: "검색 결과를 길게 누르면 해당 구절이 있는 읽기 화면으로 이동합니다."
+                ),
+            ]
+        ),
+        HelpSection(
+            title: "메모 탭",
+            items: [
+                HelpItem(
+                    title: "종류별 보기",
+                    detail: "상단 세그먼트에서 북마크 / 형광펜 / 읽음 / 메모 중 하나를 고릅니다. 각 종류만 따로 모아 볼 수 있습니다."
+                ),
+                HelpItem(
+                    title: "형광펜 색",
+                    detail: "형광펜 필터에서는 '노랑' 같은 글자 대신 색상 원(●)으로 표시됩니다."
+                ),
+                HelpItem(
+                    title: "구절 메모",
+                    detail: "읽기 탭에서 절의 메모 아이콘을 눌러 작성하거나, 메모 탭 카드의 메모 칸에서 수정할 수 있습니다."
+                ),
+                HelpItem(
+                    title: "복사·공유",
+                    detail: "메모 항목을 길게 눌러 선택한 뒤, 복사 또는 공유할 수 있습니다."
+                ),
+            ]
+        ),
+        HelpSection(
+            title: "개인메모 탭",
+            items: [
+                HelpItem(
+                    title: "메모 추가",
+                    detail: "오른쪽 아래 + 버튼을 누르면 제목과 내용을 적어 새 개인메모를 만듭니다."
+                ),
+                HelpItem(
+                    title: "수정·삭제",
+                    detail: "목록에서 항목을 왼쪽으로 밀면 수정·삭제 버튼이 나타납니다. 탭하면 편집하거나 삭제할 수 있습니다."
+                ),
+                HelpItem(
+                    title: "백업",
+                    detail: "길게 눌러 여러 메모를 선택한 뒤 '백업'을 누르면 .rmb-notes.json 파일로 저장합니다."
+                ),
+                HelpItem(
+                    title: "복원",
+                    detail: "'복원'을 누른 뒤 이전에 백업한 개인메모 파일을 선택하면 메모를 불러옵니다. 기존 메모와 합쳐집니다."
+                ),
+            ]
+        ),
+        HelpSection(
+            title: "설정 탭",
+            items: [
+                HelpItem(
+                    title: "성경 데이터",
+                    detail: "bdf/lfa 파일이 있는 폴더를 선택하거나, 데이터가 없을 때만 샘플 다운로드를 이용할 수 있습니다."
+                ),
+                HelpItem(
+                    title: "읽기 스타일",
+                    detail: "글자 크기, 줄 간격, 색상 팔레트, 화면 켜짐 유지, 멀티터치 줌 등을 조절합니다."
+                ),
+                HelpItem(
+                    title: "기록 백업",
+                    detail: "북마크·구절 메모·형광펜·읽음 표시를 JSON으로 내보내거나 가져올 수 있습니다. 개인메모는 개인메모 탭에서 별도로 백업합니다."
+                ),
+            ]
+        ),
+    ]
+}
+
+struct HelpSection: Identifiable {
+    let id = UUID()
+    let title: String
+    let items: [HelpItem]
+}
+
+struct HelpItem: Identifiable {
+    let id = UUID()
+    let title: String
+    let detail: String
+}

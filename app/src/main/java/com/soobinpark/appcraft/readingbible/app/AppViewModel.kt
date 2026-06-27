@@ -7,15 +7,18 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.soobinpark.appcraft.readingbible.data.preference.BookmarkPreferences
 import com.soobinpark.appcraft.readingbible.data.preference.DataFolderPreferences
+import com.soobinpark.appcraft.readingbible.data.preference.PersonalNotePreferences
 import com.soobinpark.appcraft.readingbible.data.preference.ReadingProgressPreferences
 import com.soobinpark.appcraft.readingbible.data.preference.ReadingStylePreferences
 import com.soobinpark.appcraft.readingbible.data.repository.FileBibleRepository
 import com.soobinpark.appcraft.readingbible.domain.model.BibleCatalog
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVerse
+import com.soobinpark.appcraft.readingbible.domain.model.PersonalNote
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingPalette
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingStyle
 import com.soobinpark.appcraft.readingbible.domain.model.VerseHighlight
 import com.soobinpark.appcraft.readingbible.domain.model.VerseBookmark
+import com.soobinpark.appcraft.readingbible.domain.model.shouldPersist
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,11 +50,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val readingStylePreferences = ReadingStylePreferences(application)
     private val bookmarkPreferences = BookmarkPreferences(application)
     private val readingProgressPreferences = ReadingProgressPreferences(application)
+    private val personalNotePreferences = PersonalNotePreferences(application)
     private val repository = FileBibleRepository(application)
     private val _dataFolderUri = MutableStateFlow(dataFolderPreferences.getTreeUri())
     private val _localDataRoot = MutableStateFlow(dataFolderPreferences.getLocalRoot())
     private val _readingStyle = MutableStateFlow(readingStylePreferences.getStyle())
     private val _bookmarks = MutableStateFlow(bookmarkPreferences.getBookmarks())
+    private val _personalNotes = MutableStateFlow(personalNotePreferences.getNotes())
     private val _cacheWarmUpState = MutableStateFlow(CacheWarmUpUiState())
     private val _dataDownloadState = MutableStateFlow(
         BibleDataDownloadUiState(installedRoot = dataFolderPreferences.getLocalRoot()),
@@ -60,6 +65,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val localDataRoot: StateFlow<File?> = _localDataRoot.asStateFlow()
     val readingStyle: StateFlow<ReadingStyle> = _readingStyle.asStateFlow()
     val bookmarks: StateFlow<List<VerseBookmark>> = _bookmarks.asStateFlow()
+    val personalNotes: StateFlow<List<PersonalNote>> = _personalNotes.asStateFlow()
     val cacheWarmUpState: StateFlow<CacheWarmUpUiState> = _cacheWarmUpState.asStateFlow()
     val dataDownloadState: StateFlow<BibleDataDownloadUiState> = _dataDownloadState.asStateFlow()
 
@@ -89,6 +95,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun downloadSampleBibleData() {
         if (_dataDownloadState.value.isActive) return
         viewModelScope.launch(Dispatchers.IO) {
+            if (hasExistingBibleData()) {
+                _dataDownloadState.value = BibleDataDownloadUiState(
+                    isActive = false,
+                    message = "이미 성경 데이터가 있습니다. 다운로드는 데이터가 없을 때만 이용할 수 있습니다.",
+                    installedRoot = _localDataRoot.value,
+                )
+                return@launch
+            }
             val application = getApplication<Application>()
             val downloadFile = File(application.cacheDir, "bible.zip")
             val installBase = File(application.getExternalFilesDir(null) ?: application.filesDir, "downloaded-bible")
@@ -196,11 +210,76 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         bookmarkKey: String,
         note: String,
     ) {
-        val next = _bookmarks.value.map { bookmark ->
-            if (bookmark.key == bookmarkKey) bookmark.copy(note = note) else bookmark
+        val next = _bookmarks.value.mapNotNull { bookmark ->
+            if (bookmark.key != bookmarkKey) {
+                bookmark
+            } else {
+                val updated = bookmark.copy(
+                    note = note,
+                    createdAtMillis = System.currentTimeMillis(),
+                )
+                updated.takeIf { it.shouldPersist() }
+            }
         }
         bookmarkPreferences.setBookmarks(next)
         _bookmarks.value = next
+    }
+
+    fun updateVerseNote(verse: BibleVerse, note: String) {
+        val key = VerseBookmark.key(verse.versionCode, verse.bookIndex, verse.chapter, verse.verse)
+        val current = _bookmarks.value
+        val existing = current.firstOrNull { it.key == key }
+        val next = if (existing != null) {
+            current.replaceOrRemoveEmpty(
+                existing.copy(
+                    note = note,
+                    text = verse.text,
+                    createdAtMillis = System.currentTimeMillis(),
+                ),
+            )
+        } else if (note.isNotBlank()) {
+            listOf(verse.toBookmark(isBookmarked = false).copy(note = note)) + current
+        } else {
+            current
+        }
+        bookmarkPreferences.setBookmarks(next)
+        _bookmarks.value = next
+    }
+
+    fun addPersonalNote(title: String, body: String) {
+        val note = PersonalNote.create(title = title, body = body)
+        val next = listOf(note) + _personalNotes.value
+        personalNotePreferences.setNotes(next)
+        _personalNotes.value = next
+    }
+
+    fun updatePersonalNote(note: PersonalNote) {
+        val next = _personalNotes.value
+            .map { existing -> if (existing.id == note.id) note.copy(updatedAtMillis = System.currentTimeMillis()) else existing }
+            .sortedByDescending { it.updatedAtMillis }
+        personalNotePreferences.setNotes(next)
+        _personalNotes.value = next
+    }
+
+    fun deletePersonalNote(id: String) {
+        val next = _personalNotes.value.filterNot { it.id == id }
+        personalNotePreferences.setNotes(next)
+        _personalNotes.value = next
+    }
+
+    fun exportPersonalNotes(ids: Set<String>): String {
+        val selected = _personalNotes.value.filter { ids.contains(it.id) }
+        return personalNotePreferences.exportBackup(selected)
+    }
+
+    fun importPersonalNotes(raw: String) {
+        val imported = personalNotePreferences.importBackup(raw)
+        val merged = (_personalNotes.value + imported)
+            .associateBy { it.id }
+            .values
+            .sortedByDescending { it.updatedAtMillis }
+        personalNotePreferences.setNotes(merged.toList())
+        _personalNotes.value = merged.toList()
     }
 
     fun toggleHighlight(
@@ -256,7 +335,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun List<VerseBookmark>.replaceOrRemoveEmpty(updated: VerseBookmark): List<VerseBookmark> {
-        val keep = updated.isBookmarked || updated.note.isNotBlank() || updated.highlight != VerseHighlight.None || updated.isRead
+        val keep = updated.shouldPersist()
         return if (keep) {
             map { bookmark -> if (bookmark.key == updated.key) updated else bookmark }
         } else {
@@ -317,6 +396,21 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 _cacheWarmUpState.value = CacheWarmUpUiState()
             }
         }
+    }
+
+    private suspend fun hasExistingBibleData(): Boolean {
+        _dataFolderUri.value?.let { uri ->
+            if (repository.scanVersions(uri).isNotEmpty()) return true
+        }
+        _localDataRoot.value?.let { root ->
+            if (repository.scanVersions(root).isNotEmpty()) return true
+        }
+        dataFolderPreferences.getLocalRoot()?.let { root ->
+            if (root.exists() && repository.scanVersions(root).isNotEmpty()) return true
+        }
+        val fallback = File(Environment.getExternalStorageDirectory(), "bible")
+        if (fallback.exists() && repository.scanVersions(fallback).isNotEmpty()) return true
+        return false
     }
 
     private fun downloadFile(destination: File) {

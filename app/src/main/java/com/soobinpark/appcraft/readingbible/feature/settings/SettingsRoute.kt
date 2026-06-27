@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,9 +13,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -61,6 +67,7 @@ fun SettingsRoute(
     val context = LocalContext.current
     var importExportMessage by remember { mutableStateOf<String?>(null) }
     var showBibleDiagnostics by remember { mutableStateOf(false) }
+    var showHelpGuide by remember { mutableStateOf(false) }
     val appVersion = remember {
         runCatching {
             val info = context.packageManager.getPackageInfo(context.packageName, 0)
@@ -109,6 +116,25 @@ fun SettingsRoute(
         }
     }
 
+    if (showHelpGuide) {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(top = 12.dp),
+        ) {
+            Button(
+                onClick = { showHelpGuide = false },
+                modifier = Modifier
+                    .padding(horizontal = 20.dp)
+                    .fillMaxWidth(),
+            ) {
+                Text("설정으로 돌아가기")
+            }
+            HelpGuideScreen(modifier = Modifier.weight(1f))
+        }
+        return
+    }
+
     if (showBibleDiagnostics) {
         Column(
             modifier = modifier
@@ -141,6 +167,17 @@ fun SettingsRoute(
     ) {
         item {
             Text("설정", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+        }
+        item {
+            Card {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("사용 방법 도움말", style = MaterialTheme.typography.titleMedium)
+                    Text("탭별 기능, 길게 누르기, 스와이프 등 사용 방법을 확인할 수 있습니다.")
+                    Button(onClick = { showHelpGuide = true }) {
+                        Text("도움말 보기")
+                    }
+                }
+            }
         }
         item {
             Card {
@@ -231,25 +268,55 @@ private fun BibleDataDownloadCard(
     state: BibleDataDownloadUiState,
     onDownloadBibleData: () -> Unit,
 ) {
+    var expanded by remember { mutableStateOf(false) }
     Card {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("성경 데이터 다운로드", style = MaterialTheme.typography.titleMedium)
-            Text("GitHub Release에서 약 49MB의 bible.zip 파일을 내려받아 앱 전용 폴더에 압축 해제하고 바로 적용합니다.")
-            state.installedRoot?.let {
-                Text("적용된 폴더: ${it.absolutePath}", style = MaterialTheme.typography.bodySmall)
-            }
-            state.message.takeIf { it.isNotBlank() }?.let { Text(it) }
-            state.progress?.let { progress ->
-                LinearProgressIndicator(
-                    progress = { progress.coerceIn(0f, 1f) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-            Button(
-                onClick = onDownloadBibleData,
-                enabled = !state.isActive,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(if (state.installedRoot == null) "다운로드 및 적용" else "다시 다운로드")
+                Text(
+                    "성경 데이터 다운로드",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = { expanded = !expanded }) {
+                    Icon(
+                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (expanded) "접기" else "펼치기",
+                    )
+                }
+            }
+            Text(
+                "사용자의 성경 데이터가 없을 경우 편의를 위해 별도의 성경 데이터 다운로드 기능을 제공합니다. " +
+                    "성경 데이터를 구할 수 없는 경우에 한해, 제한적으로 다운로드를 이용해 주세요.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            AnimatedVisibility(visible = expanded) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "GitHub Release에서 약 49MB의 bible.zip 파일을 내려받아 앱 전용 폴더에 압축 해제하고 바로 적용합니다. " +
+                            "이미 bdf/lfa 폴더를 선택했거나 성경 데이터가 감지되면 다운로드할 수 없습니다.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    state.installedRoot?.let {
+                        Text("적용된 폴더: ${it.absolutePath}", style = MaterialTheme.typography.bodySmall)
+                    }
+                    state.message.takeIf { it.isNotBlank() }?.let { Text(it) }
+                    state.progress?.let { progress ->
+                        LinearProgressIndicator(
+                            progress = { progress.coerceIn(0f, 1f) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    Button(
+                        onClick = onDownloadBibleData,
+                        enabled = !state.isActive,
+                    ) {
+                        Text("다운로드 및 적용")
+                    }
+                }
             }
         }
     }

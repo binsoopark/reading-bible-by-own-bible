@@ -48,7 +48,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.ui.window.Dialog
 import androidx.compose.material3.Text
@@ -60,6 +62,7 @@ import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.EditNote
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.FormatColorFill
 import androidx.compose.runtime.Composable
@@ -111,6 +114,7 @@ fun ReaderRoute(
     onBookmarkToggle: (BibleVerse) -> Unit,
     onHighlightToggle: (BibleVerse, VerseHighlight) -> Unit,
     onReadToggle: (BibleVerse) -> Unit,
+    onVerseNoteChanged: (BibleVerse, String) -> Unit,
     onFontSizeChanged: (Float) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ReaderViewModel = viewModel(),
@@ -130,6 +134,7 @@ fun ReaderRoute(
         onBookmarkToggle = onBookmarkToggle,
         onHighlightToggle = onHighlightToggle,
         onReadToggle = onReadToggle,
+        onVerseNoteChanged = onVerseNoteChanged,
         onFontSizeChanged = onFontSizeChanged,
         modifier = modifier,
     )
@@ -148,6 +153,7 @@ private fun ReaderScreen(
     onBookmarkToggle: (BibleVerse) -> Unit,
     onHighlightToggle: (BibleVerse, VerseHighlight) -> Unit,
     onReadToggle: (BibleVerse) -> Unit,
+    onVerseNoteChanged: (BibleVerse, String) -> Unit,
     onFontSizeChanged: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -160,6 +166,8 @@ private fun ReaderScreen(
     val context = LocalContext.current
     var fontSizeToast by remember { mutableStateOf<Toast?>(null) }
     var selectedVerseKeys by remember(state.bookIndex, state.chapter) { mutableStateOf(setOf<String>()) }
+    var noteEditingVerse by remember { mutableStateOf<BibleVerse?>(null) }
+    var noteDraft by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val currentBook = BibleCatalog.books[state.bookIndex]
@@ -399,6 +407,20 @@ private fun ReaderScreen(
                                     }
                                     ScaledVerseIconButton(
                                         fontSizeSp = readingStyle.fontSizeSp,
+                                        onClick = {
+                                            noteDraft = record?.note.orEmpty()
+                                            noteEditingVerse = verse
+                                        },
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.EditNote,
+                                            contentDescription = "구절 메모",
+                                            tint = if (record?.note?.isNotBlank() == true) palette.highlightAccent else palette.accent,
+                                            modifier = Modifier.size(dynamicActionIconSize(readingStyle.fontSizeSp)),
+                                        )
+                                    }
+                                    ScaledVerseIconButton(
+                                        fontSizeSp = readingStyle.fontSizeSp,
                                         onClick = { onBookmarkToggle(verse) },
                                     ) {
                                         val selected = record?.isBookmarked == true
@@ -493,6 +515,53 @@ private fun ReaderScreen(
             },
         )
     }
+
+    noteEditingVerse?.let { verse ->
+        VerseNoteEditorDialog(
+            reference = "${currentBook.koreanName} ${verse.chapter}:${verse.verse} · ${verse.versionCode}",
+            verseText = verse.text,
+            initialNote = noteDraft,
+            onDismiss = { noteEditingVerse = null },
+            onSave = { note ->
+                onVerseNoteChanged(verse, note)
+                noteEditingVerse = null
+            },
+        )
+    }
+}
+
+@Composable
+private fun VerseNoteEditorDialog(
+    reference: String,
+    verseText: String,
+    initialNote: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit,
+) {
+    var note by remember(initialNote) { mutableStateOf(initialNote) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("구절 메모") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(reference, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Text(verseText, style = MaterialTheme.typography.bodyMedium)
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    label = { Text("이 구절에 대한 메모") },
+                    minLines = 4,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSave(note) }) { Text("저장") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("취소") }
+        },
+    )
 }
 
 private fun BibleVerse.bookmarkKey(): String {

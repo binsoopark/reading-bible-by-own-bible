@@ -3,6 +3,7 @@ package com.soobinpark.appcraft.readingbible.data.preference
 import android.content.Context
 import com.soobinpark.appcraft.readingbible.domain.model.VerseHighlight
 import com.soobinpark.appcraft.readingbible.domain.model.VerseBookmark
+import com.soobinpark.appcraft.readingbible.domain.model.shouldPersist
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -39,7 +40,7 @@ class BookmarkPreferences(context: Context) {
             }
         }.getOrDefault(emptyList())
             .filter { it.versionCode.isNotBlank() && it.text.isNotBlank() }
-            .filter { it.isBookmarked || it.note.isNotBlank() || it.highlight != VerseHighlight.None || it.isRead }
+            .filter { it.shouldPersist() }
             .distinctBy { it.key }
             .sortedByDescending { it.createdAtMillis }
     }

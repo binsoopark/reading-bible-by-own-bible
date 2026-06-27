@@ -41,6 +41,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.soobinpark.appcraft.readingbible.core.design.ReadingBibleTheme
+import com.soobinpark.appcraft.readingbible.feature.personalnotes.PersonalNotesRoute
 import com.soobinpark.appcraft.readingbible.feature.reader.ReaderRoute
 import com.soobinpark.appcraft.readingbible.feature.reader.ReaderViewModel
 import com.soobinpark.appcraft.readingbible.feature.records.RecordsRoute
@@ -57,6 +58,7 @@ fun ReadingBibleApp(
     val localDataRoot by appViewModel.localDataRoot.collectAsState()
     val readingStyle by appViewModel.readingStyle.collectAsState()
     val bookmarks by appViewModel.bookmarks.collectAsState()
+    val personalNotes by appViewModel.personalNotes.collectAsState()
     val cacheWarmUpState by appViewModel.cacheWarmUpState.collectAsState()
     val dataDownloadState by appViewModel.dataDownloadState.collectAsState()
 
@@ -87,6 +89,7 @@ fun ReadingBibleApp(
                         onBookmarkToggle = appViewModel::toggleBookmark,
                         onHighlightToggle = { verse, color -> appViewModel.toggleHighlight(verse, color) },
                         onReadToggle = appViewModel::toggleRead,
+                        onVerseNoteChanged = appViewModel::updateVerseNote,
                         onFontSizeChanged = appViewModel::setReadingFontSize,
                         modifier = modifier,
                         viewModel = readerViewModel,
@@ -103,6 +106,15 @@ fun ReadingBibleApp(
                     AppTab.Records -> RecordsRoute(
                         bookmarks = bookmarks,
                         onNoteChanged = appViewModel::updateBookmarkNote,
+                        modifier = modifier,
+                    )
+                    AppTab.PersonalNotes -> PersonalNotesRoute(
+                        notes = personalNotes,
+                        onAddNote = appViewModel::addPersonalNote,
+                        onUpdateNote = appViewModel::updatePersonalNote,
+                        onDeleteNote = appViewModel::deletePersonalNote,
+                        onExportNotes = appViewModel::exportPersonalNotes,
+                        onImportNotes = appViewModel::importPersonalNotes,
                         modifier = modifier,
                     )
                     AppTab.Settings -> SettingsRoute(
@@ -169,12 +181,12 @@ private fun FloatingBottomTabs(
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 58.dp, vertical = 9.dp),
+            .padding(horizontal = 12.dp, vertical = 9.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Surface(
             modifier = Modifier
-                .widthIn(max = 296.dp)
+                .widthIn(max = 420.dp)
                 .fillMaxWidth()
                 .height(54.dp),
             shape = RoundedCornerShape(28.dp),

@@ -48,7 +48,8 @@ com.soobinpark.appcraft.readingbible/
 ./gradlew assembleDebug
 ```
 
-Release: GitHub Actions + 서명 Secrets ([`../.github/workflows/android-release.yml`](../.github/workflows/android-release.yml))
+Release: `v*` 태그 push 시 GitHub Actions + Fastlane으로 **Google Play 공개 테스트**까지 자동 배포합니다.  
+설정 방법은 [Play Store 배포 가이드](docs/PLAY_DEPLOY.md)를 참고하세요.
 
 ## 문서
 

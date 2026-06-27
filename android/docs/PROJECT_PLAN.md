@@ -128,6 +128,13 @@ com.soobinpark.appcraft.readingbible
 
 > iOS 동일 기능은 워크스페이스 `ios/`에 구현됨. 저장소는 Android·iOS 모노레포.
 
+### 2026-06-28 1.2.0 — Fastlane 공개 테스트 배포
+
+- [x] `versionName` `1.2.0`, `versionCode` `10003`
+- [x] Fastlane `deploy_open_testing` lane (Play `beta` = 공개 테스트)
+- [x] GitHub Actions: 태그 push 시 빌드 → Play 업로드 → Release 에셋 첨부
+- [x] [Play Store 배포 가이드](PLAY_DEPLOY.md) 추가
+
 ### 2026-06-28 1.1.1 — 모노레포 배포
 
 - [x] `versionName` `1.1.1`, `versionCode` `10002`

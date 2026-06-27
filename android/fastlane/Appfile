@@ -1,0 +1,5 @@
+package_name("com.soobinpark.appcraft.readingbible")
+
+if ENV["PLAY_STORE_JSON_KEY_PATH"]
+  json_key_file(ENV["PLAY_STORE_JSON_KEY_PATH"])
+end

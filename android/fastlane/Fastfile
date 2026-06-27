@@ -1,0 +1,50 @@
+default_platform(:android)
+
+platform :android do
+  AAB_PATH = "app/build/outputs/bundle/release/app-release.aab"
+  APK_PATH = "app/build/outputs/apk/release/app-release.apk"
+
+  before_all do
+    ensure_env_vars(
+      env_vars: [
+        "ANDROID_KEYSTORE_PATH",
+        "ANDROID_KEYSTORE_PASSWORD",
+        "ANDROID_KEY_ALIAS",
+        "ANDROID_KEY_PASSWORD",
+      ]
+    )
+  end
+
+  desc "Build signed release AAB and APK"
+  lane :build_release do
+    gradle(
+      task: "bundle",
+      build_type: "Release",
+      project_dir: "."
+    )
+    gradle(
+      task: "assemble",
+      build_type: "Release",
+      project_dir: "."
+    )
+  end
+
+  desc "Upload to Google Play Open Testing (beta track)"
+  lane :deploy_open_testing do
+    json_key = ENV["PLAY_STORE_JSON_KEY_PATH"]
+    UI.user_error!("PLAY_STORE_JSON_KEY_PATH 환경 변수가 필요합니다.") unless json_key && File.exist?(json_key)
+
+    build_release
+
+    upload_to_play_store(
+      track: "beta",
+      aab: AAB_PATH,
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: false,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "completed"
+    )
+  end
+end

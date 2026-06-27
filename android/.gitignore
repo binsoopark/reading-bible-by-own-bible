@@ -17,5 +17,11 @@ local.properties
 *.ap_
 *.aab
 
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/test_output
+fastlane/readme.md
+
 # OS files
 .DS_Store

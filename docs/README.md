@@ -7,6 +7,7 @@
 | 문서 | 설명 |
 | --- | --- |
 | [REQUIREMENTS.md](REQUIREMENTS.md) | 전체 제품 요구사항 (기능, 데이터 모델, 파일 포맷, 캐시, 검색, UI 동작) |
+| [privacy-policy.html](privacy-policy.html) | 앱 개인정보처리방침 (GitHub Pages 공개 URL) |
 
 ## Android 구현 참고
 

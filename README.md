@@ -39,7 +39,7 @@ Lifove Bible 호환 성경 데이터(`.bdf`, `.lfa`, `.lfb`)를 **사용자가 �
 bible/
 ├── docs/       크로스플랫폼 제품 요구사항 (다른 플랫폼 구현 시 기준 문서)
 ├── android/    Android 앱 (Kotlin, Jetpack Compose, v1.2.1)
-├── ios/        iOS 앱 (SwiftUI, MVVM, Clean Architecture, v1.2.0)
+├── ios/        iOS 앱 (SwiftUI, MVVM, Clean Architecture, v1.2.1)
 ├── data/       개발·테스트용 샘플 성경 데이터 (로컬, git 제외)
 └── reference/  Lifove Bible 6.2.8 역공학 참고 자료 (로컬, git 제외)
 ```
@@ -71,7 +71,7 @@ bible/
 | 영문 이름 | Reading My Bible |
 | 패키지 / Bundle ID | `com.soobinpark.appcraft.readingbible` |
 | Android 버전 | 1.2.1 |
-| iOS 버전 | 1.1.0 |
+| iOS 버전 | 1.2.1 |
 
 ## 라이선스·주의
 

@@ -8,7 +8,7 @@ Android [`PLAY_DEPLOY.md`](../android/docs/PLAY_DEPLOY.md)와 대칭으로, iOS 
 | --- | --- |
 | Bundle ID | `com.soobinpark.appcraft.readingbible` |
 | Team ID | `3Z2KXXULNQ` |
-| 현재 버전 | 1.2.0 (10003) |
+| 현재 버전 | 1.2.1 (10004) |
 | 개인정보처리방침 | https://binsoopark.github.io/reading-bible-by-own-bible/privacy-policy.html |
 
 자격증명·API 키는 Notion **Reading My Bible — iOS 배포 Secrets** 페이지를 참고하세요.
@@ -28,7 +28,7 @@ Android [`PLAY_DEPLOY.md`](../android/docs/PLAY_DEPLOY.md)와 대칭으로, iOS 
 
 | 항목 | 위치 |
 | --- | --- |
-| 버전 (1.2.0 / 10003) | `ios/project.yml` |
+| 버전 (1.2.1 / 10004) | `ios/project.yml` |
 | Development Team | `DEVELOPMENT_TEAM: 3Z2KXXULNQ` |
 | 공유 Scheme | `project.yml` → `schemes:` (xcodegen 생성) |
 | App Icon | `ios/Resources/Assets.xcassets/AppIcon.appiconset/` |
@@ -58,7 +58,7 @@ open ReadingMyBible.xcodeproj
 - 스크린샷 (6.7", 6.5" 등)
 - 앱 설명, 키워드, 연령 등급
 - **앱 개인정보 보호** 설문: 개인정보 수집 없음
-- TestFlight "테스트할 내용": Android changelog와 동일 (`10003.txt` 참고)
+- TestFlight "테스트할 내용": Android changelog와 동일 (`10004.txt` 참고)
 
 ---
 

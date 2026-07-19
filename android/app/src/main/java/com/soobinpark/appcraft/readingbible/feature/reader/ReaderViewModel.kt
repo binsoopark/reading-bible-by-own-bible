@@ -84,7 +84,15 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
             val selected = savedProgress.versionCode?.let { code ->
                 versions.firstOrNull { it.code.equals(code, ignoreCase = true) }
             } ?: versions.firstOrNull()
-            val comparison = versions.firstOrNull { it.code != selected?.code }
+            val comparison = if (savedProgress.hasSavedComparisonVersion) {
+                savedProgress.comparisonVersionCode?.let { code ->
+                    versions.firstOrNull {
+                        it.code.equals(code, ignoreCase = true) && it.code != selected?.code
+                    }
+                }
+            } else {
+                versions.firstOrNull { it.code != selected?.code }
+            }
             val book = BibleCatalog.books[safeBookIndex]
             _uiState.value = _uiState.value.copy(
                 versions = versions,
@@ -138,7 +146,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                     null
                 },
             )
-            saveProgress(version, state.bookIndex, state.chapter)
+            saveProgress(version, comparison, state.bookIndex, state.chapter)
             warmUpSelectedVersion(version)
         }
     }
@@ -153,6 +161,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                 }.orEmpty()
             }
             _uiState.value = state.copy(comparisonVersion = comparison, comparisonVerses = verses)
+            saveProgress(state.selectedVersion, comparison, state.bookIndex, state.chapter)
         }
     }
 
@@ -183,7 +192,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                     null
                 },
             )
-            saveProgress(state.selectedVersion, safeBookIndex, safeChapter)
+            saveProgress(state.selectedVersion, state.comparisonVersion, safeBookIndex, safeChapter)
         }
     }
 
@@ -207,7 +216,6 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                 ?: versions.firstOrNull()
             val comparison = state.comparisonVersion
                 ?.takeUnless { it.code == targetVersion?.code }
-                ?: versions.firstOrNull { it.code != targetVersion?.code }
             val (verses, comparisonVerses) = withContext(Dispatchers.IO) {
                 val targetVerses = targetVersion?.let {
                     repository.readChapter(it, BibleCatalog.books[safeBookIndex], safeChapter)
@@ -235,7 +243,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                     null
                 },
             )
-            saveProgress(targetVersion, safeBookIndex, safeChapter)
+            saveProgress(targetVersion, comparison, safeBookIndex, safeChapter)
             targetVersion?.let { warmUpSelectedVersion(it) }
         }
     }
@@ -248,12 +256,15 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
 
     private fun saveProgress(
         version: BibleVersion?,
+        comparisonVersion: BibleVersion?,
         bookIndex: Int,
         chapter: Int,
     ) {
         progressPreferences.setProgress(
             ReadingProgress(
                 versionCode = version?.code,
+                comparisonVersionCode = comparisonVersion?.code,
+                hasSavedComparisonVersion = true,
                 bookIndex = bookIndex,
                 chapter = chapter,
             ),

@@ -288,8 +288,10 @@ class FileBibleRepository(
         versionCode: String,
         entryName: String,
     ): ChapterTarget? {
-        if (!entryName.startsWith(versionCode) || !entryName.endsWith(".lfb", ignoreCase = true)) return null
-        val token = entryName.removePrefix(versionCode).removeSuffix(".lfb")
+        if (!entryName.startsWith(versionCode, ignoreCase = true) ||
+            !entryName.endsWith(".lfb", ignoreCase = true)
+        ) return null
+        val token = entryName.substring(versionCode.length, entryName.length - ".lfb".length)
         val bookNumber = token.substringBefore("_")
         val chapter = token.substringAfter("_", missingDelimiterValue = "").toIntOrNull() ?: return null
         val bookIndex = bookNumber.toIntOrNull()?.minus(1) ?: return null

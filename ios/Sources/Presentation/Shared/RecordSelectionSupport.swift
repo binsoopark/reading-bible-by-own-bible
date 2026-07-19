@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HighlightColorPickerSheet: View {
     @Binding var selection: VerseHighlight
+    var onSelected: ((VerseHighlight) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     @Environment(\.readingPalette) private var palette
 
@@ -13,6 +14,7 @@ struct HighlightColorPickerSheet: View {
                 ForEach(colors, id: \.self) { color in
                     Button {
                         selection = color
+                        onSelected?(color)
                         dismiss()
                     } label: {
                         HStack(spacing: 12) {
@@ -51,6 +53,7 @@ struct HighlightColorPickerSheet: View {
 struct SelectionActionBar: View {
     let count: Int
     let onClear: () -> Void
+    var onHighlight: (() -> Void)? = nil
     let onCopy: () -> Void
     let onShare: () -> Void
     @Environment(\.readingPalette) private var palette
@@ -63,6 +66,13 @@ struct SelectionActionBar: View {
             Spacer()
             Button("해제", action: onClear)
                 .buttonStyle(ReadingSecondaryButtonStyle())
+            if let onHighlight {
+                Button(action: onHighlight) {
+                    Image(systemName: "highlighter")
+                }
+                .buttonStyle(ReadingSecondaryButtonStyle())
+                .accessibilityLabel("선택한 구절 형광펜")
+            }
             Button("복사", action: onCopy)
                 .buttonStyle(ReadingSecondaryButtonStyle())
             Button("공유", action: onShare)

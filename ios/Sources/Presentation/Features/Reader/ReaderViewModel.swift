@@ -71,7 +71,16 @@ final class ReaderViewModel: ObservableObject {
             selectedVersion = saved.versionCode.flatMap { code in
                 scanned.first { $0.code.caseInsensitiveCompare(code) == .orderedSame }
             } ?? scanned.first
-            comparisonVersion = scanned.first { $0.id != selectedVersion?.id }
+            let defaults = UserDefaults.standard
+            if defaults.bool(forKey: Self.comparisonVersionSavedKey) {
+                comparisonVersion = defaults.string(forKey: Self.comparisonVersionCodeKey).flatMap { code in
+                    scanned.first {
+                        $0.code.caseInsensitiveCompare(code) == .orderedSame && $0.id != selectedVersion?.id
+                    }
+                }
+            } else {
+                comparisonVersion = scanned.first { $0.id != selectedVersion?.id }
+            }
 
             loadingMessage = selectedVersion.map { "\($0.displayName) \(book.koreanName) \(chapter)장을 여는 중입니다." }
                 ?? "사용 가능한 역본을 확인하는 중입니다."
@@ -93,14 +102,18 @@ final class ReaderViewModel: ObservableObject {
 
     func selectVersion(_ version: BibleVersion) {
         selectedVersion = versions.first { $0.id == version.id } ?? version
+        if comparisonVersion?.id == selectedVersion?.id {
+            comparisonVersion = nil
+        }
         message = nil
         Task { await reloadCurrentChapter() }
         saveProgress()
     }
 
     func selectComparison(_ version: BibleVersion?) {
-        comparisonVersion = version
+        comparisonVersion = version?.id == selectedVersion?.id ? nil : version
         Task { await reloadCurrentChapter() }
+        saveProgress()
     }
 
     func selectBook(_ index: Int, chapter newChapter: Int = 1) {
@@ -204,5 +217,11 @@ final class ReaderViewModel: ObservableObject {
             bookIndex: bookIndex,
             chapter: chapter
         ))
+        let defaults = UserDefaults.standard
+        defaults.set(comparisonVersion?.code, forKey: Self.comparisonVersionCodeKey)
+        defaults.set(true, forKey: Self.comparisonVersionSavedKey)
     }
+
+    private static let comparisonVersionCodeKey = "last_comparison_version_code"
+    private static let comparisonVersionSavedKey = "has_saved_comparison_version"
 }

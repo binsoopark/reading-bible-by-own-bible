@@ -1,6 +1,6 @@
 # 로컬 전용 대용량/참고 자료 (GitHub Release bible.zip 또는 로컬 복사 사용)
-reference/
-data/
+/reference/
+/data/
 
 # Android
 android/.gradle/

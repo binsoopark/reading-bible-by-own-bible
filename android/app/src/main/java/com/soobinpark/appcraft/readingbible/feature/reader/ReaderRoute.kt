@@ -79,6 +79,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -113,6 +114,7 @@ fun ReaderRoute(
     cacheWarmUpState: CacheWarmUpUiState,
     onBookmarkToggle: (BibleVerse) -> Unit,
     onHighlightToggle: (BibleVerse, VerseHighlight) -> Unit,
+    onHighlightsChanged: (List<BibleVerse>, VerseHighlight) -> Unit,
     onReadToggle: (BibleVerse) -> Unit,
     onVerseNoteChanged: (BibleVerse, String) -> Unit,
     onFontSizeChanged: (Float) -> Unit,
@@ -133,6 +135,7 @@ fun ReaderRoute(
         onBookChapterSelected = viewModel::selectBookAndChapter,
         onBookmarkToggle = onBookmarkToggle,
         onHighlightToggle = onHighlightToggle,
+        onHighlightsChanged = onHighlightsChanged,
         onReadToggle = onReadToggle,
         onVerseNoteChanged = onVerseNoteChanged,
         onFontSizeChanged = onFontSizeChanged,
@@ -152,6 +155,7 @@ private fun ReaderScreen(
     onBookChapterSelected: (Int, Int) -> Unit,
     onBookmarkToggle: (BibleVerse) -> Unit,
     onHighlightToggle: (BibleVerse, VerseHighlight) -> Unit,
+    onHighlightsChanged: (List<BibleVerse>, VerseHighlight) -> Unit,
     onReadToggle: (BibleVerse) -> Unit,
     onVerseNoteChanged: (BibleVerse, String) -> Unit,
     onFontSizeChanged: (Float) -> Unit,
@@ -161,11 +165,13 @@ private fun ReaderScreen(
     var showComparisonSheet by remember { mutableStateOf(false) }
     var showBookSheet by remember { mutableStateOf(false) }
     var showHighlightColorSheet by remember { mutableStateOf(false) }
+    var applyHighlightToSelectionOnPick by remember { mutableStateOf(false) }
     var selectedHighlightColor by remember { mutableStateOf(VerseHighlight.Yellow) }
     var chapterSlideDirection by remember { mutableStateOf(AnimatedContentTransitionScope.SlideDirection.Left) }
     val context = LocalContext.current
     var fontSizeToast by remember { mutableStateOf<Toast?>(null) }
     var selectedVerseKeys by remember(state.bookIndex, state.chapter) { mutableStateOf(setOf<String>()) }
+    var selectionAnchorKey by remember(state.bookIndex, state.chapter) { mutableStateOf<String?>(null) }
     var noteEditingVerse by remember { mutableStateOf<BibleVerse?>(null) }
     var noteDraft by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -293,12 +299,21 @@ private fun ReaderScreen(
                     if (selectedVerses.isNotEmpty()) {
                         SelectedVersesBar(
                             count = selectedVerses.size,
-                            onClear = { selectedVerseKeys = emptySet() },
+                            onClear = {
+                                selectedVerseKeys = emptySet()
+                                selectionAnchorKey = null
+                            },
+                            onHighlight = {
+                                applyHighlightToSelectionOnPick = true
+                                showHighlightColorSheet = true
+                            },
                             onCopy = {
                                 val text = selectedVerses.selectionText(currentBook.koreanName)
                                 val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                                 clipboard.setPrimaryClip(ClipData.newPlainText("성경 구절", text))
                                 Toast.makeText(context, "선택한 구절을 복사했습니다", Toast.LENGTH_SHORT).show()
+                                selectedVerseKeys = emptySet()
+                                selectionAnchorKey = null
                             },
                             onShare = {
                                 val text = selectedVerses.selectionText(currentBook.koreanName)
@@ -307,6 +322,8 @@ private fun ReaderScreen(
                                     putExtra(Intent.EXTRA_TEXT, text)
                                 }
                                 context.startActivity(Intent.createChooser(intent, "구절 공유"))
+                                selectedVerseKeys = emptySet()
+                                selectionAnchorKey = null
                             },
                         )
                     }
@@ -333,6 +350,18 @@ private fun ReaderScreen(
                             val isHighlighted = highlight != VerseHighlight.None
                             val isSelected = selectedVerseKeys.contains(verseKey)
                             val isRead = record?.isRead == true
+                            val highlightBackground = highlightContainerColor(highlight)
+                            val highlightedContent = contrastingContentColor(highlightBackground)
+                            val cardContent = when {
+                                isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
+                                isHighlighted -> highlightedContent
+                                else -> palette.content
+                            }
+                            val cardAccent = when {
+                                isSelected -> MaterialTheme.colorScheme.primary
+                                isHighlighted -> highlightedContent
+                                else -> palette.accent
+                            }
                             Card(
                                 modifier = Modifier
                                     .then(
@@ -349,20 +378,34 @@ private fun ReaderScreen(
                                     .combinedClickable(
                                         onClick = {
                                             if (selectedVerseKeys.isNotEmpty()) {
-                                                selectedVerseKeys = selectedVerseKeys.toggle(verseKey)
+                                                val selection = selectVerseRange(
+                                                    verses = visibleVerses,
+                                                    selectedKeys = selectedVerseKeys,
+                                                    anchorKey = selectionAnchorKey,
+                                                    targetKey = verseKey,
+                                                )
+                                                selectedVerseKeys = selection.keys
+                                                selectionAnchorKey = selection.anchorKey
                                             }
                                         },
                                         onLongClick = {
-                                            selectedVerseKeys = selectedVerseKeys.toggle(verseKey)
+                                            val selection = selectVerseRange(
+                                                verses = visibleVerses,
+                                                selectedKeys = selectedVerseKeys,
+                                                anchorKey = selectionAnchorKey,
+                                                targetKey = verseKey,
+                                            )
+                                            selectedVerseKeys = selection.keys
+                                            selectionAnchorKey = selection.anchorKey
                                         },
                                     ),
                                 colors = CardDefaults.cardColors(
                                     containerColor = when {
                                         isSelected -> MaterialTheme.colorScheme.primaryContainer
-                                        isHighlighted -> highlightContainerColor(highlight)
+                                        isHighlighted -> highlightBackground
                                         else -> palette.container
                                     },
-                                    contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else palette.content,
+                                    contentColor = cardContent,
                                 ),
                             ) {
                             Column(Modifier.padding(cardPadding)) {
@@ -371,26 +414,29 @@ private fun ReaderScreen(
                                         text = "${verse.verse}",
                                         fontSize = (readingStyle.fontSizeSp + 2f).coerceIn(16f, 30f).sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = if (isSelected) MaterialTheme.colorScheme.primary else palette.accent,
+                                        color = cardAccent,
                                         modifier = Modifier.weight(1f),
                                     )
                                     if (readingStyle.showNotesInReader && record?.note?.isNotBlank() == true) {
                                         Icon(
                                             imageVector = Icons.Outlined.Description,
                                             contentDescription = "메모 있음",
-                                            tint = palette.highlightAccent,
+                                            tint = cardAccent,
                                             modifier = Modifier.size(dynamicActionIconSize(readingStyle.fontSizeSp)),
                                         )
                                     }
                                     ScaledVerseIconButton(
                                         fontSizeSp = readingStyle.fontSizeSp,
                                         onClick = { onHighlightToggle(verse, selectedHighlightColor) },
-                                        onLongClick = { showHighlightColorSheet = true },
+                                        onLongClick = {
+                                            applyHighlightToSelectionOnPick = false
+                                            showHighlightColorSheet = true
+                                        },
                                     ) {
                                         Icon(
                                             imageVector = Icons.Outlined.FormatColorFill,
                                             contentDescription = if (isHighlighted) "하이라이트 해제" else "하이라이트 추가",
-                                            tint = if (isHighlighted) highlightAccentColor(highlight) else palette.accent,
+                                            tint = if (isHighlighted) cardAccent else palette.accent,
                                             modifier = Modifier.size(dynamicActionIconSize(readingStyle.fontSizeSp)),
                                         )
                                     }
@@ -401,7 +447,7 @@ private fun ReaderScreen(
                                         Icon(
                                             imageVector = if (isRead) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
                                             contentDescription = if (isRead) "읽음 해제" else "읽음 표시",
-                                            tint = if (isRead) palette.highlightAccent else palette.accent,
+                                            tint = if (isHighlighted) cardAccent else if (isRead) palette.highlightAccent else palette.accent,
                                             modifier = Modifier.size(dynamicActionIconSize(readingStyle.fontSizeSp)),
                                         )
                                     }
@@ -415,7 +461,7 @@ private fun ReaderScreen(
                                         Icon(
                                             imageVector = Icons.Outlined.EditNote,
                                             contentDescription = "구절 메모",
-                                            tint = if (record?.note?.isNotBlank() == true) palette.highlightAccent else palette.accent,
+                                            tint = if (isHighlighted) cardAccent else if (record?.note?.isNotBlank() == true) palette.highlightAccent else palette.accent,
                                             modifier = Modifier.size(dynamicActionIconSize(readingStyle.fontSizeSp)),
                                         )
                                     }
@@ -427,7 +473,7 @@ private fun ReaderScreen(
                                         Icon(
                                             imageVector = if (selected) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
                                             contentDescription = if (selected) "북마크 해제" else "북마크 추가",
-                                            tint = palette.accent,
+                                            tint = cardAccent,
                                             modifier = Modifier.size(dynamicActionIconSize(readingStyle.fontSizeSp)),
                                         )
                                     }
@@ -441,7 +487,7 @@ private fun ReaderScreen(
                                 if (comparisonVerse != null) {
                                     Text(
                                         text = comparisonVerse.text,
-                                        color = palette.secondaryContent,
+                                        color = if (isHighlighted) cardContent.copy(alpha = 0.78f) else palette.secondaryContent,
                                         fontSize = (readingStyle.fontSizeSp - 1f).coerceAtLeast(12f).sp,
                                         lineHeight = (readingStyle.fontSizeSp * effectiveLineHeightMultiplier).sp,
                                         fontWeight = if (readingStyle.boldTextEnabled) FontWeight.Bold else FontWeight.Normal,
@@ -508,9 +554,21 @@ private fun ReaderScreen(
     if (showHighlightColorSheet) {
         HighlightColorSheet(
             selected = selectedHighlightColor,
-            onDismiss = { showHighlightColorSheet = false },
+            onDismiss = {
+                applyHighlightToSelectionOnPick = false
+                showHighlightColorSheet = false
+            },
             onSelected = {
                 selectedHighlightColor = it
+                if (applyHighlightToSelectionOnPick) {
+                    onHighlightsChanged(
+                        state.verses.filter { verse -> selectedVerseKeys.contains(verse.bookmarkKey()) },
+                        it,
+                    )
+                    selectedVerseKeys = emptySet()
+                    selectionAnchorKey = null
+                }
+                applyHighlightToSelectionOnPick = false
                 showHighlightColorSheet = false
             },
         )
@@ -568,8 +626,32 @@ private fun BibleVerse.bookmarkKey(): String {
     return VerseBookmark.key(versionCode, bookIndex, chapter, verse)
 }
 
-private fun Set<String>.toggle(key: String): Set<String> {
-    return if (contains(key)) this - key else this + key
+private data class VerseRangeSelection(
+    val keys: Set<String>,
+    val anchorKey: String?,
+)
+
+private fun selectVerseRange(
+    verses: List<BibleVerse>,
+    selectedKeys: Set<String>,
+    anchorKey: String?,
+    targetKey: String,
+): VerseRangeSelection {
+    if (selectedKeys.isEmpty()) return VerseRangeSelection(setOf(targetKey), targetKey)
+    val resolvedAnchor = anchorKey?.takeIf { key -> verses.any { it.bookmarkKey() == key } }
+        ?: selectedKeys.firstOrNull { key -> verses.any { it.bookmarkKey() == key } }
+        ?: targetKey
+    if (resolvedAnchor == targetKey && selectedKeys.size == 1) {
+        return VerseRangeSelection(emptySet(), null)
+    }
+    val anchorIndex = verses.indexOfFirst { it.bookmarkKey() == resolvedAnchor }
+    val targetIndex = verses.indexOfFirst { it.bookmarkKey() == targetKey }
+    if (anchorIndex < 0 || targetIndex < 0) return VerseRangeSelection(setOf(targetKey), targetKey)
+    val range = minOf(anchorIndex, targetIndex)..maxOf(anchorIndex, targetIndex)
+    return VerseRangeSelection(
+        keys = range.mapTo(mutableSetOf()) { verses[it].bookmarkKey() },
+        anchorKey = resolvedAnchor,
+    )
 }
 
 private fun List<BibleVerse>.selectionText(bookName: String): String {
@@ -584,6 +666,7 @@ private fun List<BibleVerse>.selectionText(bookName: String): String {
 private fun SelectedVersesBar(
     count: Int,
     onClear: () -> Unit,
+    onHighlight: () -> Unit,
     onCopy: () -> Unit,
     onShare: () -> Unit,
 ) {
@@ -602,6 +685,9 @@ private fun SelectedVersesBar(
                 modifier = Modifier.weight(1f),
             )
             TextButton(onClick = onClear) { Text("해제") }
+            IconButton(onClick = onHighlight) {
+                Icon(Icons.Outlined.FormatColorFill, contentDescription = "선택한 구절 형광펜")
+            }
             Button(onClick = onCopy) { Text("복사") }
             Button(onClick = onShare) { Text("공유") }
         }
@@ -914,16 +1000,8 @@ private fun highlightContainerColor(highlight: VerseHighlight): Color {
     }
 }
 
-private fun highlightAccentColor(highlight: VerseHighlight): Color {
-    return when (highlight) {
-        VerseHighlight.None -> Color.Unspecified
-        VerseHighlight.Yellow -> Color(0xFF8A6200)
-        VerseHighlight.Mint -> Color(0xFF007A4D)
-        VerseHighlight.Blue -> Color(0xFF1F64C8)
-        VerseHighlight.Pink -> Color(0xFFC73368)
-        VerseHighlight.Lavender -> Color(0xFF6C4BD2)
-        VerseHighlight.Orange -> Color(0xFFB95D00)
-    }
+private fun contrastingContentColor(background: Color): Color {
+    return if (background.luminance() > 0.45f) Color(0xFF17120A) else Color.White
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

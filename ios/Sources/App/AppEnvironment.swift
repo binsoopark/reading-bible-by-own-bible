@@ -121,6 +121,32 @@ final class AppEnvironment: ObservableObject {
         bookmarkStore.save(bookmarks)
     }
 
+    func setHighlight(for verses: [BibleVerse], color: VerseHighlight) {
+        guard !verses.isEmpty else { return }
+        let now = Int64(Date().timeIntervalSince1970 * 1000)
+        for verse in verses {
+            if var existing = bookmarks.first(where: { $0.key == verse.id }) {
+                existing.highlight = color
+                existing.createdAtMillis = now
+                upsert(existing)
+            } else if color != .none {
+                upsert(VerseBookmark(
+                    versionCode: verse.versionCode,
+                    bookIndex: verse.bookIndex,
+                    chapter: verse.chapter,
+                    verse: verse.verse,
+                    text: verse.text,
+                    note: "",
+                    isBookmarked: false,
+                    highlight: color,
+                    isRead: false,
+                    createdAtMillis: now
+                ))
+            }
+        }
+        bookmarkStore.save(bookmarks)
+    }
+
     func toggleRead(for verse: BibleVerse) {
         if var existing = bookmarks.first(where: { $0.key == verse.id }) {
             existing.isRead.toggle()

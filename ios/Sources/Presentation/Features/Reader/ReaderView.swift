@@ -10,8 +10,10 @@ struct ReaderView: View {
     @State private var fontSizeHint: Int?
     @State private var swipeOffset: CGFloat = 0
     @State private var selectedVerseKeys: Set<String> = []
+    @State private var selectionAnchorKey: String?
     @State private var selectedHighlightColor: VerseHighlight = .yellow
     @State private var showHighlightColorPicker = false
+    @State private var applyHighlightToSelectionOnPick = false
     @State private var showShareSheet = false
     @State private var sharePayload = ""
     @State private var copiedNotice = false
@@ -25,11 +27,16 @@ struct ReaderView: View {
             if !selectedVerseKeys.isEmpty {
                 SelectionActionBar(
                     count: selectedVerseKeys.count,
-                    onClear: { selectedVerseKeys.removeAll() },
+                    onClear: { clearVerseSelection() },
+                    onHighlight: {
+                        applyHighlightToSelectionOnPick = true
+                        showHighlightColorPicker = true
+                    },
                     onCopy: copySelectedVerses,
                     onShare: {
                         sharePayload = selectedVersesShareText
                         showShareSheet = true
+                        clearVerseSelection()
                     }
                 )
                 .padding(.horizontal, 12)
@@ -63,10 +70,13 @@ struct ReaderView: View {
                                         onHighlight: {
                                             environment.toggleHighlight(for: verse, color: selectedHighlightColor)
                                         },
-                                        onHighlightLongPress: { showHighlightColorPicker = true },
+                                        onHighlightLongPress: {
+                                            applyHighlightToSelectionOnPick = false
+                                            showHighlightColorPicker = true
+                                        },
                                         onRead: { environment.toggleRead(for: verse) },
                                         onNote: { openNoteEditor(for: verse) },
-                                        onSelectToggle: { toggleVerseSelection(verse.id) }
+                                        onSelectToggle: { selectVerseRange(to: verse.id) }
                                     )
                                 }
                             }
@@ -85,7 +95,7 @@ struct ReaderView: View {
                             withAnimation { proxy.scrollTo(target, anchor: .top) }
                         }
                         .onChange(of: chapterContentID) { _, _ in
-                            selectedVerseKeys.removeAll()
+                            clearVerseSelection()
                             guard let first = viewModel.verses.first?.id else { return }
                             withAnimation { proxy.scrollTo(first, anchor: .top) }
                         }
@@ -125,8 +135,15 @@ struct ReaderView: View {
                 .onDisappear { viewModel.selectComparison(viewModel.comparisonVersion) }
         }
         .sheet(isPresented: $showHighlightColorPicker) {
-            HighlightColorPickerSheet(selection: $selectedHighlightColor)
+            HighlightColorPickerSheet(selection: $selectedHighlightColor) { color in
+                if applyHighlightToSelectionOnPick {
+                    environment.setHighlight(for: selectedVerses, color: color)
+                    clearVerseSelection()
+                }
+                applyHighlightToSelectionOnPick = false
+            }
                 .readingTheme(environment.readingStyle.palette)
+                .onDisappear { applyHighlightToSelectionOnPick = false }
         }
         .sheet(isPresented: $showShareSheet) {
             ShareTextSheet(text: sharePayload)
@@ -177,12 +194,34 @@ struct ReaderView: View {
         )
     }
 
-    private func toggleVerseSelection(_ id: String) {
-        if selectedVerseKeys.contains(id) {
-            selectedVerseKeys.remove(id)
-        } else {
-            selectedVerseKeys.insert(id)
+    private func selectVerseRange(to targetKey: String) {
+        if selectedVerseKeys.isEmpty {
+            selectedVerseKeys = [targetKey]
+            selectionAnchorKey = targetKey
+            return
         }
+        let anchorKey = selectionAnchorKey.flatMap { key in
+            viewModel.verses.contains(where: { $0.id == key }) ? key : nil
+        } ?? selectedVerseKeys.first ?? targetKey
+        if anchorKey == targetKey, selectedVerseKeys.count == 1 {
+            clearVerseSelection()
+            return
+        }
+        guard let anchorIndex = viewModel.verses.firstIndex(where: { $0.id == anchorKey }),
+              let targetIndex = viewModel.verses.firstIndex(where: { $0.id == targetKey })
+        else {
+            selectedVerseKeys = [targetKey]
+            selectionAnchorKey = targetKey
+            return
+        }
+        let bounds = min(anchorIndex, targetIndex) ... max(anchorIndex, targetIndex)
+        selectedVerseKeys = Set(bounds.map { viewModel.verses[$0].id })
+        selectionAnchorKey = anchorKey
+    }
+
+    private func clearVerseSelection() {
+        selectedVerseKeys.removeAll()
+        selectionAnchorKey = nil
     }
 
     private func openNoteEditor(for verse: BibleVerse) {
@@ -194,6 +233,7 @@ struct ReaderView: View {
         let text = selectedVersesShareText
         guard !text.isEmpty else { return }
         RecordClipboard.copy(text)
+        clearVerseSelection()
         copiedNotice = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
             copiedNotice = false
@@ -342,7 +382,7 @@ private struct VerseCardView: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text("\(verse.verse)")
                     .font(.system(size: fontSize * 1.1, weight: .bold))
-                    .foregroundStyle(palette.verseNumber)
+                    .foregroundStyle(actionForeground)
                 Text(verse.text)
                     .font(.system(size: fontSize, weight: bold ? .semibold : .regular))
                     .lineSpacing(fontSize * (lineHeight - 1))
@@ -354,7 +394,7 @@ private struct VerseCardView: View {
             if let comparisonText {
                 Text(comparisonText)
                     .font(.system(size: fontSize * 0.92))
-                    .foregroundStyle(palette.onSurface.opacity(0.75))
+                    .foregroundStyle(cardForeground.opacity(0.75))
                     .padding(.leading, fontSize * 1.4)
             }
             HStack(spacing: 0) {
@@ -372,8 +412,9 @@ private struct VerseCardView: View {
                     action: onNote
                 )
             }
-            .foregroundStyle(palette.primary)
+            .foregroundStyle(actionForeground)
         }
+        .foregroundStyle(cardForeground)
         .padding(max(6, fontSize * 0.35))
         .background(cardBackground, in: RoundedRectangle(cornerRadius: 12))
         .overlay {
@@ -417,7 +458,7 @@ private struct VerseCardView: View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: actionIconSize, weight: .medium))
-                .foregroundStyle(color ?? palette.primary)
+                .foregroundStyle(color ?? actionForeground)
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
@@ -425,8 +466,8 @@ private struct VerseCardView: View {
     }
 
     private var highlightColor: Color {
-        guard let highlight = bookmark?.highlight, highlight != .none else { return palette.primary }
-        return palette.highlight[highlight] ?? palette.primary
+        guard isHighlighted else { return palette.primary }
+        return actionForeground
     }
 
     private var cardBackground: Color {
@@ -437,6 +478,20 @@ private struct VerseCardView: View {
             return palette.surface.opacity(0.6)
         }
         return palette.highlight[highlight] ?? palette.surface.opacity(0.6)
+    }
+
+    private var isHighlighted: Bool {
+        bookmark?.highlight != nil && bookmark?.highlight != .none
+    }
+
+    private var cardForeground: Color {
+        if isSelected { return palette.onSurface }
+        if isHighlighted { return palette.isDark ? .white : .black }
+        return palette.onSurface
+    }
+
+    private var actionForeground: Color {
+        isHighlighted ? cardForeground : palette.primary
     }
 }
 

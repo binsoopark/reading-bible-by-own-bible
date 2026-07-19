@@ -29,7 +29,7 @@ class SafLfaBibleFileParser(
             ZipInputStream(stream.buffered()).use { zip ->
                 while (true) {
                     val entry = runCatching { zip.nextEntry }.getOrNull() ?: return emptyList()
-                    if (entry.name == entryName) {
+                    if (entry.name.equals(entryName, ignoreCase = true)) {
                         val text = runCatching { decodeLfaText(zip.readBytes()) }.getOrNull() ?: return emptyList()
                         return text.lineSequence().mapNotNull { line ->
                             parseVerseLine(version.code, book.index, chapter, bookNumber, chapterNeedle, line)

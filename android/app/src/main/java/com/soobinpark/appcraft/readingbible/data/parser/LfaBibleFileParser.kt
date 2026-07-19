@@ -23,7 +23,9 @@ class LfaBibleFileParser : BibleFileParser {
         val entryName = "${version.code}${bookNumber}_$chapter.lfb"
 
         return ZipFile(archive).use { zip ->
-            val entry = zip.getEntry(entryName) ?: return emptyList()
+            val entry = zip.entries().asSequence()
+                .firstOrNull { it.name.equals(entryName, ignoreCase = true) }
+                ?: return emptyList()
             val text = decodeLfaText(zip.getInputStream(entry).readBytes())
             text.lineSequence().mapNotNull { line ->
                     parseVerseLine(version.code, book.index, chapter, bookNumber, chapterNeedle, line)

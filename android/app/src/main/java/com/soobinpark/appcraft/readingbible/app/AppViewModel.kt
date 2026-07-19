@@ -301,6 +301,28 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         _bookmarks.value = next
     }
 
+    fun setHighlights(
+        verses: List<BibleVerse>,
+        color: VerseHighlight,
+    ) {
+        if (verses.isEmpty()) return
+        var next = _bookmarks.value
+        val now = System.currentTimeMillis()
+        verses.forEach { verse ->
+            val key = VerseBookmark.key(verse.versionCode, verse.bookIndex, verse.chapter, verse.verse)
+            val existing = next.firstOrNull { it.key == key }
+            next = if (existing != null) {
+                next.replaceOrRemoveEmpty(existing.copy(highlight = color, createdAtMillis = now))
+            } else if (color != VerseHighlight.None) {
+                listOf(verse.toBookmark(isBookmarked = false, highlight = color)) + next
+            } else {
+                next
+            }
+        }
+        bookmarkPreferences.setBookmarks(next)
+        _bookmarks.value = next
+    }
+
     fun toggleRead(verse: BibleVerse) {
         val key = VerseBookmark.key(verse.versionCode, verse.bookIndex, verse.chapter, verse.verse)
         val current = _bookmarks.value

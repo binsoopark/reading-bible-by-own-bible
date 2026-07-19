@@ -3,8 +3,10 @@ options:
   bundleIdPrefix: com.soobinpark.appcraft
   deploymentTarget:
     iOS: "17.0"
+  developmentTeam: 3Z2KXXULNQ
   createIntermediateGroups: true
   groupSortPosition: top
+  developmentLanguage: ko
 packages:
   ZIPFoundation:
     url: https://github.com/weichsel/ZIPFoundation
@@ -15,17 +17,45 @@ targets:
     platform: iOS
     sources:
       - path: Sources
+      - path: Resources/Assets.xcassets
+        buildPhase: resources
+      - path: PrivacyInfo.xcprivacy
+        buildPhase: resources
     dependencies:
       - package: ZIPFoundation
     settings:
-      PRODUCT_BUNDLE_IDENTIFIER: com.soobinpark.appcraft.readingbible
-      MARKETING_VERSION: 1.1.0
-      CURRENT_PROJECT_VERSION: 10001
-      SWIFT_VERSION: "5.10"
-      GENERATE_INFOPLIST_FILE: YES
-      INFOPLIST_KEY_CFBundleDisplayName: "내 성경 읽기"
-      INFOPLIST_KEY_UILaunchScreen_Generation: YES
-      INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
-      INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
-      INFOPLIST_KEY_UIFileSharingEnabled: YES
-      INFOPLIST_KEY_UISupportsDocumentBrowser: YES
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.soobinpark.appcraft.readingbible
+        MARKETING_VERSION: 1.2.0
+        CURRENT_PROJECT_VERSION: 10003
+        SWIFT_VERSION: "5.10"
+        DEVELOPMENT_TEAM: 3Z2KXXULNQ
+        CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_IDENTITY: ""
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: "내 성경 읽기"
+        INFOPLIST_KEY_CFBundleIconName: AppIcon
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIRequiresFullScreen: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
+        INFOPLIST_KEY_UIFileSharingEnabled: YES
+        INFOPLIST_KEY_UISupportsDocumentBrowser: YES
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+schemes:
+  ReadingMyBible:
+    build:
+      targets:
+        ReadingMyBible: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release

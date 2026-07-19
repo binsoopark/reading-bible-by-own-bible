@@ -23,5 +23,8 @@ fastlane/Preview.html
 fastlane/test_output
 fastlane/readme.md
 
+# Upload key reset certificate (local only)
+upload_certificate.pem
+
 # OS files
 .DS_Store

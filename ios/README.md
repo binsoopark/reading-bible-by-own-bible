@@ -60,3 +60,4 @@ xcodebuild -scheme ReadingMyBible -destination 'platform=iOS Simulator,name=iPho
 
 - [워크스페이스 README](../README.md)
 - [요구사항 명세](../docs/REQUIREMENTS.md)
+- [App Store / TestFlight 배포](docs/APP_STORE_DEPLOY.md)

@@ -39,7 +39,7 @@ Lifove Bible 호환 성경 데이터(`.bdf`, `.lfa`, `.lfb`)를 **사용자가 �
 bible/
 ├── docs/       크로스플랫폼 제품 요구사항 (다른 플랫폼 구현 시 기준 문서)
 ├── android/    Android 앱 (Kotlin, Jetpack Compose, v1.2.0)
-├── ios/        iOS 앱 (SwiftUI, MVVM, Clean Architecture, v1.1.0)
+├── ios/        iOS 앱 (SwiftUI, MVVM, Clean Architecture, v1.2.0)
 ├── data/       개발·테스트용 샘플 성경 데이터 (로컬, git 제외)
 └── reference/  Lifove Bible 6.2.8 역공학 참고 자료 (로컬, git 제외)
 ```
@@ -50,6 +50,7 @@ bible/
 | --- | --- |
 | Android 앱 개발 | Android Studio에서 `android/` 열기 |
 | iOS 앱 개발 | `cd ios && xcodegen generate && open ReadingMyBible.xcodeproj` |
+| iOS 배포 | [ios/docs/APP_STORE_DEPLOY.md](ios/docs/APP_STORE_DEPLOY.md) |
 | 요구사항·포맷 명세 | [docs/REQUIREMENTS.md](docs/REQUIREMENTS.md) |
 | 테스트 데이터 | `data/bible/` 을 기기로 복사하거나 앱에서 폴더 선택 |
 | Lifove 포맷·알고리즘 참고 | `reference/LifoveBibleReconstructed/docs/` |

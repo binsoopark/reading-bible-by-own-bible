@@ -115,7 +115,7 @@ com.soobinpark.appcraft.readingbible
 
 ### 2026-08-08 Android 빌드 도구 최신화
 
-- [x] Android Gradle Plugin `9.3.0` 적용
+- [x] Android Gradle Plugin `9.2.1` 적용
 - [x] Gradle wrapper `9.5.0` 적용
 - [x] Kotlin Compose plugin `2.3.21` 적용
 - [x] AGP 9 built-in Kotlin에 맞춰 `org.jetbrains.kotlin.android` plugin 제거

@@ -113,6 +113,17 @@ com.soobinpark.appcraft.readingbible
 
 ## 11. 작업 로그
 
+### 2026-08-08 Android 빌드 도구 최신화
+
+- [x] Android Gradle Plugin `9.3.0` 적용
+- [x] Gradle wrapper `9.5.0` 적용
+- [x] Kotlin Compose plugin `2.3.21` 적용
+- [x] AGP 9 built-in Kotlin에 맞춰 `org.jetbrains.kotlin.android` plugin 제거
+- [x] `compileSdk` / `targetSdk`를 `37`로 업데이트
+- [x] Gradle 10 대비 Groovy DSL assignment 문법으로 정리
+- [x] deprecated `Icons.Outlined.MenuBook`를 AutoMirrored 아이콘으로 교체
+- [x] `assembleDebug --warning-mode all` 빌드 성공
+
 ### 2026-06-28 1.1.0 — 구절 메모·개인메모·도움말
 
 - [x] **읽기 탭 구절 메모**: 절 카드 메모 아이콘 탭 → 작성/수정 다이얼로그, `AppViewModel.updateVerseNote` 연동

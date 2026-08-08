@@ -1,8 +1,8 @@
 package com.soobinpark.appcraft.readingbible.app
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.EditNote
-import androidx.compose.material.icons.outlined.MenuBook
 import androidx.compose.material.icons.outlined.NoteAlt
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
@@ -12,7 +12,7 @@ enum class AppTab(
     val label: String,
     val icon: ImageVector,
 ) {
-    Reader("읽기", Icons.Outlined.MenuBook),
+    Reader("읽기", Icons.AutoMirrored.Outlined.MenuBook),
     Search("검색", Icons.Outlined.Search),
     Records("메모", Icons.Outlined.NoteAlt),
     PersonalNotes("개인메모", Icons.Outlined.EditNote),

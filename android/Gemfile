@@ -1,5 +1,5 @@
 source "https://rubygems.org"
 
-gem "fastlane", "~> 2.227"
+gem "fastlane", "~> 2.237"
 # CI에서 yank된 3.0.9 대신 사용 가능한 버전 고정
 gem "CFPropertyList", "3.0.8"

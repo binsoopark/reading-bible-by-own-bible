@@ -65,7 +65,7 @@ final class FileBibleRepository: BibleRepository, @unchecked Sendable {
             for chapter in 1 ... book.chapterCount {
                 current += 1
                 if current == 1 || current == total || chapter == 1 || current % 25 == 0 {
-                    onProgress(current, total, "\(book.koreanName) \(chapter)장")
+                    onProgress(current, total, L10n.format("format.chapter", book.localizedName, chapter))
                 }
                 _ = try await readChapter(version: version, book: book, chapter: chapter)
             }
@@ -89,7 +89,7 @@ final class FileBibleRepository: BibleRepository, @unchecked Sendable {
             for chapter in 1 ... book.chapterCount {
                 current += 1
                 if current == 1 || current == total || chapter == 1 || current % 25 == 0 {
-                    onProgress(current, total, "\(book.koreanName) \(chapter)장")
+                    onProgress(current, total, L10n.format("format.chapter", book.localizedName, chapter))
                 }
                 let verses: [BibleVerse]
                 if cachedRefs.contains(where: { $0.bookIndex == book.index && $0.chapter == chapter }) {

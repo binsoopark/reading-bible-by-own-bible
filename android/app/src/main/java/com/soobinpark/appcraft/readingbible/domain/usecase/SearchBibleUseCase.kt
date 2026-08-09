@@ -1,8 +1,12 @@
 package com.soobinpark.appcraft.readingbible.domain.usecase
 
+import com.soobinpark.appcraft.readingbible.R
+import com.soobinpark.appcraft.readingbible.app.AppText
 import com.soobinpark.appcraft.readingbible.domain.model.BibleCatalog
 import com.soobinpark.appcraft.readingbible.domain.model.BibleSearchResult
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
+import com.soobinpark.appcraft.readingbible.domain.model.localizedName
+import java.util.Locale
 import com.soobinpark.appcraft.readingbible.domain.repository.BibleRepository
 
 class SearchBibleUseCase(
@@ -40,7 +44,7 @@ class SearchBibleUseCase(
             for (chapter in 1..book.chapterCount) {
                 current += 1
                 if (current == 1 || current == total || chapter == 1 || current % 25 == 0) {
-                    onProgress(current, total, "${book.koreanName} ${chapter}장")
+                    onProgress(current, total, AppText.get(R.string.format_chapter, book.localizedName(Locale.getDefault().language), chapter))
                 }
                 val verses = repository.readChapter(version, book, chapter)
                 verses.forEach { verse ->

@@ -55,12 +55,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.soobinpark.appcraft.readingbible.R
 import com.soobinpark.appcraft.readingbible.domain.model.PersonalNote
 import java.text.DateFormat
 import java.util.Date
@@ -97,9 +99,9 @@ fun PersonalNotesRoute(
                     output.write(payload.toByteArray(Charsets.UTF_8))
                 }
             }.onSuccess {
-                Toast.makeText(context, "선택한 개인메모를 백업했습니다.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.personal_notes_backup_success), Toast.LENGTH_SHORT).show()
             }.onFailure {
-                Toast.makeText(context, "백업에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.personal_notes_backup_failure), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -114,12 +116,12 @@ fun PersonalNotesRoute(
                 runCatching {
                     onImportNotes(raw)
                     selectedIds = emptySet()
-                    Toast.makeText(context, "개인메모를 복원했습니다.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.personal_notes_restore_success), Toast.LENGTH_SHORT).show()
                 }.onFailure { error ->
-                    Toast.makeText(context, error.message ?: "복원에 실패했습니다.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, error.message ?: context.getString(R.string.personal_notes_restore_failure), Toast.LENGTH_SHORT).show()
                 }
             }.onFailure {
-                Toast.makeText(context, "파일을 읽지 못했습니다.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.personal_notes_file_read_failure), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -130,9 +132,9 @@ fun PersonalNotesRoute(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp),
         ) {
-            Text("개인메모", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.tab_personal_notes), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
             Text(
-                text = "성경 구절과 무관하게 자유롭게 적는 메모입니다. 길게 눌러 선택한 뒤 백업할 수 있습니다.",
+                text = stringResource(R.string.personal_notes_description),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 6.dp, bottom = 10.dp),
@@ -144,7 +146,7 @@ fun PersonalNotesRoute(
                 Button(
                     onClick = {
                         if (selectedIds.isEmpty()) {
-                            Toast.makeText(context, "백업할 메모를 길게 눌러 선택하세요.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.personal_notes_select_for_backup), Toast.LENGTH_SHORT).show()
                         } else {
                             pendingExport = onExportNotes(selectedIds)
                             exportLauncher.launch(personalNotesBackupFilename())
@@ -152,14 +154,14 @@ fun PersonalNotesRoute(
                     },
                     enabled = selectedIds.isNotEmpty(),
                 ) {
-                    Text("백업")
+                    Text(stringResource(R.string.action_backup))
                 }
                 TextButton(onClick = { importLauncher.launch(arrayOf("application/json", "application/octet-stream")) }) {
-                    Text("복원")
+                    Text(stringResource(R.string.action_restore))
                 }
                 if (selectedIds.isNotEmpty()) {
                     TextButton(onClick = { selectedIds = emptySet() }) {
-                        Text("해제 (${selectedIds.size})")
+                        Text(stringResource(R.string.personal_notes_clear_count, selectedIds.size))
                     }
                 }
             }
@@ -176,9 +178,9 @@ fun PersonalNotesRoute(
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                        Text("개인메모 없음", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp))
+                        Text(stringResource(R.string.personal_notes_empty_title), fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(top = 8.dp))
                         Text(
-                            "오른쪽 아래 + 버튼으로 새 메모를 추가하세요.",
+                            stringResource(R.string.personal_notes_empty_message),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -227,13 +229,13 @@ fun PersonalNotesRoute(
                 .align(Alignment.BottomEnd)
                 .padding(end = 20.dp, bottom = FloatingTabClearance),
         ) {
-            Icon(Icons.Default.Add, contentDescription = "메모 추가")
+            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.personal_notes_add))
         }
     }
 
     editingNote?.let { note ->
         PersonalNoteEditorDialog(
-            title = "메모 수정",
+            title = stringResource(R.string.personal_notes_edit_title),
             initialTitle = note.title,
             initialBody = note.body,
             onDismiss = { editingNote = null },
@@ -246,7 +248,7 @@ fun PersonalNotesRoute(
 
     if (showCreateDialog) {
         PersonalNoteEditorDialog(
-            title = "새 메모",
+            title = stringResource(R.string.personal_notes_new_title),
             initialTitle = "",
             initialBody = "",
             onDismiss = { showCreateDialog = false },
@@ -300,7 +302,7 @@ private fun PersonalNoteRow(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Edit,
-                    contentDescription = "수정",
+                    contentDescription = stringResource(R.string.action_edit),
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
@@ -312,7 +314,7 @@ private fun PersonalNoteRow(
             ) {
                 Icon(
                     imageVector = Icons.Outlined.Delete,
-                    contentDescription = "삭제",
+                    contentDescription = stringResource(R.string.action_delete),
                     tint = Color.White,
                 )
             }
@@ -369,7 +371,7 @@ private fun PersonalNoteRow(
         ) {
             Column(Modifier.padding(14.dp)) {
                 Text(
-                    text = note.title.ifBlank { "제목 없음" },
+                    text = note.title.ifBlank { stringResource(R.string.personal_notes_untitled) },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = if (selected) {
@@ -453,14 +455,14 @@ private fun PersonalNoteEditorDialog(
                     OutlinedTextField(
                         value = noteTitle,
                         onValueChange = { noteTitle = it },
-                        label = { Text("제목") },
+                        label = { Text(stringResource(R.string.field_title)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     OutlinedTextField(
                         value = noteBody,
                         onValueChange = { noteBody = it },
-                        label = { Text("내용") },
+                        label = { Text(stringResource(R.string.field_content)) },
                         minLines = 4,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -469,10 +471,10 @@ private fun PersonalNoteEditorDialog(
                         horizontalArrangement = Arrangement.End,
                     ) {
                         TextButton(onClick = onDismiss) {
-                            Text("취소")
+                            Text(stringResource(R.string.action_cancel))
                         }
                         TextButton(onClick = { onSave(noteTitle, noteBody) }) {
-                            Text("저장")
+                            Text(stringResource(R.string.action_save))
                         }
                     }
                 }

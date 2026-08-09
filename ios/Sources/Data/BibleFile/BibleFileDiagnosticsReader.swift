@@ -27,16 +27,16 @@ struct BibleFileDiagnosticsReader: Sendable {
 
         for (prefix, group) in incompleteBdf where !prefix.isEmpty {
             issues.append(BibleFileIssue(
-                title: "BDF 분할 세트 미완성: \(prefix)",
-                detail: "\(group.count)/7 파일만 발견되었습니다.",
+                title: L10n.format("diagnostics.incompleteBdf.title", prefix),
+                detail: L10n.format("diagnostics.incompleteBdf.detail", group.count),
                 severity: .warning
             ))
         }
 
         if versions.isEmpty {
             issues.append(BibleFileIssue(
-                title: "역본 없음",
-                detail: "완성된 BDF 세트나 LFA 파일을 찾지 못했습니다.",
+                title: L10n.text("diagnostics.noVersion.title"),
+                detail: L10n.text("diagnostics.noVersion.detail"),
                 severity: .error
             ))
         }

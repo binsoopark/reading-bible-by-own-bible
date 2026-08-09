@@ -11,13 +11,13 @@ enum VerseHighlight: String, CaseIterable, Codable, Sendable {
 
     var label: String {
         switch self {
-        case .none: "없음"
-        case .yellow: "노랑"
-        case .mint: "민트"
-        case .blue: "파랑"
-        case .pink: "분홍"
-        case .lavender: "라벤더"
-        case .orange: "주황"
+        case .none: L10n.text("highlight.none")
+        case .yellow: L10n.text("highlight.yellow")
+        case .mint: L10n.text("highlight.mint")
+        case .blue: L10n.text("highlight.blue")
+        case .pink: L10n.text("highlight.pink")
+        case .lavender: L10n.text("highlight.lavender")
+        case .orange: L10n.text("highlight.orange")
         }
     }
 }

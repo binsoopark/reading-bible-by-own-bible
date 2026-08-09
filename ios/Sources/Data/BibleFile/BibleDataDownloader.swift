@@ -4,6 +4,7 @@ import ZIPFoundation
 
 struct BibleDataDownloadState: Equatable {
     var isActive = false
+    var isError = false
     var message = ""
     var progress: Double?
     var installedRoot: URL?
@@ -44,21 +45,21 @@ enum BibleDataDownloader {
         let stageDir = BibleStoragePaths.downloadStage
         let cacheFile = fileManager.temporaryDirectory.appendingPathComponent("bible.zip")
 
-        onProgress(BibleDataDownloadState(isActive: true, message: "성경 데이터 파일을 다운로드하는 중입니다.", progress: 0))
+        onProgress(BibleDataDownloadState(isActive: true, message: L10n.text("download.progress.downloading"), progress: 0))
 
         let (tempURL, _) = try await URLSession.shared.download(from: zipURL)
         try? fileManager.removeItem(at: cacheFile)
         try fileManager.moveItem(at: tempURL, to: cacheFile)
 
-        onProgress(BibleDataDownloadState(isActive: true, message: "다운로드 파일을 확인하는 중입니다.", progress: 0.72))
+        onProgress(BibleDataDownloadState(isActive: true, message: L10n.text("download.progress.verifying"), progress: 0.72))
         let hash = try sha256(of: cacheFile)
         guard hash == expectedSha256 else {
             throw NSError(domain: "BibleDataDownloader", code: 1, userInfo: [
-                NSLocalizedDescriptionKey: "다운로드한 파일의 체크섬이 일치하지 않습니다.",
+                NSLocalizedDescriptionKey: L10n.text("download.error.checksum"),
             ])
         }
 
-        onProgress(BibleDataDownloadState(isActive: true, message: "성경 데이터 압축을 해제하는 중입니다.", progress: 0.82))
+        onProgress(BibleDataDownloadState(isActive: true, message: L10n.text("download.progress.extracting"), progress: 0.82))
         try? fileManager.removeItem(at: stageDir)
         try fileManager.createDirectory(at: stageDir, withIntermediateDirectories: true)
         try fileManager.unzipItem(at: cacheFile, to: stageDir)
@@ -71,7 +72,7 @@ enum BibleDataDownloader {
         _ = try await repository.scanVersions(at: finalRoot)
 
         try? fileManager.removeItem(at: cacheFile)
-        onProgress(BibleDataDownloadState(isActive: false, message: "성경 데이터를 다운로드하고 적용했습니다.", progress: 1, installedRoot: finalRoot))
+        onProgress(BibleDataDownloadState(isActive: false, message: L10n.text("download.success"), progress: 1, installedRoot: finalRoot))
         return finalRoot
     }
 

@@ -1,5 +1,8 @@
 package com.soobinpark.appcraft.readingbible.data.biblefile
 
+import com.soobinpark.appcraft.readingbible.R
+import com.soobinpark.appcraft.readingbible.app.AppText
+
 import android.content.Context
 import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
@@ -21,8 +24,8 @@ class BibleFileDiagnosticsReader(
             return emptyDiagnostic(
                 rootLabel = root.absolutePath,
                 issue = BibleFileIssue(
-                    title = "기본 폴더가 없습니다",
-                    detail = "${root.absolutePath} 폴더를 찾지 못했습니다. 설정 탭에서 bdf/lfa 폴더를 선택해 주세요.",
+                    title = AppText.get(R.string.diagnostic_default_missing_title),
+                    detail = AppText.get(R.string.diagnostic_default_missing_detail, root.absolutePath),
                     severity = BibleFileIssueSeverity.Error,
                 ),
             )
@@ -31,8 +34,8 @@ class BibleFileDiagnosticsReader(
             return emptyDiagnostic(
                 rootLabel = root.absolutePath,
                 issue = BibleFileIssue(
-                    title = "폴더가 아닙니다",
-                    detail = "${root.absolutePath} 경로가 파일로 감지되었습니다.",
+                    title = AppText.get(R.string.diagnostic_not_folder_title),
+                    detail = AppText.get(R.string.diagnostic_path_is_file, root.absolutePath),
                     severity = BibleFileIssueSeverity.Error,
                 ),
             )
@@ -54,8 +57,8 @@ class BibleFileDiagnosticsReader(
             ?: return emptyDiagnostic(
                 rootLabel = treeUri.toString(),
                 issue = BibleFileIssue(
-                    title = "선택한 폴더를 열 수 없습니다",
-                    detail = "저장소 권한이 사라졌거나 폴더가 이동되었을 수 있습니다. 설정 탭에서 폴더를 다시 선택해 주세요.",
+                    title = AppText.get(R.string.diagnostic_cannot_open_title),
+                    detail = AppText.get(R.string.diagnostic_cannot_open_detail),
                     severity = BibleFileIssueSeverity.Error,
                 ),
             )
@@ -64,8 +67,8 @@ class BibleFileDiagnosticsReader(
             return emptyDiagnostic(
                 rootLabel = root.name ?: treeUri.toString(),
                 issue = BibleFileIssue(
-                    title = "폴더가 아닙니다",
-                    detail = "선택된 URI가 폴더로 인식되지 않습니다.",
+                    title = AppText.get(R.string.diagnostic_not_folder_title),
+                    detail = AppText.get(R.string.diagnostic_uri_not_folder),
                     severity = BibleFileIssueSeverity.Error,
                 ),
             )
@@ -107,8 +110,8 @@ class BibleFileDiagnosticsReader(
 
         if (fileNames.isEmpty()) {
             issues += BibleFileIssue(
-                title = "폴더가 비어 있습니다",
-                detail = "이 폴더에서 bdf/lfa 파일을 찾을 수 없습니다.",
+                title = AppText.get(R.string.diagnostic_empty_title),
+                detail = AppText.get(R.string.diagnostic_empty_detail),
                 severity = BibleFileIssueSeverity.Warning,
             )
         }
@@ -117,8 +120,8 @@ class BibleFileDiagnosticsReader(
             val missing = (1..7).filterNot { it in indexes }
             if (missing.isNotEmpty()) {
                 issues += BibleFileIssue(
-                    title = "$prefix bdf 파일이 일부 없습니다",
-                    detail = "누락된 분할 파일: ${missing.joinToString { "$prefix$it.bdf" }}",
+                    title = AppText.get(R.string.diagnostic_incomplete_bdf_title, prefix),
+                    detail = AppText.get(R.string.diagnostic_missing_files, missing.joinToString { "$prefix$it.bdf" }),
                     severity = BibleFileIssueSeverity.Warning,
                 )
             }
@@ -126,16 +129,16 @@ class BibleFileDiagnosticsReader(
 
         if (lfbCount > 0) {
             issues += BibleFileIssue(
-                title = ".lfb 파일이 감지되었습니다",
-                detail = "현재 MVP는 .bdf와 .lfa 읽기를 우선 지원합니다. .lfb는 이후 단계에서 구조 분석 후 연결할 예정입니다.",
+                title = AppText.get(R.string.diagnostic_lfb_title),
+                detail = AppText.get(R.string.diagnostic_lfb_detail),
                 severity = BibleFileIssueSeverity.Info,
             )
         }
 
         if (mp3Count > 0) {
             issues += BibleFileIssue(
-                title = "MP3 파일이 감지되었습니다",
-                detail = "오디오 파일 ${mp3Count}개가 있습니다. 현재 단계에서는 감지만 지원하고, 재생 UI는 이후 오디오 플레이어 단계에서 연결합니다.",
+                title = AppText.get(R.string.diagnostic_mp3_title),
+                detail = AppText.get(R.string.diagnostic_mp3_detail, mp3Count),
                 severity = BibleFileIssueSeverity.Info,
             )
         }
@@ -143,16 +146,16 @@ class BibleFileDiagnosticsReader(
         val unknownFileCount = fileNames.size - knownCount
         if (unknownFileCount > 0) {
             issues += BibleFileIssue(
-                title = "알 수 없는 파일이 있습니다",
-                detail = "지원 포맷이 아닌 파일 ${unknownFileCount}개가 함께 있습니다.",
+                title = AppText.get(R.string.diagnostic_unknown_title),
+                detail = AppText.get(R.string.diagnostic_unknown_detail, unknownFileCount),
                 severity = BibleFileIssueSeverity.Info,
             )
         }
 
         if (versions.isEmpty() && fileNames.isNotEmpty()) {
             issues += BibleFileIssue(
-                title = "읽을 수 있는 역본이 없습니다",
-                detail = ".lfa 파일이 없거나, .bdf 파일이 1~7번 세트로 완성되지 않았을 수 있습니다.",
+                title = AppText.get(R.string.diagnostic_no_readable_title),
+                detail = AppText.get(R.string.diagnostic_no_readable_detail),
                 severity = BibleFileIssueSeverity.Error,
             )
         }

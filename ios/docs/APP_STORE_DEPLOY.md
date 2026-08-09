@@ -7,11 +7,11 @@ Android [`PLAY_DEPLOY.md`](../android/docs/PLAY_DEPLOY.md)와 대칭으로, iOS 
 | 항목 | 값 |
 | --- | --- |
 | Bundle ID | `com.soobinpark.appcraft.readingbible` |
-| Team ID | `3Z2KXXULNQ` |
+| Development Team | 로컬 `Config/Local.xcconfig`에서 설정 |
 | 현재 버전 | 1.2.1 (10004) |
 | 개인정보처리방침 | https://binsoopark.github.io/reading-bible-by-own-bible/privacy-policy.html |
 
-자격증명·API 키는 Notion **Reading My Bible — iOS 배포 Secrets** 페이지를 참고하세요.
+자격증명과 API 키는 저장소 밖의 개인 비밀 관리 도구에 보관하세요.
 
 ---
 
@@ -29,7 +29,7 @@ Android [`PLAY_DEPLOY.md`](../android/docs/PLAY_DEPLOY.md)와 대칭으로, iOS 
 | 항목 | 위치 |
 | --- | --- |
 | 버전 (1.2.1 / 10004) | `ios/project.yml` |
-| Development Team | `DEVELOPMENT_TEAM: 3Z2KXXULNQ` |
+| Development Team | Git에서 제외된 `Config/Local.xcconfig` |
 | 공유 Scheme | `project.yml` → `schemes:` (xcodegen 생성) |
 | App Icon | `ios/Resources/Assets.xcassets/AppIcon.appiconset/` |
 | Privacy Manifest | `ios/PrivacyInfo.xcprivacy` |
@@ -64,7 +64,7 @@ open ReadingMyBible.xcodeproj
 
 ## Phase 4 — 자동화 (예정)
 
-GitHub Secrets (Notion 참고):
+GitHub Secrets:
 
 | Secret | 설명 |
 | --- | --- |

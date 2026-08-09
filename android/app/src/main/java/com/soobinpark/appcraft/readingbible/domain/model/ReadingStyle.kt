@@ -1,13 +1,11 @@
 package com.soobinpark.appcraft.readingbible.domain.model
 
-enum class ReadingPalette(
-    val label: String,
-) {
-    Paper("종이"),
-    Evening("저녁"),
-    Oled("OLED"),
-    HighContrast("고대비"),
-    WarmLight("따뜻한 빛"),
+enum class ReadingPalette {
+    Paper,
+    Evening,
+    Oled,
+    HighContrast,
+    WarmLight,
 }
 
 data class ReadingStyle(

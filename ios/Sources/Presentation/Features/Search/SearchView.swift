@@ -11,14 +11,14 @@ struct SearchView: View {
     var body: some View {
         VStack(spacing: 12) {
             HStack {
-                TextField("검색어 (2글자 이상)", text: $viewModel.query)
+                TextField(L10n.text("search.placeholder"), text: $viewModel.query)
                     .textFieldStyle(ReadingTextFieldStyle())
                     .submitLabel(.search)
                     .onSubmit {
                         KeyboardDismiss.hide()
                         Task { await runSearch() }
                     }
-                Button("검색") {
+                Button(L10n.text("action.search")) {
                     KeyboardDismiss.hide()
                     Task { await runSearch() }
                 }
@@ -27,7 +27,7 @@ struct SearchView: View {
             .padding(.horizontal)
 
             if let version = viewModel.selectedVersion {
-                Text("역본: \(version.displayName)")
+                Text(L10n.format("search.version", version.displayName))
                     .font(.caption)
                     .readingSecondaryForeground()
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -43,7 +43,7 @@ struct SearchView: View {
 
             List {
                 Section {
-                    Text("결과 \(viewModel.results.count)개")
+                    Text(L10n.format("search.resultCount", viewModel.results.count))
                         .font(.caption)
                         .readingSecondaryForeground()
                 }
@@ -60,7 +60,7 @@ struct SearchView: View {
                     .onLongPressGesture { onOpenResult(result) }
                 }
                 if viewModel.canLoadMore {
-                    Button("더 보기") { viewModel.resultPage += 1 }
+                    Button(L10n.text("action.more")) { viewModel.resultPage += 1 }
                         .foregroundStyle(palette.primary)
                 }
             }

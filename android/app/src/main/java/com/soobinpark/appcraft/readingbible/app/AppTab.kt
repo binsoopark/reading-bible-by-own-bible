@@ -7,14 +7,16 @@ import androidx.compose.material.icons.outlined.NoteAlt
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.annotation.StringRes
+import com.soobinpark.appcraft.readingbible.R
 
 enum class AppTab(
-    val label: String,
+    @StringRes val labelRes: Int,
     val icon: ImageVector,
 ) {
-    Reader("읽기", Icons.AutoMirrored.Outlined.MenuBook),
-    Search("검색", Icons.Outlined.Search),
-    Records("메모", Icons.Outlined.NoteAlt),
-    PersonalNotes("개인메모", Icons.Outlined.EditNote),
-    Settings("설정", Icons.Outlined.Settings),
+    Reader(R.string.tab_reader, Icons.AutoMirrored.Outlined.MenuBook),
+    Search(R.string.tab_search, Icons.Outlined.Search),
+    Records(R.string.tab_records, Icons.Outlined.NoteAlt),
+    PersonalNotes(R.string.tab_personal_notes, Icons.Outlined.EditNote),
+    Settings(R.string.tab_settings, Icons.Outlined.Settings),
 }

@@ -52,3 +52,6 @@ object BibleCatalog {
 
     fun bookNumber(bookIndex: Int): String = (bookIndex + 1).toString().padStart(2, '0')
 }
+
+fun BibleBook.localizedName(languageCode: String): String =
+    if (languageCode.equals("ko", ignoreCase = true)) koreanName else englishName

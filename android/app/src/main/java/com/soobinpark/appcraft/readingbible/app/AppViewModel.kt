@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Environment
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.soobinpark.appcraft.readingbible.R
 import com.soobinpark.appcraft.readingbible.data.preference.BookmarkPreferences
 import com.soobinpark.appcraft.readingbible.data.preference.DataFolderPreferences
 import com.soobinpark.appcraft.readingbible.data.preference.PersonalNotePreferences
@@ -19,6 +20,7 @@ import com.soobinpark.appcraft.readingbible.domain.model.ReadingStyle
 import com.soobinpark.appcraft.readingbible.domain.model.VerseHighlight
 import com.soobinpark.appcraft.readingbible.domain.model.VerseBookmark
 import com.soobinpark.appcraft.readingbible.domain.model.shouldPersist
+import com.soobinpark.appcraft.readingbible.domain.model.localizedName
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,6 +48,7 @@ data class BibleDataDownloadUiState(
 )
 
 class AppViewModel(application: Application) : AndroidViewModel(application) {
+    private val language: String get() = getApplication<Application>().resources.configuration.locales[0].language
     private val dataFolderPreferences = DataFolderPreferences(application)
     private val readingStylePreferences = ReadingStylePreferences(application)
     private val bookmarkPreferences = BookmarkPreferences(application)
@@ -98,7 +101,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             if (hasExistingBibleData()) {
                 _dataDownloadState.value = BibleDataDownloadUiState(
                     isActive = false,
-                    message = "이미 성경 데이터가 있습니다. 다운로드는 데이터가 없을 때만 이용할 수 있습니다.",
+                    message = AppText.get(R.string.download_existing_data),
                     installedRoot = _localDataRoot.value,
                 )
                 return@launch
@@ -110,7 +113,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 _dataDownloadState.value = BibleDataDownloadUiState(
                     isActive = true,
-                    message = "성경 데이터 파일을 다운로드하는 중입니다.",
+                    message = AppText.get(R.string.download_downloading),
                     progress = 0f,
                     installedRoot = _localDataRoot.value,
                 )
@@ -118,30 +121,30 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 downloadFile(downloadFile)
                 _dataDownloadState.value = BibleDataDownloadUiState(
                     isActive = true,
-                    message = "다운로드 파일을 확인하는 중입니다.",
+                    message = AppText.get(R.string.download_verifying),
                     progress = 0.72f,
                     installedRoot = _localDataRoot.value,
                 )
-                check(downloadFile.sha256() == BibleZipSha256) { "다운로드한 파일의 체크섬이 일치하지 않습니다." }
+                check(downloadFile.sha256() == BibleZipSha256) { AppText.get(R.string.download_checksum_error) }
 
                 stageDir.deleteRecursively()
                 stageDir.mkdirs()
                 _dataDownloadState.value = BibleDataDownloadUiState(
                     isActive = true,
-                    message = "성경 데이터 압축을 해제하는 중입니다.",
+                    message = AppText.get(R.string.download_extracting),
                     progress = 0.82f,
                     installedRoot = _localDataRoot.value,
                 )
                 unzipBibleData(downloadFile, stageDir)
                 installBase.deleteRecursively()
-                check(stageDir.renameTo(installBase)) { "압축 해제한 폴더를 적용하지 못했습니다." }
+                check(stageDir.renameTo(installBase)) { AppText.get(R.string.download_apply_error) }
                 val root = File(installBase, "bible").takeIf { it.isDirectory } ?: installBase
                 dataFolderPreferences.setLocalRoot(root)
                 _dataFolderUri.value = null
                 _localDataRoot.value = root
                 _dataDownloadState.value = BibleDataDownloadUiState(
                     isActive = false,
-                    message = "성경 데이터를 다운로드하고 적용했습니다.",
+                    message = AppText.get(R.string.download_success),
                     progress = 1f,
                     installedRoot = root,
                 )
@@ -149,7 +152,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             } catch (error: Throwable) {
                 _dataDownloadState.value = BibleDataDownloadUiState(
                     isActive = false,
-                    message = "성경 데이터 다운로드에 실패했습니다. ${error.message.orEmpty()}",
+                    message = AppText.get(R.string.download_failure, error.message.orEmpty()),
                     installedRoot = _localDataRoot.value,
                 )
             } finally {
@@ -373,7 +376,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 _cacheWarmUpState.value = CacheWarmUpUiState(
                     isActive = true,
-                    message = "성경 데이터 폴더를 확인하는 중입니다.",
+                    message = AppText.get(R.string.bootstrap_checking_folder),
                 )
                 val root = File(Environment.getExternalStorageDirectory(), "bible")
                 val versions = uri?.let { repository.scanVersions(it) }
@@ -394,14 +397,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 selected?.let {
                     _cacheWarmUpState.value = CacheWarmUpUiState(
                         isActive = true,
-                        message = "마지막으로 읽던 ${book.koreanName} ${chapter}장을 준비하는 중입니다.",
+                        message = AppText.get(R.string.bootstrap_last_chapter, book.localizedName(language), chapter),
                     )
                     repository.readChapter(it, book, chapter)
                 }
                 versions.firstOrNull { it.code != selected?.code }?.let {
                     _cacheWarmUpState.value = CacheWarmUpUiState(
                         isActive = true,
-                        message = "비교 역본 본문을 미리 읽는 중입니다.",
+                        message = AppText.get(R.string.bootstrap_comparison),
                     )
                     repository.readChapter(it, book, chapter)
                 }
@@ -409,7 +412,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     repository.warmUpVersion(version) { current, total, label ->
                         _cacheWarmUpState.value = CacheWarmUpUiState(
                             isActive = true,
-                            message = "${version.displayName} 역본을 빠른 실행용 DB 캐시로 준비 중입니다. $label",
+                            message = AppText.get(R.string.bootstrap_cache_version, version.displayName, label),
                             progress = current.toFloat() / total.toFloat(),
                         )
                     }
@@ -452,7 +455,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         downloaded += read
                         _dataDownloadState.value = BibleDataDownloadUiState(
                             isActive = true,
-                            message = "성경 데이터 파일을 다운로드하는 중입니다.",
+                            message = AppText.get(R.string.download_downloading),
                             progress = (downloaded.toFloat() / total.toFloat()).coerceIn(0f, 0.7f),
                             installedRoot = _localDataRoot.value,
                         )
@@ -474,7 +477,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             while (entry != null) {
                 val target = File(destination, entry.name).canonicalFile
                 check(target.path == canonicalDestination.path || target.path.startsWith(canonicalDestination.path + File.separator)) {
-                    "안전하지 않은 압축 경로입니다."
+                    AppText.get(R.string.zip_unsafe_path)
                 }
                 if (entry.isDirectory) {
                     target.mkdirs()

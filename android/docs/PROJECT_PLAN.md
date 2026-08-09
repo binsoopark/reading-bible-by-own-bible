@@ -199,7 +199,7 @@ com.soobinpark.appcraft.readingbible
 
 ### 2026-05-31 GitHub Release 성경 데이터 다운로드
 
-- [x] `/Users/soobinpark/Downloads/bible/bible.zip` 파일 SHA-256 확인
+- [x] 로컬 `bible.zip` 파일 SHA-256 확인
 - [x] GitHub Release `bible-data-2026.05.31` 생성 및 `bible.zip` asset 업로드
 - [x] 설정 탭에 `성경 데이터 다운로드` 카드 추가
 - [x] 앱에서 GitHub Release의 `bible.zip` 다운로드, SHA-256 검증, 압축 해제, 앱 전용 데이터 폴더 적용 구현

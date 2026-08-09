@@ -13,7 +13,7 @@ struct SettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text("설정")
+            Text(L10n.text("tab.settings"))
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(palette.onSurface)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -27,7 +27,7 @@ struct SettingsView: View {
                         showHelpGuide = true
                     } label: {
                         HStack {
-                            Label("사용 방법 도움말", systemImage: "questionmark.circle")
+                            Label(L10n.text("settings.help.title"), systemImage: "questionmark.circle")
                                 .foregroundStyle(palette.onSurface)
                             Spacer()
                             Image(systemName: "chevron.right")
@@ -38,44 +38,44 @@ struct SettingsView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    Text("탭별 기능, 길게 누르기, 스와이프 등 사용 방법을 확인할 수 있습니다.")
+                    Text(L10n.text("settings.help.description"))
                         .font(.caption)
                         .readingSecondaryForeground()
                 } header: {
-                    Text("도움말").foregroundStyle(palette.onSurfaceVariant)
+                    Text(L10n.text("settings.help.section")).foregroundStyle(palette.onSurfaceVariant)
                 }
 
                 Section {
-                    Button("성경 데이터 폴더 선택") { showFolderPicker = true }
+                    Button(L10n.text("settings.chooseFolder")) { showFolderPicker = true }
                     if let url = environment.dataFolderURL {
                         Text(url.path)
                             .font(.caption)
                             .readingSecondaryForeground()
                     } else {
-                        Text("폴더가 선택되지 않았습니다.")
+                        Text(L10n.text("settings.noFolder"))
                             .readingSecondaryForeground()
                     }
-                    Button("성경 파일 확인") { Task { await loadDiagnostics() } }
+                    Button(L10n.text("settings.checkFiles")) { Task { await loadDiagnostics() } }
                 } header: {
-                    Text("데이터").foregroundStyle(palette.onSurfaceVariant)
+                    Text(L10n.text("settings.data.section")).foregroundStyle(palette.onSurfaceVariant)
                 }
 
                 BibleDataDownloadSection()
 
                 Section {
                     Slider(value: fontSizeBinding, in: ReadingStyle.fontSizeRange, step: 1) {
-                        Text("글자 크기")
+                        Text(L10n.text("settings.fontSize"))
                     }
                     .tint(palette.primary)
                     Slider(value: lineHeightBinding, in: ReadingStyle.lineHeightRange, step: 0.05) {
-                        Text("줄 간격")
+                        Text(L10n.text("settings.lineSpacing"))
                     }
                     .tint(palette.primary)
                     Button {
                         showPalettePicker = true
                     } label: {
                         HStack {
-                            Text("팔레트")
+                            Text(L10n.text("settings.palette"))
                                 .foregroundStyle(palette.onSurface)
                             Spacer()
                             Text(environment.readingStyle.palette.label)
@@ -88,33 +88,33 @@ struct SettingsView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    Toggle("화면 꺼지지 않도록 유지", isOn: keepScreenOnBinding)
-                    Toggle("멀티터치 줌 사용", isOn: multitouchZoomBinding)
-                    Toggle("볼드체 적용", isOn: boldBinding)
-                    Toggle("메모 아이콘 표시", isOn: noteIconBinding)
+                    Toggle(L10n.text("settings.keepScreenOn"), isOn: keepScreenOnBinding)
+                    Toggle(L10n.text("settings.multitouchZoom"), isOn: multitouchZoomBinding)
+                    Toggle(L10n.text("settings.boldText"), isOn: boldBinding)
+                    Toggle(L10n.text("settings.showNoteIcon"), isOn: noteIconBinding)
                 } header: {
-                    Text("읽기 스타일").foregroundStyle(palette.onSurfaceVariant)
+                    Text(L10n.text("settings.readingStyle.section")).foregroundStyle(palette.onSurfaceVariant)
                 }
 
                 Section {
-                    ShareLink(item: environment.exportRecordsJSON(), preview: SharePreview("구절 기록"))
-                    TextField("JSON 가져오기", text: $importJSON, axis: .vertical)
+                    ShareLink(item: environment.exportRecordsJSON(), preview: SharePreview(L10n.text("settings.records.sharePreview")))
+                    TextField(L10n.text("settings.records.importPlaceholder"), text: $importJSON, axis: .vertical)
                         .textFieldStyle(ReadingTextFieldStyle())
-                    Button("기록 가져오기") {
+                    Button(L10n.text("settings.records.import")) {
                         KeyboardDismiss.hide()
                         environment.importRecordsJSON(importJSON)
                     }
                 } header: {
-                    Text("기록").foregroundStyle(palette.onSurfaceVariant)
+                    Text(L10n.text("settings.records.section")).foregroundStyle(palette.onSurfaceVariant)
                 }
 
                 Section {
                     Text(appInfoText)
                         .font(.footnote)
                         .readingSecondaryForeground()
-                    LabeledContent("버전", value: "1.0.0")
+                    LabeledContent(L10n.text("settings.version"), value: "1.0.0")
                 } header: {
-                    Text("앱 정보").foregroundStyle(palette.onSurfaceVariant)
+                    Text(L10n.text("settings.appInfo.section")).foregroundStyle(palette.onSurfaceVariant)
                 }
             }
             .readingThemedForm()
@@ -236,13 +236,13 @@ private struct PalettePickerSheet: View {
                 }
             }
             .readingThemedList()
-            .navigationTitle("팔레트")
+            .navigationTitle(L10n.text("settings.palette"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(palette.background, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("닫기") { dismiss() }
+                    Button(L10n.text("action.close")) { dismiss() }
                 }
             }
         }
@@ -258,19 +258,19 @@ private struct DiagnosticsSheet: View {
         NavigationStack {
             List {
                 if let diagnostic {
-                    Section("요약") {
-                        LabeledContent("파일 수", value: "\(diagnostic.scannedFileCount)")
+                    Section(L10n.text("diagnostics.summary")) {
+                        LabeledContent(L10n.text("diagnostics.fileCount"), value: "\(diagnostic.scannedFileCount)")
                         LabeledContent("LFA", value: "\(diagnostic.lfaCount)")
                         LabeledContent("BDF", value: "\(diagnostic.bdfFileCount)")
-                        LabeledContent("완성 BDF 역본", value: "\(diagnostic.completeBdfVersionCount)")
+                        LabeledContent(L10n.text("diagnostics.completeBdf"), value: "\(diagnostic.completeBdfVersionCount)")
                         LabeledContent("MP3", value: "\(diagnostic.mp3Count)")
                     }
-                    Section("역본") {
+                    Section(L10n.text("diagnostics.versions")) {
                         ForEach(diagnostic.versions) { version in
                             Text("\(version.displayName) (\(version.code))")
                         }
                     }
-                    Section("이슈") {
+                    Section(L10n.text("diagnostics.issues")) {
                         ForEach(diagnostic.issues) { issue in
                             VStack(alignment: .leading) {
                                 Text(issue.title).font(.headline)
@@ -281,12 +281,12 @@ private struct DiagnosticsSheet: View {
                 }
             }
             .readingThemedList()
-            .navigationTitle("파일 진단")
+            .navigationTitle(L10n.text("diagnostics.title"))
             .toolbarBackground(palette.background, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("닫기") { dismiss() }
+                    Button(L10n.text("action.close")) { dismiss() }
                 }
             }
         }

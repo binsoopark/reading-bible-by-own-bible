@@ -2,6 +2,8 @@ package com.soobinpark.appcraft.readingbible.data.repository
 
 import android.content.Context
 import android.net.Uri
+import com.soobinpark.appcraft.readingbible.R
+import com.soobinpark.appcraft.readingbible.app.AppText
 import androidx.documentfile.provider.DocumentFile
 import com.soobinpark.appcraft.readingbible.data.biblefile.BibleFileScanner
 import com.soobinpark.appcraft.readingbible.data.biblefile.SafBibleFileScanner
@@ -18,6 +20,8 @@ import com.soobinpark.appcraft.readingbible.domain.model.BibleSearchResult
 import com.soobinpark.appcraft.readingbible.domain.model.BibleSourceType
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVerse
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
+import com.soobinpark.appcraft.readingbible.domain.model.localizedName
+import java.util.Locale
 import com.soobinpark.appcraft.readingbible.domain.repository.BibleRepository
 import java.io.File
 import java.nio.charset.Charset
@@ -101,14 +105,14 @@ class FileBibleRepository(
                     current += 1
                     val book = BibleCatalog.books[first.bookIndex]
                     if (current == 1 || current == total || first.chapter == 1 || current % 25 == 0) {
-                        onProgress(current, total, "${book.koreanName} ${first.chapter}장")
+                        onProgress(current, total, AppText.get(R.string.format_chapter, book.localizedName(Locale.getDefault().language), first.chapter))
                     }
                 }
             }
-            onProgress(current.coerceAtLeast(1), total, "DB 캐시에 저장하는 중입니다")
+            onProgress(current.coerceAtLeast(1), total, AppText.get(R.string.cache_saving))
             chapterPersistentCache?.writeChapters(chapters)
             chapterCache.putAll(chapters)
-            onProgress(total, total, "캐시 저장 완료")
+            onProgress(total, total, AppText.get(R.string.cache_saved))
             chapterPersistentCache?.markWarmUpComplete(warmUpKey)
             completed = true
         } finally {
@@ -149,7 +153,7 @@ class FileBibleRepository(
         }
         missingChapters.forEachIndexed { index, (book, chapter) ->
             if (index == 0 || index == missingChapters.lastIndex || chapter == 1 || index % 25 == 0) {
-                onProgress(index + 1, missingChapters.size.coerceAtLeast(1), "${book.koreanName} ${chapter}장")
+                onProgress(index + 1, missingChapters.size.coerceAtLeast(1), AppText.get(R.string.format_chapter, book.localizedName(Locale.getDefault().language), chapter))
             }
             readChapter(version, book, chapter)
                 .filter { verse -> verse.text.contains(normalizedQuery, ignoreCase = true) }

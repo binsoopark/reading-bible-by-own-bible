@@ -55,7 +55,7 @@ final class AppEnvironment: ObservableObject {
             await warmUpIfNeeded()
         } catch {
             bootstrapError = error.localizedDescription
-            cacheWarmUpMessage = "초기화 실패: \(error.localizedDescription)"
+            cacheWarmUpMessage = L10n.format("cache.error.initialize", error.localizedDescription)
         }
     }
 
@@ -295,7 +295,8 @@ final class AppEnvironment: ObservableObject {
             localDownloadRoot: localDownloadRoot ?? dataFolderStore.getLocalDownloadRoot()
         ) {
             dataDownloadState = BibleDataDownloadState(
-                message: "이미 성경 데이터가 있습니다. 다운로드는 데이터가 없을 때만 이용할 수 있습니다.",
+                isError: true,
+                message: L10n.text("download.error.existingData"),
                 installedRoot: localDownloadRoot ?? dataFolderURL
             )
             return
@@ -313,7 +314,8 @@ final class AppEnvironment: ObservableObject {
             await warmUpIfNeeded()
         } catch {
             dataDownloadState = BibleDataDownloadState(
-                message: "성경 데이터 다운로드에 실패했습니다. \(error.localizedDescription)",
+                isError: true,
+                message: L10n.format("download.error.failed", error.localizedDescription),
                 installedRoot: localDownloadRoot
             )
         }
@@ -347,7 +349,7 @@ final class AppEnvironment: ObservableObject {
         do {
             let versions = try await repository.scanVersions(at: scoped)
             guard let version = versions.first else { return }
-            cacheWarmUpMessage = "캐시 준비 중..."
+            cacheWarmUpMessage = L10n.text("cache.preparing")
             try await repository.warmUpVersion(version) { current, total, label in
                 Task { @MainActor in
                     self.cacheWarmUpProgress = Double(current) / Double(total)

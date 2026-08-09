@@ -48,7 +48,7 @@ struct ReaderView: View {
                 Spacer()
             } else if let message = viewModel.message {
                 Spacer()
-                ContentUnavailableView("데이터 없음", systemImage: "folder", description: Text(message))
+                ContentUnavailableView(L10n.text("reader.noData"), systemImage: "folder", description: Text(message))
                 Spacer()
             } else {
                 ZStack {
@@ -124,7 +124,7 @@ struct ReaderView: View {
             }
         }
         .sheet(isPresented: $showVersionPicker) {
-            VersionPicker(title: "역본 선택", versions: viewModel.versions, selection: $viewModel.selectedVersion, allowNone: false)
+            VersionPicker(title: L10n.text("reader.versionPicker"), versions: viewModel.versions, selection: $viewModel.selectedVersion, allowNone: false)
                 .readingTheme(environment.readingStyle.palette)
                 .onDisappear {
                     if let version = viewModel.selectedVersion {
@@ -133,7 +133,7 @@ struct ReaderView: View {
                 }
         }
         .sheet(isPresented: $showComparisonPicker) {
-            VersionPicker(title: "비교 역본", versions: viewModel.versions, selection: $viewModel.comparisonVersion, allowNone: true)
+            VersionPicker(title: L10n.text("reader.comparisonPicker"), versions: viewModel.versions, selection: $viewModel.comparisonVersion, allowNone: true)
                 .readingTheme(environment.readingStyle.palette)
                 .onDisappear { viewModel.selectComparison(viewModel.comparisonVersion) }
         }
@@ -164,7 +164,7 @@ struct ReaderView: View {
         }
         .overlay(alignment: .top) {
             if copiedNotice {
-                Text("선택한 구절을 복사했습니다.")
+                Text(L10n.text("reader.copied"))
                     .font(.caption.weight(.semibold))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
@@ -298,7 +298,7 @@ struct ReaderView: View {
                 Button {
                     showBookPicker = true
                 } label: {
-                    Label("\(viewModel.currentBook.koreanName) \(viewModel.chapter)장", systemImage: "list.bullet")
+                    Label(L10n.format("format.chapter", viewModel.currentBook.localizedName, viewModel.chapter), systemImage: "list.bullet")
                         .font(.subheadline.weight(.semibold))
                 }
                 Spacer()
@@ -310,9 +310,9 @@ struct ReaderView: View {
                 }
             }
             HStack {
-                Button(viewModel.selectedVersion?.displayName ?? "역본") { showVersionPicker = true }
+                Button(viewModel.selectedVersion?.displayName ?? L10n.text("reader.version")) { showVersionPicker = true }
                     .buttonStyle(.bordered)
-                Button(viewModel.comparisonVersion?.displayName ?? "비교") { showComparisonPicker = true }
+                Button(viewModel.comparisonVersion?.displayName ?? L10n.text("reader.compare")) { showComparisonPicker = true }
                     .buttonStyle(.bordered)
                 Spacer()
             }

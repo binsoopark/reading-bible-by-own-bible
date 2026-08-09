@@ -37,13 +37,13 @@ struct HighlightColorPickerSheet: View {
                 }
             }
             .readingThemedList()
-            .navigationTitle("형광펜 색상")
+            .navigationTitle(L10n.text("highlight.picker.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(palette.background, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("닫기") { dismiss() }
+                    Button(L10n.text("action.close")) { dismiss() }
                 }
             }
         }
@@ -60,22 +60,22 @@ struct SelectionActionBar: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Text("\(count)개 선택")
+            Text(L10n.format("format.selectedCount", count))
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(palette.onSurface)
             Spacer()
-            Button("해제", action: onClear)
+            Button(L10n.text("action.clearSelection"), action: onClear)
                 .buttonStyle(ReadingSecondaryButtonStyle())
             if let onHighlight {
                 Button(action: onHighlight) {
                     Image(systemName: "highlighter")
                 }
                 .buttonStyle(ReadingSecondaryButtonStyle())
-                .accessibilityLabel("선택한 구절 형광펜")
+                .accessibilityLabel(L10n.text("highlight.selection.accessibility"))
             }
-            Button("복사", action: onCopy)
+            Button(L10n.text("action.copy"), action: onCopy)
                 .buttonStyle(ReadingSecondaryButtonStyle())
-            Button("공유", action: onShare)
+            Button(L10n.text("action.share"), action: onShare)
                 .buttonStyle(ReadingPrimaryButtonStyle())
         }
         .padding(.horizontal, 12)

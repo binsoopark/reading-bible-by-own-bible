@@ -7,9 +7,11 @@ struct BookChapterPicker: View {
     @Environment(\.dismiss) private var dismiss
     @State private var testament: Testament = .old
 
-    enum Testament: String, CaseIterable {
-        case old = "구약"
-        case new = "신약"
+    enum Testament: CaseIterable {
+        case old
+        case new
+
+        var label: String { self == .old ? L10n.text("testament.old") : L10n.text("testament.new") }
     }
 
     var body: some View {
@@ -17,7 +19,7 @@ struct BookChapterPicker: View {
             VStack(spacing: 0) {
                 Picker("testament", selection: $testament) {
                     ForEach(Testament.allCases, id: \.self) { value in
-                        Text(value.rawValue).tag(value)
+                        Text(value.label).tag(value)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -35,7 +37,7 @@ struct BookChapterPicker: View {
                                     chapter = 1
                                 } label: {
                                     HStack {
-                                        Text(item.koreanName)
+                                        Text(item.localizedName)
                                         Spacer()
                                         if item.index == bookIndex {
                                             Image(systemName: "checkmark")
@@ -63,7 +65,7 @@ struct BookChapterPicker: View {
                                     dismiss()
                                 } label: {
                                     HStack {
-                                        Text("\(value)장")
+                                        Text(L10n.format("format.chapterNumber", value))
                                         Spacer()
                                         if value == chapter {
                                             Image(systemName: "checkmark")
@@ -81,11 +83,11 @@ struct BookChapterPicker: View {
                     .frame(maxWidth: .infinity)
                 }
             }
-            .navigationTitle("책/장 선택")
+            .navigationTitle(L10n.text("picker.bookChapter.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("취소") { dismiss() }
+                    Button(L10n.text("action.cancel")) { dismiss() }
                 }
             }
             .onAppear {
@@ -119,14 +121,14 @@ struct VersionPicker: View {
             Group {
                 if versions.isEmpty {
                     ContentUnavailableView(
-                        "역본 없음",
+                        L10n.text("version.none"),
                         systemImage: "books.vertical",
-                        description: Text("성경 데이터 폴더에서 역본을 찾지 못했습니다.")
+                        description: Text(L10n.text("version.none.description"))
                     )
                 } else {
                     List {
                         if allowNone {
-                            Button("없음") {
+                            Button(L10n.text("action.none")) {
                                 selection = nil
                                 dismiss()
                             }
@@ -172,9 +174,9 @@ struct VersionPicker: View {
     private var groupedVersions: [String: [BibleVersion]] {
         Dictionary(grouping: versions) { version in
             let code = version.code.lowercased()
-            if code.hasPrefix("kor") || code.contains("korn") || code.contains("kork") { return "한국어" }
-            if code.hasPrefix("eng") { return "English" }
-            return "기타"
+            if code.hasPrefix("kor") || code.contains("korn") || code.contains("kork") { return L10n.text("language.korean") }
+            if code.hasPrefix("eng") { return L10n.text("language.english") }
+            return L10n.text("language.other")
         }
     }
 }

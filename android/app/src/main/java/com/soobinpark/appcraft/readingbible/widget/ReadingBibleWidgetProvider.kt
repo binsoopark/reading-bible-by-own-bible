@@ -25,7 +25,7 @@ class ReadingBibleWidgetProvider : AppWidgetProvider() {
             val views = RemoteViews(context.packageName, R.layout.widget_reading_bible).apply {
                 setOnClickPendingIntent(R.id.widget_root, pendingIntent)
                 setTextViewText(R.id.widget_title, context.getString(R.string.app_name))
-                setTextViewText(R.id.widget_body, "내가 가진 성경 파일로 이어서 읽기")
+                setTextViewText(R.id.widget_body, context.getString(R.string.widget_body))
             }
             appWidgetManager.updateAppWidget(widgetId, views)
         }

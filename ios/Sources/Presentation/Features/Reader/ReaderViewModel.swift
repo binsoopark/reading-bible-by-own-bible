@@ -11,7 +11,7 @@ final class ReaderViewModel: ObservableObject {
     @Published var verses: [BibleVerse] = []
     @Published var comparisonVerses: [BibleVerse] = []
     @Published var isLoading = true
-    @Published var loadingMessage = "성경 데이터를 준비하는 중입니다."
+    @Published var loadingMessage = L10n.text("reader.loading.prepare")
     @Published var message: String?
 
     private var repository: BibleRepository?
@@ -33,20 +33,20 @@ final class ReaderViewModel: ObservableObject {
 
         if let bootstrapError = environment.bootstrapError {
             isLoading = false
-            message = "앱 초기화에 실패했습니다. \(bootstrapError)"
+            message = L10n.format("reader.error.bootstrap", bootstrapError)
             return
         }
 
         guard let repository, let dataFolderStore else {
             isLoading = false
-            message = "성경 데이터를 불러올 준비가 되지 않았습니다."
+            message = L10n.text("reader.error.notReady")
             return
         }
 
         dataRoot = environment.dataFolderURL ?? dataFolderStore.defaultBibleFolder()
         guard let root = dataRoot else {
             isLoading = false
-            message = "성경 데이터 폴더를 선택하거나 샘플 데이터를 다운로드해 주세요."
+            message = L10n.text("reader.error.chooseData")
             versions = []
             selectedVersion = nil
             verses = []
@@ -54,7 +54,7 @@ final class ReaderViewModel: ObservableObject {
         }
 
         isLoading = true
-        loadingMessage = "데이터 폴더에서 BDF/LFA 역본을 찾는 중입니다."
+        loadingMessage = L10n.text("reader.loading.findVersions")
         message = nil
 
         let scoped = dataFolderStore.startAccessing() ?? root
@@ -82,12 +82,12 @@ final class ReaderViewModel: ObservableObject {
                 comparisonVersion = scanned.first { $0.id != selectedVersion?.id }
             }
 
-            loadingMessage = selectedVersion.map { "\($0.displayName) \(book.koreanName) \(chapter)장을 여는 중입니다." }
-                ?? "사용 가능한 역본을 확인하는 중입니다."
+            loadingMessage = selectedVersion.map { L10n.format("reader.loading.openChapter", $0.displayName, book.localizedName, chapter) }
+                ?? L10n.text("reader.loading.checkVersions")
 
             if scanned.isEmpty {
                 isLoading = false
-                message = "선택한 폴더에서 BDF/LFA 역본을 찾지 못했습니다."
+                message = L10n.text("reader.error.noVersions")
                 verses = []
                 return
             }

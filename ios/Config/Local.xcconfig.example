@@ -1,0 +1,3 @@
+// Copy this file to Local.xcconfig and use values owned by your Apple account.
+READING_BIBLE_BUNDLE_ID = com.example.readingmybible
+DEVELOPMENT_TEAM = YOUR_TEAM_ID

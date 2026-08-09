@@ -22,12 +22,12 @@ struct PersonalNotesView: View {
             header
             if !selectedIDs.isEmpty {
                 HStack {
-                    Text("\(selectedIDs.count)개 선택")
+                    Text(L10n.format("format.selectedCount", selectedIDs.count))
                         .font(.subheadline.weight(.semibold))
                     Spacer()
-                    Button("해제") { selectedIDs.removeAll() }
+                    Button(L10n.text("action.clearSelection")) { selectedIDs.removeAll() }
                         .buttonStyle(ReadingSecondaryButtonStyle())
-                    Button("백업") { backupSelected() }
+                    Button(L10n.text("action.backup")) { backupSelected() }
                         .buttonStyle(ReadingPrimaryButtonStyle())
                 }
                 .padding(.horizontal, 16)
@@ -60,7 +60,7 @@ struct PersonalNotesView: View {
         }
         .sheet(item: $editingNote) { note in
             PersonalNoteEditorSheet(
-                title: "메모 수정",
+                title: L10n.text("personalNotes.edit.title"),
                 initialTitle: note.title,
                 initialBody: note.body
             ) { title, body in
@@ -72,7 +72,7 @@ struct PersonalNotesView: View {
             .readingTheme(environment.readingStyle.palette)
         }
         .sheet(isPresented: $isCreating) {
-            PersonalNoteEditorSheet(title: "새 메모", initialTitle: "", initialBody: "") { title, body in
+            PersonalNoteEditorSheet(title: L10n.text("personalNotes.new.title"), initialTitle: "", initialBody: "") { title, body in
                 _ = environment.addPersonalNote(title: title, body: body)
             }
             .readingTheme(environment.readingStyle.palette)
@@ -91,14 +91,14 @@ struct PersonalNotesView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("개인메모")
+            Text(L10n.text("tab.personalNotes"))
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(palette.onSurface)
-            Text("성경 구절과 무관하게 자유롭게 적는 메모입니다. 길게 눌러 선택한 뒤 백업할 수 있습니다.")
+            Text(L10n.text("personalNotes.description"))
                 .font(.caption)
                 .readingSecondaryForeground()
             HStack {
-                Button("복원") { showImporter = true }
+                Button(L10n.text("action.restore")) { showImporter = true }
                     .buttonStyle(ReadingSecondaryButtonStyle())
                 Spacer()
             }
@@ -117,9 +117,9 @@ struct PersonalNotesView: View {
                 Image(systemName: "square.and.pencil")
                     .font(.system(size: 40))
                     .foregroundStyle(palette.onSurfaceVariant)
-                Text("개인메모 없음")
+                Text(L10n.text("personalNotes.empty.title"))
                     .font(.headline)
-                Text("오른쪽 아래 + 버튼으로 새 메모를 추가하세요.")
+                Text(L10n.text("personalNotes.empty.message"))
                     .font(.subheadline)
                     .multilineTextAlignment(.center)
                     .readingSecondaryForeground()
@@ -181,7 +181,7 @@ struct PersonalNotesView: View {
         do {
             exportData = try environment.exportPersonalNotes(ids: selectedIDs)
             showExporter = true
-            flash("선택한 메모를 백업합니다.")
+            flash(L10n.text("personalNotes.backup.started"))
         } catch {
             flash(error.localizedDescription)
         }
@@ -191,7 +191,7 @@ struct PersonalNotesView: View {
         do {
             try environment.importPersonalNotes(from: data, merge: true)
             selectedIDs.removeAll()
-            flash("개인메모를 복원했습니다.")
+            flash(L10n.text("personalNotes.restore.success"))
         } catch {
             flash(error.localizedDescription)
         }
@@ -284,7 +284,7 @@ private struct PersonalNoteSwipeRow: View {
 
     private var rowContent: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(note.title.isEmpty ? "제목 없음" : note.title)
+            Text(note.title.isEmpty ? L10n.text("personalNotes.untitled") : note.title)
                 .font(.headline)
                 .foregroundStyle(palette.onSurface)
             if !note.body.isEmpty {

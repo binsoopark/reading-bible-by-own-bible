@@ -1,0 +1,7 @@
+// Public defaults. Personal signing settings belong in Local.xcconfig.
+READING_BIBLE_BUNDLE_ID = com.soobinpark.appcraft.readingbible
+DEVELOPMENT_TEAM =
+
+#include? "Local.xcconfig"
+
+PRODUCT_BUNDLE_IDENTIFIER = $(READING_BIBLE_BUNDLE_ID)

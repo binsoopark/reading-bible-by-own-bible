@@ -13,8 +13,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.soobinpark.appcraft.readingbible.R
 
 @Composable
 fun HelpGuideScreen(
@@ -26,33 +28,33 @@ fun HelpGuideScreen(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
-            Text("사용 방법", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.help_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
         }
         item {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("시작하기", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.help_getting_started), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        text = HelpGuideContent.intro,
+                        text = stringResource(R.string.help_intro),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
             }
         }
-        items(HelpGuideContent.sections, key = { it.title }) { section ->
+        items(HelpGuideContent.sections, key = { it.titleRes }) { section ->
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(section.title, style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(section.titleRes), style = MaterialTheme.typography.titleMedium)
                     section.items.forEach { item ->
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
-                                text = item.title,
+                                text = stringResource(item.titleRes),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.SemiBold,
                             )
                             Text(
-                                text = item.detail,
+                                text = stringResource(item.detailRes),
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }

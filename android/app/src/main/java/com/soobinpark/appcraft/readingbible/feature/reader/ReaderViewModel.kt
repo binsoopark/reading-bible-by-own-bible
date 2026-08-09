@@ -7,7 +7,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.soobinpark.appcraft.readingbible.data.preference.ReadingProgressPreferences
 import com.soobinpark.appcraft.readingbible.data.repository.FileBibleRepository
+import com.soobinpark.appcraft.readingbible.R
+import com.soobinpark.appcraft.readingbible.app.AppText
 import com.soobinpark.appcraft.readingbible.domain.model.BibleCatalog
+import com.soobinpark.appcraft.readingbible.domain.model.localizedName
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVerse
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingProgress
@@ -31,11 +34,12 @@ data class ReaderUiState(
     val verses: List<BibleVerse> = emptyList(),
     val comparisonVerses: List<BibleVerse> = emptyList(),
     val isLoading: Boolean = true,
-    val loadingMessage: String = "성경 데이터를 준비하는 중입니다.",
+    val loadingMessage: String = AppText.get(R.string.reader_loading_prepare),
     val message: String? = null,
 )
 
 class ReaderViewModel(application: Application) : AndroidViewModel(application) {
+    private val language: String get() = getApplication<Application>().resources.configuration.locales[0].language
     private val repository = FileBibleRepository(application)
     private val progressPreferences = ReadingProgressPreferences(application)
     private val _uiState = MutableStateFlow(ReaderUiState())
@@ -70,7 +74,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
             val root = _uiState.value.dataRoot
             _uiState.value = _uiState.value.copy(
                 isLoading = true,
-                loadingMessage = "데이터 폴더에서 BDF/LFA 역본을 찾는 중입니다.",
+                loadingMessage = AppText.get(R.string.reader_loading_find_versions),
                 message = null,
             )
             val versions = withContext(Dispatchers.IO) {
@@ -101,8 +105,8 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                 comparisonVersion = comparison,
                 bookIndex = safeBookIndex,
                 chapter = safeChapter,
-                loadingMessage = selected?.let { "${it.code} ${book.koreanName} ${safeChapter}장을 여는 중입니다." }
-                    ?: "사용 가능한 역본을 확인하는 중입니다.",
+                loadingMessage = selected?.let { AppText.get(R.string.reader_loading_open_chapter, it.code, book.localizedName(language), safeChapter) }
+                    ?: AppText.get(R.string.reader_loading_check_versions),
             )
             val (verses, comparisonVerses) = withContext(Dispatchers.IO) {
                 val verses = selected?.let { repository.readChapter(it, book, safeChapter) }.orEmpty()
@@ -115,8 +119,8 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                 isLoading = false,
                 loadingMessage = "",
                 message = when {
-                    versions.isEmpty() -> "선택한 폴더 또는 기본 데이터 폴더에서 bdf/lfa 파일을 찾지 못했습니다."
-                    selected != null && verses.isEmpty() -> "${selected.displayName} ${book.koreanName} ${safeChapter}장을 읽지 못했습니다. LFA/BDF 파일 형식 또는 손상 여부를 확인해 주세요."
+                    versions.isEmpty() -> AppText.get(R.string.reader_error_no_versions)
+                    selected != null && verses.isEmpty() -> AppText.get(R.string.reader_error_chapter, selected.displayName, book.localizedName(language), safeChapter)
                     else -> null
                 },
             )
@@ -142,7 +146,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                 comparisonVerses = comparisonVerses,
                 message = if (verses.isEmpty()) {
                     val book = BibleCatalog.books[state.bookIndex]
-                    "${version.displayName} ${book.koreanName} ${state.chapter}장을 읽지 못했습니다. LFA/BDF 파일 형식 또는 손상 여부를 확인해 주세요."
+                    AppText.get(R.string.reader_error_chapter, version.displayName, book.localizedName(language), state.chapter)
                 } else {
                     null
                 },
@@ -188,7 +192,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                 comparisonVerses = comparisonVerses,
                 message = if (state.selectedVersion != null && verses.isEmpty()) {
                     val book = BibleCatalog.books[safeBookIndex]
-                    "${state.selectedVersion.displayName} ${book.koreanName} ${safeChapter}장을 읽지 못했습니다. LFA/BDF 파일 형식 또는 손상 여부를 확인해 주세요."
+                    AppText.get(R.string.reader_error_chapter, state.selectedVersion.displayName, book.localizedName(language), safeChapter)
                 } else {
                     null
                 },
@@ -239,7 +243,7 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
                 loadingMessage = "",
                 message = if (targetVersion != null && verses.isEmpty()) {
                     val book = BibleCatalog.books[safeBookIndex]
-                    "${targetVersion.displayName} ${book.koreanName} ${safeChapter}장을 읽지 못했습니다. LFA/BDF 파일 형식 또는 손상 여부를 확인해 주세요."
+                    AppText.get(R.string.reader_error_chapter, targetVersion.displayName, book.localizedName(language), safeChapter)
                 } else {
                     null
                 },

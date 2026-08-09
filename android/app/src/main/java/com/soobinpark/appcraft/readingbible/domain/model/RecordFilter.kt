@@ -1,10 +1,10 @@
 package com.soobinpark.appcraft.readingbible.domain.model
 
-enum class RecordFilter(val label: String) {
-    Bookmark("북마크"),
-    Highlight("형광펜"),
-    Read("읽음"),
-    Note("메모"),
+enum class RecordFilter {
+    Bookmark,
+    Highlight,
+    Read,
+    Note,
     ;
 
     fun matches(bookmark: VerseBookmark): Boolean {
@@ -17,13 +17,17 @@ enum class RecordFilter(val label: String) {
     }
 }
 
-enum class RecordSortOrder(val label: String) {
-    Recent("최신순"),
-    Bible("성경순"),
+enum class RecordSortOrder {
+    Recent,
+    Bible,
 }
 
 object RecordShareFormatter {
-    fun format(bookmarks: List<VerseBookmark>): String {
+    fun format(
+        bookmarks: List<VerseBookmark>,
+        bookName: (BibleBook) -> String = { it.koreanName },
+        verseLine: (Int, String) -> String = { verse, text -> "$verse $text" },
+    ): String {
         if (bookmarks.isEmpty()) return ""
         val sorted = bookmarks.sortedWith(
             compareBy<VerseBookmark>({ it.versionCode.lowercase() }, { it.bookIndex }, { it.chapter }, { it.verse }),
@@ -35,13 +39,13 @@ object RecordShareFormatter {
         fun flush() {
             if (sectionBookmarks.isEmpty()) return
             val first = sectionBookmarks.first()
-            val bookName = BibleCatalog.books.getOrNull(first.bookIndex)?.koreanName.orEmpty()
+            val localizedBookName = BibleCatalog.books.getOrNull(first.bookIndex)?.let(bookName).orEmpty()
             val verseLabel = sectionBookmarks.map { it.verse }.toVerseRangeLabel()
-            val reference = "$bookName ${first.chapter}:$verseLabel · ${first.versionCode}".trim()
+            val reference = "$localizedBookName ${first.chapter}:$verseLabel · ${first.versionCode}".trim()
             sections += if (sectionBookmarks.size == 1) {
                 "“${first.text.trim()}”\n$reference"
             } else {
-                val body = sectionBookmarks.joinToString("\n") { "${it.verse}절 ${it.text.trim()}" }
+                val body = sectionBookmarks.joinToString("\n") { verseLine(it.verse, it.text.trim()) }
                 "$body\n\n$reference"
             }
             sectionBookmarks.clear()

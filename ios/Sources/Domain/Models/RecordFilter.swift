@@ -10,10 +10,10 @@ enum RecordFilter: String, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .bookmark: "북마크"
-        case .highlight: "형광펜"
-        case .read: "읽음"
-        case .note: "메모"
+        case .bookmark: L10n.text("record.filter.bookmark")
+        case .highlight: L10n.text("record.filter.highlight")
+        case .read: L10n.text("record.filter.read")
+        case .note: L10n.text("record.filter.note")
         }
     }
 
@@ -35,8 +35,8 @@ enum RecordSortOrder: String, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .recent: "최신순"
-        case .bible: "성경순"
+        case .recent: L10n.text("record.sort.recent")
+        case .bible: L10n.text("record.sort.bible")
         }
     }
 }
@@ -60,12 +60,12 @@ enum RecordShareFormatter {
             guard let first = sectionBookmarks.first else { return }
             let book = BibleCatalog.book(at: first.bookIndex)
             let verseLabel = verseRangeLabel(sectionBookmarks.map(\.verse))
-            let reference = "\(book.koreanName) \(first.chapter):\(verseLabel) · \(first.versionCode)"
+            let reference = "\(book.localizedName) \(first.chapter):\(verseLabel) · \(first.versionCode)"
             if sectionBookmarks.count == 1 {
                 sections.append("“\(first.text.trimmingCharacters(in: .whitespacesAndNewlines))”\n\(reference)")
             } else {
                 let body = sectionBookmarks.map {
-                    "\($0.verse)절 \($0.text.trimmingCharacters(in: .whitespacesAndNewlines))"
+                    L10n.format("format.verseLine", $0.verse, $0.text.trimmingCharacters(in: .whitespacesAndNewlines))
                 }.joined(separator: "\n")
                 sections.append("\(body)\n\n\(reference)")
             }

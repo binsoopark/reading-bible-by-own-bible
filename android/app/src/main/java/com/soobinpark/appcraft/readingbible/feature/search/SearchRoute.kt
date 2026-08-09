@@ -50,6 +50,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -62,6 +64,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.soobinpark.appcraft.readingbible.domain.model.BibleSearchResult
+import com.soobinpark.appcraft.readingbible.R
+import com.soobinpark.appcraft.readingbible.domain.model.localizedName
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
 import java.io.File
 import kotlinx.coroutines.launch
@@ -102,6 +106,8 @@ private fun SearchScreen(
     modifier: Modifier = Modifier,
 ) {
     var showVersionSheet by androidx.compose.runtime.remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val language = context.resources.configuration.locales[0].language
     val resultListState = rememberLazyListState()
     val resultStartIndex = 2 +
         if (state.isLoading || state.isSearching) 1 else 0 +
@@ -128,7 +134,7 @@ private fun SearchScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
-                Text("검색", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.tab_search), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
             }
             item {
                 SearchInputCard(
@@ -155,7 +161,7 @@ private fun SearchScreen(
             if (state.results.isNotEmpty()) {
                 item {
                     Text(
-                        text = "전체 ${state.results.size}개 중 ${state.visibleResults.size}개 표시",
+                        text = stringResource(R.string.search_results_visible, state.results.size, state.visibleResults.size),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -171,7 +177,7 @@ private fun SearchScreen(
             if (state.visibleResults.size < state.results.size) {
                 item {
                     Button(onClick = onShowNextPage, modifier = Modifier.fillMaxWidth()) {
-                        Text("다음 100개 보기")
+                        Text(stringResource(R.string.search_next_page))
                     }
                 }
             }
@@ -183,7 +189,7 @@ private fun SearchScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        text = currentResult?.let { "${it.book.koreanName} ${it.verse.chapter}장" }.orEmpty(),
+                        text = currentResult?.let { stringResource(R.string.format_chapter, it.book.localizedName(language), it.verse.chapter) }.orEmpty(),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -195,7 +201,7 @@ private fun SearchScreen(
             itemCount = totalListItems,
             labelForIndex = { index ->
                 state.visibleResults.getOrNull(index - resultStartIndex)
-                    ?.let { "${it.book.koreanName} ${it.verse.chapter}장" }
+                    ?.let { result -> context.getString(R.string.format_chapter, result.book.localizedName(language), result.verse.chapter) }
             },
             modifier = Modifier.align(Alignment.CenterEnd),
         )
@@ -224,10 +230,10 @@ private fun SearchInputCard(
     Card {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("본문 검색", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.search_body_title), style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
                 SuggestionChip(
                     onClick = onVersionClick,
-                    label = { Text(state.selectedVersion?.displayName ?: "역본 선택") },
+                    label = { Text(state.selectedVersion?.displayName ?: stringResource(R.string.reader_choose_version)) },
                 )
             }
             OutlinedTextField(
@@ -235,8 +241,8 @@ private fun SearchInputCard(
                 onValueChange = onQueryChanged,
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                label = { Text("검색어") },
-                placeholder = { Text("두 글자 이상 입력") },
+                label = { Text(stringResource(R.string.search_query)) },
+                placeholder = { Text(stringResource(R.string.search_query_hint)) },
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { onSearch() }),
             )
@@ -245,10 +251,10 @@ private fun SearchInputCard(
                     onClick = onSearch,
                     enabled = !state.isLoading && !state.isSearching,
                 ) {
-                    Text("검색")
+                    Text(stringResource(R.string.action_search))
                 }
                 Text(
-                    text = if (state.results.isEmpty()) "전체 결과를 검색합니다" else "총 ${state.results.size}개 결과",
+                    text = if (state.results.isEmpty()) stringResource(R.string.search_all_results) else stringResource(R.string.search_total_results, state.results.size),
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = 10.dp),
                 )
@@ -264,7 +270,7 @@ private fun SearchProgress(state: SearchUiState) {
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator()
                 Text(
-                    text = state.searchProgressMessage.ifBlank { "검색하는 중입니다." },
+                    text = state.searchProgressMessage.ifBlank { stringResource(R.string.search_in_progress) },
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -298,7 +304,7 @@ private fun VersionSelectorList(
             groupedVersions.forEach { (group, groupVersions) ->
                 item(key = "header-$group") {
                     Text(
-                        text = group,
+                        text = stringResource(group),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.SemiBold,
@@ -334,7 +340,7 @@ private fun SearchVersionPickerDialog(
             modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("검색 역본 선택", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.search_version_picker), style = MaterialTheme.typography.titleLarge)
             VersionSelectorList(
                 versions = versions,
                 selectedVersion = selectedVersion,
@@ -385,7 +391,7 @@ private fun SearchResultCard(
     ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
-                text = "${result.book.koreanName} ${result.verse.chapter}:${result.verse.verse}",
+                text = "${result.book.localizedName(LocalContext.current.resources.configuration.locales[0].language)} ${result.verse.chapter}:${result.verse.verse}",
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.SemiBold,
@@ -421,24 +427,24 @@ private fun highlightQuery(
     }
 }
 
-private fun BibleVersion.languageGroup(): String {
+private fun BibleVersion.languageGroup(): Int {
     val key = "${code.lowercase()} ${displayName.lowercase()}"
     return when {
-        key.contains("kor") || key.contains("개역") || key.contains("한글") || key.contains("한국") -> "한국어"
+        key.contains("kor") || key.contains("개역") || key.contains("한글") || key.contains("한국") -> R.string.language_korean
         key.contains("eng") || key.contains("niv") || key.contains("kjv") || key.contains("nasb") ||
-            key.contains("english") -> "영어"
-        key.contains("jpn") || key.contains("japanese") || key.contains("일본") -> "일본어"
-        key.contains("chn") || key.contains("chi") || key.contains("chinese") || key.contains("중국") -> "중국어"
-        key.contains("grk") || key.contains("greek") || key.contains("헬라") -> "원어/그리스어"
-        key.contains("heb") || key.contains("hebrew") || key.contains("히브리") -> "원어/히브리어"
-        else -> "기타"
+            key.contains("english") -> R.string.language_english
+        key.contains("jpn") || key.contains("japanese") || key.contains("일본") -> R.string.language_japanese
+        key.contains("chn") || key.contains("chi") || key.contains("chinese") || key.contains("중국") -> R.string.language_chinese
+        key.contains("grk") || key.contains("greek") || key.contains("헬라") -> R.string.language_greek
+        key.contains("heb") || key.contains("hebrew") || key.contains("히브리") -> R.string.language_hebrew
+        else -> R.string.language_other
     }
 }
 
 private object VersionLanguageGroup {
-    private val order = listOf("한국어", "영어", "일본어", "중국어", "원어/그리스어", "원어/히브리어", "기타")
+    private val order = listOf(R.string.language_korean, R.string.language_english, R.string.language_japanese, R.string.language_chinese, R.string.language_greek, R.string.language_hebrew, R.string.language_other)
 
-    fun orderOf(group: String): Int = order.indexOf(group).takeIf { it >= 0 } ?: order.size
+    fun orderOf(group: Int): Int = order.indexOf(group).takeIf { it >= 0 } ?: order.size
 }
 
 @Composable

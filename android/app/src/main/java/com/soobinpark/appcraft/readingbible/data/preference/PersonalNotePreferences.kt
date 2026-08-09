@@ -1,12 +1,13 @@
 package com.soobinpark.appcraft.readingbible.data.preference
 
 import android.content.Context
+import com.soobinpark.appcraft.readingbible.R
 import com.soobinpark.appcraft.readingbible.domain.model.PersonalNote
 import com.soobinpark.appcraft.readingbible.domain.model.PersonalNoteBackupFile
 import org.json.JSONArray
 import org.json.JSONObject
 
-class PersonalNotePreferences(context: Context) {
+class PersonalNotePreferences(private val context: Context) {
     private val prefs = context.getSharedPreferences("reading_bible_preferences", Context.MODE_PRIVATE)
 
     fun getNotes(): List<PersonalNote> {
@@ -37,7 +38,7 @@ class PersonalNotePreferences(context: Context) {
     fun importBackup(raw: String): List<PersonalNote> {
         val root = JSONObject(raw)
         check(root.optString("format") == PersonalNoteBackupFile.FORMAT_ID) {
-            "개인메모 백업 파일 형식이 올바르지 않습니다."
+            context.getString(R.string.personal_notes_invalid_backup)
         }
         val notesArray = root.optJSONArray("notes") ?: JSONArray()
         return buildList {

@@ -13,7 +13,7 @@ struct HelpGuideView: View {
                         .foregroundStyle(palette.onSurface)
                         .fixedSize(horizontal: false, vertical: true)
                 } header: {
-                    Text("시작하기").foregroundStyle(palette.onSurfaceVariant)
+                    Text(L10n.text("help.gettingStarted")).foregroundStyle(palette.onSurfaceVariant)
                 }
 
                 ForEach(HelpGuideContent.sections) { section in
@@ -36,13 +36,13 @@ struct HelpGuideView: View {
                 }
             }
             .readingThemedList()
-            .navigationTitle("사용 방법")
+            .navigationTitle(L10n.text("help.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(palette.background, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("닫기") { dismiss() }
+                    Button(L10n.text("action.close")) { dismiss() }
                 }
             }
         }

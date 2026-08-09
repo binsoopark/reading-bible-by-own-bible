@@ -38,6 +38,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.soobinpark.appcraft.readingbible.R
+import com.soobinpark.appcraft.readingbible.app.labelRes
 import com.soobinpark.appcraft.readingbible.app.BibleDataDownloadUiState
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingPalette
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingStyle
@@ -71,8 +72,8 @@ fun SettingsRoute(
     val appVersion = remember {
         runCatching {
             val info = context.packageManager.getPackageInfo(context.packageName, 0)
-            info.versionName ?: "알 수 없음"
-        }.getOrDefault("알 수 없음")
+            info.versionName ?: context.getString(R.string.unknown)
+        }.getOrDefault(context.getString(R.string.unknown))
     }
     val folderPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
@@ -95,9 +96,9 @@ fun SettingsRoute(
                     output.write(onExportRecords().toByteArray(Charsets.UTF_8))
                 }
             }.onSuccess {
-                importExportMessage = "구절 기록을 내보냈습니다."
+                importExportMessage = context.getString(R.string.settings_export_success)
             }.onFailure {
-                importExportMessage = "내보내기에 실패했습니다."
+                importExportMessage = context.getString(R.string.settings_export_failure)
             }
         }
     }
@@ -109,9 +110,9 @@ fun SettingsRoute(
                 context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
             }.onSuccess { json ->
                 onImportRecords(json)
-                importExportMessage = "구절 기록을 가져왔습니다."
+                importExportMessage = context.getString(R.string.settings_import_success)
             }.onFailure {
-                importExportMessage = "가져오기에 실패했습니다."
+                importExportMessage = context.getString(R.string.settings_import_failure)
             }
         }
     }
@@ -128,7 +129,7 @@ fun SettingsRoute(
                     .padding(horizontal = 20.dp)
                     .fillMaxWidth(),
             ) {
-                Text("설정으로 돌아가기")
+                Text(stringResource(R.string.settings_back))
             }
             HelpGuideScreen(modifier = Modifier.weight(1f))
         }
@@ -147,7 +148,7 @@ fun SettingsRoute(
                     .padding(horizontal = 20.dp)
                     .fillMaxWidth(),
             ) {
-                Text("설정으로 돌아가기")
+                Text(stringResource(R.string.settings_back))
             }
             LibraryRoute(
                 dataFolderUri = dataFolderUri,
@@ -166,15 +167,15 @@ fun SettingsRoute(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            Text("설정", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.tab_settings), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold)
         }
         item {
             Card {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("사용 방법 도움말", style = MaterialTheme.typography.titleMedium)
-                    Text("탭별 기능, 길게 누르기, 스와이프 등 사용 방법을 확인할 수 있습니다.")
+                    Text(stringResource(R.string.settings_help_title), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.settings_help_description))
                     Button(onClick = { showHelpGuide = true }) {
-                        Text("도움말 보기")
+                        Text(stringResource(R.string.settings_help_action))
                     }
                 }
             }
@@ -182,14 +183,14 @@ fun SettingsRoute(
         item {
             Card {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("성경 데이터 폴더", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.settings_data_folder), style = MaterialTheme.typography.titleMedium)
                     Text(
                         dataFolderUri?.toString()
                             ?: localDataRoot?.absolutePath
-                            ?: "아직 선택한 폴더가 없습니다. 선택하지 않으면 기본 /sdcard/bible 폴더를 시도합니다.",
+                            ?: stringResource(R.string.settings_no_folder),
                     )
                     Button(onClick = { folderPicker.launch(null) }) {
-                        Text("bdf/lfa 폴더 선택")
+                        Text(stringResource(R.string.settings_choose_folder))
                     }
                 }
             }
@@ -203,21 +204,21 @@ fun SettingsRoute(
         item {
             Card {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("처음 시작", style = MaterialTheme.typography.titleMedium)
-                    Text("1. Lifove Bible 호환 bdf/lfa 파일이 들어 있는 폴더를 선택합니다.")
-                    Text("2. 설정의 성경 파일 확인에서 감지된 파일과 누락 파일을 확인합니다.")
-                    Text("3. 읽기 탭에서 역본, 책, 장을 선택해 읽습니다.")
-                    Text("이 앱은 성경 본문 데이터를 포함하지 않으며, 사용자가 가진 파일을 읽습니다.")
+                    Text(stringResource(R.string.settings_getting_started), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.settings_step_one))
+                    Text(stringResource(R.string.settings_step_two))
+                    Text(stringResource(R.string.settings_step_three))
+                    Text(stringResource(R.string.settings_data_notice))
                 }
             }
         }
         item {
             Card {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("성경 파일 확인", style = MaterialTheme.typography.titleMedium)
-                    Text("선택한 bdf/lfa 폴더의 역본, 오디오 파일, 누락 파일과 진단 결과를 확인합니다.")
+                    Text(stringResource(R.string.settings_check_files), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.settings_check_files_description))
                     Button(onClick = { showBibleDiagnostics = true }) {
-                        Text("성경 파일 확인하기")
+                        Text(stringResource(R.string.settings_check_files_action))
                     }
                 }
             }
@@ -225,14 +226,14 @@ fun SettingsRoute(
         item {
             Card {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("기록 가져오기 / 내보내기", style = MaterialTheme.typography.titleMedium)
-                    Text("북마크, 메모, 하이라이트, 읽음 체크를 JSON 파일로 백업하거나 복원합니다.")
+                    Text(stringResource(R.string.settings_records_transfer), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.settings_records_transfer_description))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(onClick = { exportLauncher.launch("reading-bible-records.json") }) {
-                            Text("내보내기")
+                            Text(stringResource(R.string.settings_export))
                         }
                         Button(onClick = { importLauncher.launch(arrayOf("application/json", "text/*", "*/*")) }) {
-                            Text("가져오기")
+                            Text(stringResource(R.string.settings_import))
                         }
                     }
                     importExportMessage?.let { Text(it) }
@@ -254,8 +255,8 @@ fun SettingsRoute(
         item {
             Card {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("앱 정보", style = MaterialTheme.typography.titleMedium)
-                    Text("버전 $appVersion")
+                    Text(stringResource(R.string.settings_app_info), style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.format_version, appVersion))
                     Text(stringResource(R.string.app_info_lifove_compat))
                 }
             }
@@ -276,32 +277,30 @@ private fun BibleDataDownloadCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    "성경 데이터 다운로드",
+                    stringResource(R.string.settings_download_title),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
                 )
                 IconButton(onClick = { expanded = !expanded }) {
                     Icon(
                         imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = if (expanded) "접기" else "펼치기",
+                        contentDescription = stringResource(if (expanded) R.string.action_collapse else R.string.action_expand),
                     )
                 }
             }
             Text(
-                "사용자의 성경 데이터가 없을 경우 편의를 위해 별도의 성경 데이터 다운로드 기능을 제공합니다. " +
-                    "성경 데이터를 구할 수 없는 경우에 한해, 제한적으로 다운로드를 이용해 주세요.",
+                stringResource(R.string.settings_download_notice),
                 style = MaterialTheme.typography.bodyMedium,
             )
             AnimatedVisibility(visible = expanded) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        "GitHub Release에서 약 49MB의 bible.zip 파일을 내려받아 앱 전용 폴더에 압축 해제하고 바로 적용합니다. " +
-                            "이미 bdf/lfa 폴더를 선택했거나 성경 데이터가 감지되면 다운로드할 수 없습니다.",
+                        stringResource(R.string.settings_download_detail),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     state.installedRoot?.let {
-                        Text("적용된 폴더: ${it.absolutePath}", style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(R.string.settings_installed_folder, it.absolutePath), style = MaterialTheme.typography.bodySmall)
                     }
                     state.message.takeIf { it.isNotBlank() }?.let { Text(it) }
                     state.progress?.let { progress ->
@@ -314,7 +313,7 @@ private fun BibleDataDownloadCard(
                         onClick = onDownloadBibleData,
                         enabled = !state.isActive,
                     ) {
-                        Text("다운로드 및 적용")
+                        Text(stringResource(R.string.settings_download_action))
                     }
                 }
             }
@@ -335,33 +334,33 @@ private fun ReadingStyleCard(
 ) {
     Card {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            Text("읽기 스타일", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.settings_reading_style), style = MaterialTheme.typography.titleMedium)
             ToggleSettingRow(
-                title = "화면 꺼지지 않도록 유지",
-                description = "본문을 읽는 동안 화면 자동 꺼짐을 막습니다.",
+                title = stringResource(R.string.settings_keep_screen_on),
+                description = stringResource(R.string.settings_keep_screen_on_description),
                 checked = readingStyle.keepScreenOn,
                 onCheckedChange = onKeepScreenOnChanged,
             )
             ToggleSettingRow(
-                title = "멀티터치 줌 사용",
-                description = "본문에서 두 손가락으로 글자 크기를 조절합니다.",
+                title = stringResource(R.string.settings_multitouch_zoom),
+                description = stringResource(R.string.settings_multitouch_zoom_description),
                 checked = readingStyle.multitouchZoomEnabled,
                 onCheckedChange = onMultitouchZoomEnabledChanged,
             )
             ToggleSettingRow(
-                title = "볼드체 적용",
-                description = "본문 성경 구절을 굵게 표시합니다.",
+                title = stringResource(R.string.settings_bold_text),
+                description = stringResource(R.string.settings_bold_text_description),
                 checked = readingStyle.boldTextEnabled,
                 onCheckedChange = onBoldTextEnabledChanged,
             )
             ToggleSettingRow(
-                title = "본문 메모 아이콘 표시",
-                description = "메모가 작성된 절 옆에 표시를 보여줍니다.",
+                title = stringResource(R.string.settings_note_icon),
+                description = stringResource(R.string.settings_note_icon_description),
                 checked = readingStyle.showNotesInReader,
                 onCheckedChange = onShowNotesInReaderChanged,
             )
             SettingSlider(
-                title = "글자 크기",
+                title = stringResource(R.string.settings_font_size),
                 valueLabel = "${readingStyle.fontSizeSp.roundToInt()}sp",
                 value = readingStyle.fontSizeSp,
                 valueRange = 12f..28f,
@@ -369,14 +368,14 @@ private fun ReadingStyleCard(
                 onValueChange = onFontSizeChanged,
             )
             SettingSlider(
-                title = "본문 줄 간격",
+                title = stringResource(R.string.settings_line_spacing),
                 valueLabel = "${(readingStyle.lineHeightMultiplier * 100).roundToInt()}%",
                 value = readingStyle.lineHeightMultiplier,
                 valueRange = 1.2f..2.2f,
                 steps = 9,
                 onValueChange = onLineHeightChanged,
             )
-            Text("팔레트", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.settings_palette), style = MaterialTheme.typography.labelLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ReadingPalette.entries.take(3).forEach { palette ->
                     PaletteChip(
@@ -454,6 +453,6 @@ private fun PaletteChip(
     FilterChip(
         selected = selected,
         onClick = { onPaletteSelected(palette) },
-        label = { Text(palette.label) },
+        label = { Text(stringResource(palette.labelRes())) },
     )
 }

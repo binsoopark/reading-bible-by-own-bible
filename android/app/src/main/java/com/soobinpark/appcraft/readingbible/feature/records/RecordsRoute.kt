@@ -39,9 +39,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.soobinpark.appcraft.readingbible.R
 import com.soobinpark.appcraft.readingbible.domain.model.BibleCatalog
+import com.soobinpark.appcraft.readingbible.app.labelRes
+import com.soobinpark.appcraft.readingbible.domain.model.localizedName
+import java.util.Locale
 import com.soobinpark.appcraft.readingbible.domain.model.RecordFilter
 import com.soobinpark.appcraft.readingbible.domain.model.RecordShareFormatter
 import com.soobinpark.appcraft.readingbible.domain.model.RecordSortOrder
@@ -99,7 +104,7 @@ fun RecordsRoute(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("메모", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
+        Text(stringResource(R.string.tab_records), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             RecordFilter.entries.forEachIndexed { index, item ->
                 SegmentedButton(
@@ -110,12 +115,12 @@ fun RecordsRoute(
                     },
                     shape = SegmentedButtonDefaults.itemShape(index = index, count = RecordFilter.entries.size),
                 ) {
-                    Text(item.label)
+                    Text(stringResource(item.labelRes()))
                 }
             }
         }
         Text(
-            text = filterDescription(filter),
+            text = stringResource(filter.descriptionRes()),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -126,8 +131,8 @@ fun RecordsRoute(
                 selectedKeys = emptySet()
             },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("기록 검색") },
-            placeholder = { Text("본문, 메모, 역본, 성경 위치") },
+            label = { Text(stringResource(R.string.records_search_label)) },
+            placeholder = { Text(stringResource(R.string.records_search_placeholder)) },
             singleLine = true,
         )
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
@@ -137,7 +142,7 @@ fun RecordsRoute(
                     onClick = { sortOrder = item },
                     shape = SegmentedButtonDefaults.itemShape(index = index, count = RecordSortOrder.entries.size),
                 ) {
-                    Text(item.label)
+                    Text(stringResource(item.labelRes()))
                 }
             }
         }
@@ -146,19 +151,25 @@ fun RecordsRoute(
                 count = selectedKeys.size,
                 onClear = { selectedKeys = emptySet() },
                 onCopy = {
-                    val text = RecordShareFormatter.format(selected)
+                    val language = context.resources.configuration.locales[0].language
+                    val text = RecordShareFormatter.format(selected, { it.localizedName(language) }) { verse, body ->
+                        context.getString(R.string.format_verse_line, verse, body)
+                    }
                     val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                    clipboard.setPrimaryClip(ClipData.newPlainText("성경 구절", text))
-                    Toast.makeText(context, "선택한 구절을 복사했습니다", Toast.LENGTH_SHORT).show()
+                    clipboard.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.clipboard_bible_verse), text))
+                    Toast.makeText(context, context.getString(R.string.records_copied), Toast.LENGTH_SHORT).show()
                     selectedKeys = emptySet()
                 },
                 onShare = {
-                    val text = RecordShareFormatter.format(selected)
+                    val language = context.resources.configuration.locales[0].language
+                    val text = RecordShareFormatter.format(selected, { it.localizedName(language) }) { verse, body ->
+                        context.getString(R.string.format_verse_line, verse, body)
+                    }
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, text)
                     }
-                    context.startActivity(Intent.createChooser(intent, "구절 공유"))
+                    context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_bible_verse)))
                     selectedKeys = emptySet()
                 },
             )
@@ -166,9 +177,9 @@ fun RecordsRoute(
         if (filtered.isEmpty()) {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(if (query.isBlank()) emptyTitle(filter) else "검색 결과 없음", style = MaterialTheme.typography.titleMedium)
+                    Text(if (query.isBlank()) stringResource(filter.emptyTitleRes()) else stringResource(R.string.records_no_search_results), style = MaterialTheme.typography.titleMedium)
                     Text(
-                        if (query.isBlank()) emptyMessage(filter) else "다른 검색어로 기록을 찾아보세요.",
+                        if (query.isBlank()) stringResource(filter.emptyMessageRes()) else stringResource(R.string.records_try_another_query),
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
@@ -214,7 +225,8 @@ private fun BookmarkCard(
     onLongClick: () -> Unit,
 ) {
     val book = BibleCatalog.books.getOrNull(bookmark.bookIndex)
-    val reference = listOfNotNull(book?.koreanName, "${bookmark.chapter}:${bookmark.verse}").joinToString(" ")
+    val language = LocalContext.current.resources.configuration.locales[0].language
+    val reference = listOfNotNull(book?.localizedName(language), "${bookmark.chapter}:${bookmark.verse}").joinToString(" ")
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -259,8 +271,8 @@ private fun BookmarkCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 6.dp),
-                    label = { Text("메모") },
-                    placeholder = { Text("이 구절에 대한 생각을 적어두기") },
+                    label = { Text(stringResource(R.string.record_filter_note)) },
+                    placeholder = { Text(stringResource(R.string.records_note_placeholder)) },
                     minLines = 2,
                 )
             }
@@ -295,13 +307,13 @@ private fun SelectedRecordsBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "${count}개 선택",
+                text = stringResource(R.string.format_selected_count, count),
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = onClear) { Text("해제") }
-            Button(onClick = onCopy) { Text("복사") }
-            Button(onClick = onShare) { Text("공유") }
+            TextButton(onClick = onClear) { Text(stringResource(R.string.action_clear_selection)) }
+            Button(onClick = onCopy) { Text(stringResource(R.string.action_copy)) }
+            Button(onClick = onShare) { Text(stringResource(R.string.action_share)) }
         }
     }
 }
@@ -310,30 +322,30 @@ private fun Set<String>.toggle(key: String): Set<String> {
     return if (contains(key)) this - key else this + key
 }
 
-private fun filterDescription(filter: RecordFilter): String {
-    return when (filter) {
-        RecordFilter.Bookmark -> "북마크한 구절만 표시합니다."
-        RecordFilter.Highlight -> "형광펜으로 표시한 구절만 표시합니다."
-        RecordFilter.Read -> "읽음으로 체크한 구절만 표시합니다."
-        RecordFilter.Note -> "메모가 있는 구절만 표시합니다."
+private fun RecordFilter.descriptionRes(): Int {
+    return when (this) {
+        RecordFilter.Bookmark -> R.string.records_description_bookmark
+        RecordFilter.Highlight -> R.string.records_description_highlight
+        RecordFilter.Read -> R.string.records_description_read
+        RecordFilter.Note -> R.string.records_description_note
     }
 }
 
-private fun emptyTitle(filter: RecordFilter): String {
-    return when (filter) {
-        RecordFilter.Bookmark -> "북마크 없음"
-        RecordFilter.Highlight -> "형광펜 표시 없음"
-        RecordFilter.Read -> "읽음 표시 없음"
-        RecordFilter.Note -> "메모 없음"
+private fun RecordFilter.emptyTitleRes(): Int {
+    return when (this) {
+        RecordFilter.Bookmark -> R.string.records_empty_bookmark_title
+        RecordFilter.Highlight -> R.string.records_empty_highlight_title
+        RecordFilter.Read -> R.string.records_empty_read_title
+        RecordFilter.Note -> R.string.records_empty_note_title
     }
 }
 
-private fun emptyMessage(filter: RecordFilter): String {
-    return when (filter) {
-        RecordFilter.Bookmark -> "읽기 탭에서 북마크 아이콘을 누르면 여기에 표시됩니다."
-        RecordFilter.Highlight -> "읽기 탭에서 형광펜 아이콘을 눌러 표시하면 여기에 나타납니다."
-        RecordFilter.Read -> "읽기 탭에서 읽음 체크를 하면 여기에 표시됩니다."
-        RecordFilter.Note -> "기록 카드에서 메모를 작성하면 여기에 표시됩니다."
+private fun RecordFilter.emptyMessageRes(): Int {
+    return when (this) {
+        RecordFilter.Bookmark -> R.string.records_empty_bookmark_message
+        RecordFilter.Highlight -> R.string.records_empty_highlight_message
+        RecordFilter.Read -> R.string.records_empty_read_message
+        RecordFilter.Note -> R.string.records_empty_note_message
     }
 }
 

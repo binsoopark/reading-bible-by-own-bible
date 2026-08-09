@@ -6,6 +6,8 @@ import android.os.Environment
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.soobinpark.appcraft.readingbible.data.repository.FileBibleRepository
+import com.soobinpark.appcraft.readingbible.R
+import com.soobinpark.appcraft.readingbible.app.AppText
 import com.soobinpark.appcraft.readingbible.data.preference.ReadingProgressPreferences
 import com.soobinpark.appcraft.readingbible.domain.model.BibleSearchResult
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
@@ -101,7 +103,7 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
                 visibleResults = emptyList(),
                 resultPage = 0,
                 isLoading = false,
-                message = if (versions.isEmpty()) "검색할 bdf/lfa 역본을 찾지 못했습니다. 설정 탭에서 데이터 폴더를 선택해 주세요." else null,
+                message = if (versions.isEmpty()) AppText.get(R.string.search_no_versions_folder) else null,
             )
         }
     }
@@ -113,7 +115,7 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
             val version = state.selectedVersion
             val query = state.query.trim()
             if (version == null) {
-                _uiState.value = state.copy(message = "검색할 역본이 없습니다.")
+                _uiState.value = state.copy(message = AppText.get(R.string.search_no_version))
                 return@launch
             }
             if (query.length < 2) {
@@ -121,7 +123,7 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
                     results = emptyList(),
                     visibleResults = emptyList(),
                     resultPage = 0,
-                    message = "검색어를 두 글자 이상 입력해 주세요.",
+                    message = AppText.get(R.string.search_query_too_short),
                 )
                 return@launch
             }
@@ -133,13 +135,13 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
                 visibleResults = emptyList(),
                 resultPage = 0,
                 searchProgress = 0f,
-                searchProgressMessage = "검색 인덱스를 준비하는 중입니다.",
+                searchProgressMessage = AppText.get(R.string.search_preparing_index),
             )
             val results = withContext(Dispatchers.IO) {
                 repository.searchOptimized(version = version, query = query) { current, total, label ->
                     _uiState.value = _uiState.value.copy(
                         searchProgress = current.toFloat() / total.toFloat(),
-                        searchProgressMessage = "$label 검색 중",
+                        searchProgressMessage = AppText.get(R.string.search_progress, label),
                     )
                 }
             }
@@ -150,7 +152,7 @@ class SearchViewModel(application: Application) : AndroidViewModel(application) 
                 isSearching = false,
                 searchProgress = null,
                 searchProgressMessage = "",
-                message = if (results.isEmpty()) "검색 결과가 없습니다." else null,
+                message = if (results.isEmpty()) AppText.get(R.string.search_no_results) else null,
             )
         }
     }

@@ -1,6 +1,8 @@
-# Bible Workspace
+# Reading My Bible
 
-Lifove Bible 호환 성경 데이터(`.bdf`, `.lfa`, `.lfb`)를 **사용자가 이미 보유한 파일**로 읽기 위한 멀티플랫폼 성경 리더 워크스페이스입니다.
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+
+Lifove Bible 호환 성경 데이터(`.bdf`, `.lfa`, `.lfb`)를 **사용자가 이용할 권한이 있는 파일**로 읽기 위한 Android·iOS 성경 리더입니다.
 
 ## 이 프로젝트의 특성
 
@@ -29,7 +31,7 @@ Lifove Bible 호환 성경 데이터(`.bdf`, `.lfa`, `.lfb`)를 **사용자가 �
 ### 데이터는 어디서 오는가
 
 1. **권장**: 이미 보유한 bdf/lfa 폴더를 앱에서 선택
-2. **보조**: 성경 데이터를 구할 수 없을 때만, 설정의 **성경 데이터 다운로드**(GitHub Release `bible.zip`, 1회 제한)
+2. **보조**: 설정의 성경 데이터 다운로드 기능 사용. 다운로드 데이터는 소스 코드와 별도이며 각 번역본의 이용 조건이 적용됩니다.
 
 앱은 번역본 **배포·판매 앱이 아닙니다.** 데이터 출처와 이용 조건은 사용자 책임입니다.
 
@@ -73,11 +75,20 @@ bible/
 | Android 버전 | 1.2.1 |
 | iOS 버전 | 1.2.1 |
 
-## 라이선스·주의
+## 오픈소스와 라이선스
 
-- 저장소의 `data/bible/` 및 다운로드 zip은 **개발·테스트 편의**용일 수 있습니다.
-- 상용 배포 시 각 성경 **저작권·이용약관**을 반드시 확인하세요.
-- `reference/`는 역공학 참고용이며, 원본 Lifove Bible과 동일 동작을 보장하지 않습니다.
+- 소스 코드와 문서는 별도 표시가 없는 한 [Apache License 2.0](LICENSE)입니다.
+- 성경 본문, 찬송가, 교독문, 사용자 데이터는 이 라이선스에 포함되지 않습니다.
+- 앱 이름·로고·아이콘·스토어 자산도 Apache License 2.0 적용 대상이 아닙니다.
+- 자세한 적용 범위와 파생 앱 배포 시 교체할 항목은 [OPEN_SOURCE.md](OPEN_SOURCE.md)를 확인하세요.
+- 서드파티 고지는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에서 확인할 수 있습니다.
+- Lifove Bible과는 제휴·승인 관계가 없는 독립적인 호환 리더입니다.
+
+## 기여
+
+기여 방법은 [CONTRIBUTING.md](CONTRIBUTING.md), 보안 문제 제보는
+[SECURITY.md](SECURITY.md), 커뮤니티 기준은 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)를 확인하세요.
+공개 운영 준비 상태와 남은 데이터 권리 검토는 [오픈소스 공개 점검표](docs/OPEN_SOURCE_CHECKLIST.md)에 기록합니다.
 
 ## 관련 문서
 

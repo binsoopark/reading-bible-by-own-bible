@@ -83,6 +83,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
@@ -90,9 +91,12 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.soobinpark.appcraft.readingbible.R
+import com.soobinpark.appcraft.readingbible.app.labelRes
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.soobinpark.appcraft.readingbible.app.CacheWarmUpUiState
 import com.soobinpark.appcraft.readingbible.domain.model.BibleCatalog
+import com.soobinpark.appcraft.readingbible.domain.model.localizedName
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVerse
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingPalette
@@ -169,6 +173,7 @@ private fun ReaderScreen(
     var selectedHighlightColor by remember { mutableStateOf(VerseHighlight.Yellow) }
     var chapterSlideDirection by remember { mutableStateOf(AnimatedContentTransitionScope.SlideDirection.Left) }
     val context = LocalContext.current
+    val language = context.resources.configuration.locales[0].language
     var fontSizeToast by remember { mutableStateOf<Toast?>(null) }
     var selectedVerseKeys by remember(state.bookIndex, state.chapter) { mutableStateOf(setOf<String>()) }
     var selectionAnchorKey by remember(state.bookIndex, state.chapter) { mutableStateOf<String?>(null) }
@@ -218,18 +223,18 @@ private fun ReaderScreen(
                 onClick = { moveTo(previousChapter) },
                 enabled = previousChapter != null && !state.isLoading,
             ) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "이전 장")
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.reader_previous_chapter))
             }
             SuggestionChip(
                 onClick = { showBookSheet = true },
-                label = { Text("${currentBook.koreanName} ${state.chapter}장") },
+                label = { Text(stringResource(R.string.format_chapter, currentBook.localizedName(language), state.chapter)) },
                 modifier = Modifier.weight(1f),
             )
             CompactIconButton(
                 onClick = { moveTo(nextChapter) },
                 enabled = nextChapter != null && !state.isLoading,
             ) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = "다음 장")
+                Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = stringResource(R.string.reader_next_chapter))
             }
         }
         Row(
@@ -238,12 +243,12 @@ private fun ReaderScreen(
         ) {
             SuggestionChip(
                 onClick = { showVersionSheet = true },
-                label = { Text(state.selectedVersion?.displayName ?: "역본 없음") },
+                label = { Text(state.selectedVersion?.displayName ?: stringResource(R.string.reader_no_version)) },
                 modifier = Modifier.weight(1f),
             )
             SuggestionChip(
                 onClick = { showComparisonSheet = true },
-                label = { Text(state.comparisonVersion?.let { "비교 ${it.displayName}" } ?: "비교 없음") },
+                label = { Text(state.comparisonVersion?.let { stringResource(R.string.reader_comparison_version, it.displayName) } ?: stringResource(R.string.reader_no_comparison)) },
                 modifier = Modifier.weight(1f),
             )
         }
@@ -270,7 +275,7 @@ private fun ReaderScreen(
                     .then(
                         if (readingStyle.multitouchZoomEnabled) {
                             Modifier.readerPinchZoom(readingStyle.fontSizeSp) { fontSize ->
-                                val message = "글자 크기 ${fontSize.roundToInt()}"
+                                val message = context.getString(R.string.reader_font_size, fontSize.roundToInt())
                                 val toast = fontSizeToast ?: Toast.makeText(context, message, Toast.LENGTH_SHORT)
                                     .also { fontSizeToast = it }
                                 toast.setText(message)
@@ -308,20 +313,26 @@ private fun ReaderScreen(
                                 showHighlightColorSheet = true
                             },
                             onCopy = {
-                                val text = selectedVerses.selectionText(currentBook.koreanName)
+                                val text = selectedVerses.selectionText(
+                                    context.getString(R.string.format_chapter, currentBook.localizedName(language), selectedVerses.first().chapter),
+                                    { verse, body -> context.getString(R.string.format_verse_line, verse, body) },
+                                )
                                 val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                clipboard.setPrimaryClip(ClipData.newPlainText("성경 구절", text))
-                                Toast.makeText(context, "선택한 구절을 복사했습니다", Toast.LENGTH_SHORT).show()
+                                clipboard.setPrimaryClip(ClipData.newPlainText(context.getString(R.string.clipboard_bible_verse), text))
+                                Toast.makeText(context, context.getString(R.string.records_copied), Toast.LENGTH_SHORT).show()
                                 selectedVerseKeys = emptySet()
                                 selectionAnchorKey = null
                             },
                             onShare = {
-                                val text = selectedVerses.selectionText(currentBook.koreanName)
+                                val text = selectedVerses.selectionText(
+                                    context.getString(R.string.format_chapter, currentBook.localizedName(language), selectedVerses.first().chapter),
+                                    { verse, body -> context.getString(R.string.format_verse_line, verse, body) },
+                                )
                                 val intent = Intent(Intent.ACTION_SEND).apply {
                                     type = "text/plain"
                                     putExtra(Intent.EXTRA_TEXT, text)
                                 }
-                                context.startActivity(Intent.createChooser(intent, "구절 공유"))
+                                context.startActivity(Intent.createChooser(intent, context.getString(R.string.share_bible_verse)))
                                 selectedVerseKeys = emptySet()
                                 selectionAnchorKey = null
                             },
@@ -420,7 +431,7 @@ private fun ReaderScreen(
                                     if (readingStyle.showNotesInReader && record?.note?.isNotBlank() == true) {
                                         Icon(
                                             imageVector = Icons.Outlined.Description,
-                                            contentDescription = "메모 있음",
+                                            contentDescription = stringResource(R.string.reader_note_exists),
                                             tint = cardAccent,
                                             modifier = Modifier.size(dynamicActionIconSize(readingStyle.fontSizeSp)),
                                         )
@@ -435,7 +446,7 @@ private fun ReaderScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Outlined.FormatColorFill,
-                                            contentDescription = if (isHighlighted) "하이라이트 해제" else "하이라이트 추가",
+                                            contentDescription = if (isHighlighted) stringResource(R.string.reader_remove_highlight) else stringResource(R.string.reader_add_highlight),
                                             tint = if (isHighlighted) cardAccent else palette.accent,
                                             modifier = Modifier.size(dynamicActionIconSize(readingStyle.fontSizeSp)),
                                         )
@@ -446,7 +457,7 @@ private fun ReaderScreen(
                                     ) {
                                         Icon(
                                             imageVector = if (isRead) Icons.Outlined.CheckCircle else Icons.Outlined.RadioButtonUnchecked,
-                                            contentDescription = if (isRead) "읽음 해제" else "읽음 표시",
+                                            contentDescription = if (isRead) stringResource(R.string.reader_mark_unread) else stringResource(R.string.reader_mark_read),
                                             tint = if (isHighlighted) cardAccent else if (isRead) palette.highlightAccent else palette.accent,
                                             modifier = Modifier.size(dynamicActionIconSize(readingStyle.fontSizeSp)),
                                         )
@@ -460,7 +471,7 @@ private fun ReaderScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.Outlined.EditNote,
-                                            contentDescription = "구절 메모",
+                                            contentDescription = stringResource(R.string.reader_verse_note),
                                             tint = if (isHighlighted) cardAccent else if (record?.note?.isNotBlank() == true) palette.highlightAccent else palette.accent,
                                             modifier = Modifier.size(dynamicActionIconSize(readingStyle.fontSizeSp)),
                                         )
@@ -472,7 +483,7 @@ private fun ReaderScreen(
                                         val selected = record?.isBookmarked == true
                                         Icon(
                                             imageVector = if (selected) Icons.Outlined.Bookmark else Icons.Outlined.BookmarkBorder,
-                                            contentDescription = if (selected) "북마크 해제" else "북마크 추가",
+                                            contentDescription = if (selected) stringResource(R.string.reader_remove_bookmark) else stringResource(R.string.reader_add_bookmark),
                                             tint = cardAccent,
                                             modifier = Modifier.size(dynamicActionIconSize(readingStyle.fontSizeSp)),
                                         )
@@ -599,7 +610,7 @@ private fun VerseNoteEditorDialog(
     var note by remember(initialNote) { mutableStateOf(initialNote) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("구절 메모") },
+        title = { Text(stringResource(R.string.reader_verse_note)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(reference, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
@@ -607,17 +618,17 @@ private fun VerseNoteEditorDialog(
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
-                    label = { Text("이 구절에 대한 메모") },
+                    label = { Text(stringResource(R.string.reader_note_hint)) },
                     minLines = 4,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(note) }) { Text("저장") }
+            TextButton(onClick = { onSave(note) }) { Text(stringResource(R.string.action_save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("취소") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
         },
     )
 }
@@ -654,11 +665,13 @@ private fun selectVerseRange(
     )
 }
 
-private fun List<BibleVerse>.selectionText(bookName: String): String {
+private fun List<BibleVerse>.selectionText(
+    header: String,
+    verseLine: (Int, String) -> String,
+): String {
     val sorted = sortedWith(compareBy({ it.bookIndex }, { it.chapter }, { it.verse }))
     val first = sorted.firstOrNull() ?: return ""
-    val header = "$bookName ${first.chapter}장"
-    val body = sorted.joinToString("\n") { verse -> "${verse.verse}절 ${verse.text}" }
+    val body = sorted.joinToString("\n") { verse -> verseLine(verse.verse, verse.text) }
     return "$header\n$body"
 }
 
@@ -680,38 +693,38 @@ private fun SelectedVersesBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "${count}개 선택",
+                text = stringResource(R.string.format_selected_count, count),
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = onClear) { Text("해제") }
+            TextButton(onClick = onClear) { Text(stringResource(R.string.action_clear_selection)) }
             IconButton(onClick = onHighlight) {
-                Icon(Icons.Outlined.FormatColorFill, contentDescription = "선택한 구절 형광펜")
+                Icon(Icons.Outlined.FormatColorFill, contentDescription = stringResource(R.string.reader_highlight_selection))
             }
-            Button(onClick = onCopy) { Text("복사") }
-            Button(onClick = onShare) { Text("공유") }
+            Button(onClick = onCopy) { Text(stringResource(R.string.action_copy)) }
+            Button(onClick = onShare) { Text(stringResource(R.string.action_share)) }
         }
     }
 }
 
-private fun BibleVersion.languageGroup(): String {
+private fun BibleVersion.languageGroup(): Int {
     val key = "${code.lowercase()} ${displayName.lowercase()}"
     return when {
-        key.contains("kor") || key.contains("개역") || key.contains("한글") || key.contains("한국") -> "한국어"
+        key.contains("kor") || key.contains("개역") || key.contains("한글") || key.contains("한국") -> R.string.language_korean
         key.contains("eng") || key.contains("niv") || key.contains("kjv") || key.contains("nasb") ||
-            key.contains("english") -> "영어"
-        key.contains("jpn") || key.contains("japanese") || key.contains("일본") -> "일본어"
-        key.contains("chn") || key.contains("chi") || key.contains("chinese") || key.contains("중국") -> "중국어"
-        key.contains("grk") || key.contains("greek") || key.contains("헬라") -> "원어/그리스어"
-        key.contains("heb") || key.contains("hebrew") || key.contains("히브리") -> "원어/히브리어"
-        else -> "기타"
+            key.contains("english") -> R.string.language_english
+        key.contains("jpn") || key.contains("japanese") || key.contains("일본") -> R.string.language_japanese
+        key.contains("chn") || key.contains("chi") || key.contains("chinese") || key.contains("중국") -> R.string.language_chinese
+        key.contains("grk") || key.contains("greek") || key.contains("헬라") -> R.string.language_greek
+        key.contains("heb") || key.contains("hebrew") || key.contains("히브리") -> R.string.language_hebrew
+        else -> R.string.language_other
     }
 }
 
 private object VersionLanguageGroup {
-    private val order = listOf("한국어", "영어", "일본어", "중국어", "원어/그리스어", "원어/히브리어", "기타")
+    private val order = listOf(R.string.language_korean, R.string.language_english, R.string.language_japanese, R.string.language_chinese, R.string.language_greek, R.string.language_hebrew, R.string.language_other)
 
-    fun orderOf(group: String): Int = order.indexOf(group).takeIf { it >= 0 } ?: order.size
+    fun orderOf(group: Int): Int = order.indexOf(group).takeIf { it >= 0 } ?: order.size
 }
 
 @Composable
@@ -737,14 +750,14 @@ private fun VersionPickerDialog(
             modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("역본 선택", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.reader_choose_version), style = MaterialTheme.typography.titleLarge)
             if (allowClear) {
                 TextButton(onClick = onCleared) {
-                    Text("비교 역본 끄기")
+                    Text(stringResource(R.string.reader_disable_comparison))
                 }
             }
             if (groupedVersions.isEmpty()) {
-                Text("선택할 역본이 없습니다.", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.reader_no_versions_to_choose), style = MaterialTheme.typography.bodyMedium)
             } else {
                 Box(modifier = Modifier.heightIn(max = 460.dp)) {
                     LazyColumn(
@@ -756,7 +769,7 @@ private fun VersionPickerDialog(
                         groupedVersions.forEach { (group, groupVersions) ->
                             item(key = "header-$group") {
                                 Text(
-                                    text = group,
+                                    text = stringResource(group),
                                     style = MaterialTheme.typography.labelLarge,
                                     color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.SemiBold,
@@ -800,6 +813,8 @@ private fun BookChapterPickerDialog(
     onDismiss: () -> Unit,
     onBookChapterSelected: (Int, Int) -> Unit,
 ) {
+    val context = LocalContext.current
+    val language = context.resources.configuration.locales[0].language
     var activeBookIndex by remember(selectedBookIndex) { mutableStateOf(selectedBookIndex) }
     val activeBook = BibleCatalog.books[activeBookIndex]
     val chapters = remember(activeBookIndex) { (1..activeBook.chapterCount).toList() }
@@ -820,7 +835,7 @@ private fun BookChapterPickerDialog(
             modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("책과 장 선택", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.reader_choose_book_chapter), style = MaterialTheme.typography.titleLarge)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -828,7 +843,7 @@ private fun BookChapterPickerDialog(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 PickerListPanel(
-                    title = "성경",
+                    title = stringResource(R.string.reader_bible),
                     listState = bookListState,
                     itemCount = BibleCatalog.books.size,
                     modifier = Modifier.weight(1.15f),
@@ -839,9 +854,9 @@ private fun BookChapterPickerDialog(
                             onClick = { activeBookIndex = book.index },
                             label = {
                                 Column {
-                                    Text(book.koreanName)
+                                    Text(book.localizedName(language))
                                     Text(
-                                        text = if (book.index < 39) "구약" else "신약",
+                                        text = stringResource(if (book.index < 39) R.string.testament_old else R.string.testament_new),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -852,7 +867,7 @@ private fun BookChapterPickerDialog(
                     }
                 }
                 PickerListPanel(
-                    title = "${activeBook.koreanName} ${activeBook.chapterCount}장",
+                    title = stringResource(R.string.format_chapter, activeBook.localizedName(language), activeBook.chapterCount),
                     listState = chapterListState,
                     itemCount = chapters.size,
                     modifier = Modifier.weight(0.85f),
@@ -861,7 +876,7 @@ private fun BookChapterPickerDialog(
                         FilterChip(
                             selected = activeBookIndex == selectedBookIndex && chapter == selectedChapter,
                             onClick = { onBookChapterSelected(activeBookIndex, chapter) },
-                            label = { Text("${chapter}장") },
+                            label = { Text(stringResource(R.string.format_chapter_number, chapter)) },
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
@@ -1017,12 +1032,12 @@ private fun HighlightColorSheet(
             modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text("하이라이트 색상", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.reader_highlight_color), style = MaterialTheme.typography.titleLarge)
             colors.forEach { color ->
                 FilterChip(
                     selected = selected == color,
                     onClick = { onSelected(color) },
-                    label = { Text(color.label) },
+                    label = { Text(stringResource(color.labelRes())) },
                     leadingIcon = {
                         Box(
                             modifier = Modifier
@@ -1269,12 +1284,12 @@ private fun LoadingReaderState(message: String) {
         ) {
             CircularProgressIndicator()
             Text(
-                text = message.ifBlank { "성경 데이터를 준비하는 중입니다." },
+                text = message.ifBlank { stringResource(R.string.reader_loading_prepare) },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "처음 여는 데이터는 BDF/LFA 파일을 읽고 앱 내부 캐시에 저장합니다.",
+                text = stringResource(R.string.reader_loading_cache_note),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1328,10 +1343,10 @@ private fun EmptyReaderState(state: ReaderUiState) {
                 .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("성경 데이터가 필요합니다", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.reader_data_required), style = MaterialTheme.typography.titleMedium)
             Text(state.message.orEmpty())
-            Text("현재 확인한 폴더: ${state.dataRoot.absolutePath}")
-            Text("지원 포맷: .bdf, .lfa, .lfb")
+            Text(stringResource(R.string.reader_current_folder, state.dataRoot.absolutePath))
+            Text(stringResource(R.string.reader_supported_formats))
         }
     }
 }

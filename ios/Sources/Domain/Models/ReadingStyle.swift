@@ -9,11 +9,11 @@ enum ReadingPalette: String, CaseIterable, Codable, Sendable {
 
     var label: String {
         switch self {
-        case .paper: "종이"
-        case .evening: "저녁"
-        case .oled: "OLED"
-        case .highContrast: "고대비"
-        case .warmLight: "따뜻한 빛"
+        case .paper: L10n.text("palette.paper")
+        case .evening: L10n.text("palette.evening")
+        case .oled: L10n.text("palette.oled")
+        case .highContrast: L10n.text("palette.highContrast")
+        case .warmLight: L10n.text("palette.warmLight")
         }
     }
 }

@@ -8,7 +8,7 @@ struct BibleDataDownloadSection: View {
     var body: some View {
         Section {
             HStack {
-                Text("성경 데이터 다운로드")
+                Text(L10n.text("download.title"))
                     .font(.headline)
                 Spacer()
                 Button {
@@ -21,22 +21,20 @@ struct BibleDataDownloadSection: View {
             }
 
             Text(
-                "사용자의 성경 데이터가 없을 경우 편의를 위해 별도의 성경 데이터 다운로드 기능을 제공합니다. " +
-                "성경 데이터를 구할 수 없는 경우에 한해, 제한적으로 다운로드를 이용해 주세요."
+                L10n.text("download.notice")
             )
             .font(.subheadline)
             .readingSecondaryForeground()
 
             if expanded {
                 Text(
-                    "GitHub Release에서 약 49MB의 bible.zip 파일을 내려받아 앱 전용 폴더에 압축 해제하고 바로 적용합니다. " +
-                    "이미 bdf/lfa 폴더를 선택했거나 성경 데이터가 감지되면 다운로드할 수 없습니다."
+                    L10n.text("download.detail")
                 )
                 .font(.caption)
                 .readingSecondaryForeground()
 
                 if let root = environment.dataDownloadState.installedRoot {
-                    Text("적용된 폴더: \(root.path)")
+                    Text(L10n.format("download.installedFolder", root.path))
                         .font(.caption2)
                         .readingSecondaryForeground()
                 }
@@ -52,7 +50,7 @@ struct BibleDataDownloadSection: View {
                         .tint(palette.primary)
                 }
 
-                Button("다운로드 및 적용") {
+                Button(L10n.text("download.action")) {
                     Task { await environment.downloadSampleBibleData() }
                 }
                 .buttonStyle(ReadingPrimaryButtonStyle())
@@ -64,8 +62,7 @@ struct BibleDataDownloadSection: View {
     }
 
     private var messageColor: Color {
-        let message = environment.dataDownloadState.message
-        if message.contains("실패") || message.contains("이미") {
+        if environment.dataDownloadState.isError {
             return .red
         }
         return palette.onSurfaceVariant

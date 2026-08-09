@@ -27,7 +27,10 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: gradle
-          cache-dependency-path: android/**/build.gradle
+          cache-dependency-path: |
+            android/**/*.gradle
+            android/gradle/libs.versions.toml
+            android/gradle/wrapper/gradle-wrapper.properties
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1

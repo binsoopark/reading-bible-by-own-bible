@@ -1,0 +1,29 @@
+name: 기능 제안
+description: 새로운 기능이나 개선 아이디어를 제안해 주세요.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 해결하려는 문제
+      description: 현재 어떤 점이 불편한지 설명해 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 제안하는 방법
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 고려한 대안
+  - type: checkboxes
+    id: rights
+    attributes:
+      label: 데이터 권리 확인
+      options:
+        - label: 제안에 권리 확인이 안 된 성경 본문이나 제3자 자료의 배포가 포함되지 않습니다.
+          required: true

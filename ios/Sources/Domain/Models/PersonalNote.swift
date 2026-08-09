@@ -48,7 +48,7 @@ enum PersonalNoteBackupCodec {
         let file = try JSONDecoder().decode(PersonalNoteBackupFile.self, from: data)
         guard file.format == PersonalNoteBackupFile.formatId else {
             throw NSError(domain: "PersonalNoteBackup", code: 1, userInfo: [
-                NSLocalizedDescriptionKey: "개인메모 백업 파일 형식이 올바르지 않습니다.",
+                NSLocalizedDescriptionKey: L10n.text("personalNotes.invalidBackup"),
             ])
         }
         return file.notes

@@ -25,6 +25,10 @@ xcodegen generate
 open ReadingMyBible.xcodeproj
 ```
 
+실기기에서 실행하려면 `Config/Local.xcconfig.example`을 `Config/Local.xcconfig`로
+복사한 뒤 자신의 Bundle ID와 Apple Development Team을 입력합니다. 이 로컬 파일은
+Git에 포함되지 않습니다. 시뮬레이터 빌드는 서명 설정 없이 가능합니다.
+
 ## 소스 구조
 
 ```text

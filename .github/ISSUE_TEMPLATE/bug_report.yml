@@ -1,0 +1,49 @@
+name: 버그 신고
+description: 재현 가능한 앱 문제를 알려주세요.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: 실제 성경 본문 파일, 사용자 기록, 개인 경로 또는 인증정보는 첨부하지 마세요.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 플랫폼
+      options:
+        - Android
+        - iOS
+        - Android와 iOS 모두
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: 앱 버전
+      placeholder: 예) 1.2.1
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 재현 절차
+      placeholder: 문제를 재현할 수 있는 순서를 적어주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대한 동작
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 실제 동작
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: 추가 정보
+      description: 민감정보와 저작권 본문을 제거한 로그나 화면만 첨부해 주세요.

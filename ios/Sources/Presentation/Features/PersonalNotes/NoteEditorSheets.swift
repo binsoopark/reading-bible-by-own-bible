@@ -19,21 +19,21 @@ struct VerseNoteEditorSheet: View {
                     Text(verseText)
                         .font(.subheadline)
                         .foregroundStyle(palette.onSurface)
-                    TextField("이 구절에 대한 메모", text: $note, axis: .vertical)
+                    TextField(L10n.text("verseNote.placeholder"), text: $note, axis: .vertical)
                         .textFieldStyle(ReadingTextFieldStyle())
                         .lineLimit(5...12)
                 }
                 .padding()
             }
             .background(palette.background)
-            .navigationTitle("구절 메모")
+            .navigationTitle(L10n.text("verseNote.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("취소") { dismiss() }
+                    Button(L10n.text("action.cancel")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("저장") {
+                    Button(L10n.text("action.save")) {
                         onSave()
                         dismiss()
                     }
@@ -61,9 +61,9 @@ struct PersonalNoteEditorSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                TextField("제목", text: $noteTitle)
+                TextField(L10n.text("field.title"), text: $noteTitle)
                     .textFieldStyle(ReadingTextFieldStyle())
-                TextField("내용", text: $noteBody, axis: .vertical)
+                TextField(L10n.text("field.content"), text: $noteBody, axis: .vertical)
                     .textFieldStyle(ReadingTextFieldStyle())
                     .lineLimit(6...20)
             }
@@ -72,10 +72,10 @@ struct PersonalNoteEditorSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("취소") { dismiss() }
+                    Button(L10n.text("action.cancel")) { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("저장") {
+                    Button(L10n.text("action.save")) {
                         onSave(noteTitle, noteBody)
                         dismiss()
                     }

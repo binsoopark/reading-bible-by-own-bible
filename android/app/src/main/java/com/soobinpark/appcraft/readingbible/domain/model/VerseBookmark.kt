@@ -1,15 +1,13 @@
 package com.soobinpark.appcraft.readingbible.domain.model
 
-enum class VerseHighlight(
-    val label: String,
-) {
-    None("없음"),
-    Yellow("노랑"),
-    Mint("민트"),
-    Blue("파랑"),
-    Pink("분홍"),
-    Lavender("라벤더"),
-    Orange("주황"),
+enum class VerseHighlight {
+    None,
+    Yellow,
+    Mint,
+    Blue,
+    Pink,
+    Lavender,
+    Orange,
 }
 
 data class VerseBookmark(

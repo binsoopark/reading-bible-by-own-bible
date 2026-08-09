@@ -71,7 +71,7 @@ struct RecordsView: View {
         }
         .overlay(alignment: .top) {
             if copiedNotice {
-                Text("선택한 구절을 복사했습니다.")
+                Text(L10n.text("records.copied"))
                     .font(.caption.weight(.semibold))
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
@@ -84,10 +84,10 @@ struct RecordsView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("메모")
+            Text(L10n.text("tab.records"))
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(palette.onSurface)
-            Picker("기록 종류", selection: $filter) {
+            Picker(L10n.text("records.type"), selection: $filter) {
                 ForEach(RecordFilter.allCases) { item in
                     Text(item.label).tag(item)
                 }
@@ -96,10 +96,10 @@ struct RecordsView: View {
             Text(filterDescription)
                 .font(.caption)
                 .readingSecondaryForeground()
-            TextField("본문, 메모, 역본, 성경 위치", text: $query)
+            TextField(L10n.text("records.searchPlaceholder"), text: $query)
                 .textFieldStyle(ReadingTextFieldStyle())
                 .onChange(of: query) { _, _ in selectedKeys.removeAll() }
-            Picker("정렬", selection: $sortOrder) {
+            Picker(L10n.text("records.sort"), selection: $sortOrder) {
                 ForEach(RecordSortOrder.allCases) { item in
                     Text(item.label).tag(item)
                 }
@@ -114,10 +114,10 @@ struct RecordsView: View {
 
     private var filterDescription: String {
         switch filter {
-        case .bookmark: "북마크한 구절만 표시합니다."
-        case .highlight: "형광펜으로 표시한 구절만 표시합니다."
-        case .read: "읽음으로 체크한 구절만 표시합니다."
-        case .note: "메모가 있는 구절만 표시합니다."
+        case .bookmark: L10n.text("records.description.bookmark")
+        case .highlight: L10n.text("records.description.highlight")
+        case .read: L10n.text("records.description.read")
+        case .note: L10n.text("records.description.note")
         }
     }
 
@@ -129,10 +129,10 @@ struct RecordsView: View {
                 Image(systemName: emptyIcon)
                     .font(.system(size: 40))
                     .foregroundStyle(palette.onSurfaceVariant)
-                Text(query.isEmpty ? emptyTitle : "검색 결과 없음")
+                Text(query.isEmpty ? emptyTitle : L10n.text("records.noSearchResults"))
                     .font(.headline)
                     .foregroundStyle(palette.onSurface)
-                Text(query.isEmpty ? emptyMessage : "다른 검색어로 기록을 찾아보세요.")
+                Text(query.isEmpty ? emptyMessage : L10n.text("records.tryAnotherQuery"))
                     .font(.subheadline)
                     .multilineTextAlignment(.center)
                     .readingSecondaryForeground()
@@ -161,19 +161,19 @@ struct RecordsView: View {
 
     private var emptyTitle: String {
         switch filter {
-        case .bookmark: "북마크 없음"
-        case .highlight: "형광펜 표시 없음"
-        case .read: "읽음 표시 없음"
-        case .note: "메모 없음"
+        case .bookmark: L10n.text("records.empty.bookmark.title")
+        case .highlight: L10n.text("records.empty.highlight.title")
+        case .read: L10n.text("records.empty.read.title")
+        case .note: L10n.text("records.empty.note.title")
         }
     }
 
     private var emptyMessage: String {
         switch filter {
-        case .bookmark: "읽기 탭에서 북마크 아이콘을 누르면 여기에 표시됩니다."
-        case .highlight: "읽기 탭에서 형광펜 아이콘을 눌러 표시하면 여기에 나타납니다."
-        case .read: "읽기 탭에서 읽음 체크를 하면 여기에 표시됩니다."
-        case .note: "기록 카드에서 메모를 작성하면 여기에 표시됩니다."
+        case .bookmark: L10n.text("records.empty.bookmark.message")
+        case .highlight: L10n.text("records.empty.highlight.message")
+        case .read: L10n.text("records.empty.read.message")
+        case .note: L10n.text("records.empty.note.message")
         }
     }
 
@@ -194,7 +194,7 @@ struct RecordsView: View {
                 .font(.body)
                 .foregroundStyle(palette.onSurface)
             if filter == .note || !bookmark.note.isEmpty {
-                TextField("메모", text: binding(for: bookmark), axis: .vertical)
+                TextField(L10n.text("record.filter.note"), text: binding(for: bookmark), axis: .vertical)
                     .textFieldStyle(ReadingTextFieldStyle())
             }
         }

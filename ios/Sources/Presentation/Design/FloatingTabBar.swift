@@ -11,11 +11,11 @@ enum AppTab: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .reader: "읽기"
-        case .search: "검색"
-        case .records: "메모"
-        case .personalNotes: "개인메모"
-        case .settings: "설정"
+        case .reader: L10n.text("tab.reader")
+        case .search: L10n.text("tab.search")
+        case .records: L10n.text("tab.records")
+        case .personalNotes: L10n.text("tab.personalNotes")
+        case .settings: L10n.text("tab.settings")
         }
     }
 

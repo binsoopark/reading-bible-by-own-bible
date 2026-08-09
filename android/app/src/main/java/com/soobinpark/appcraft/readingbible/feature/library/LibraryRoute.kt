@@ -24,9 +24,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.soobinpark.appcraft.readingbible.R
 import com.soobinpark.appcraft.readingbible.domain.model.BibleFileDiagnostic
 import com.soobinpark.appcraft.readingbible.domain.model.BibleFileIssue
 import com.soobinpark.appcraft.readingbible.domain.model.BibleFileIssueSeverity
@@ -69,12 +71,12 @@ private fun LibraryScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    "성경 파일",
+                    stringResource(R.string.library_title),
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.SemiBold,
                 )
                 TextButton(onClick = onRefresh) {
-                    Text("새로고침")
+                    Text(stringResource(R.string.action_refresh))
                 }
             }
         }
@@ -99,9 +101,9 @@ private fun AudioSection(diagnostic: BibleFileDiagnostic) {
     val context = LocalContext.current
     Card {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("오디오 파일", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.library_audio), style = MaterialTheme.typography.titleMedium)
             if (diagnostic.audioFiles.isEmpty()) {
-                Text("감지된 MP3 파일이 없습니다.")
+                Text(stringResource(R.string.library_no_audio))
             } else {
                 diagnostic.audioFiles.take(20).forEach { audio ->
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -115,12 +117,12 @@ private fun AudioSection(diagnostic: BibleFileDiagnostic) {
                                 runCatching { context.startActivity(intent) }
                             },
                         ) {
-                            Text("재생")
+                            Text(stringResource(R.string.action_play))
                         }
                     }
                 }
                 if (diagnostic.audioFiles.size > 20) {
-                    Text("그 외 ${diagnostic.audioFiles.size - 20}개 파일이 더 있습니다.")
+                    Text(stringResource(R.string.library_more_audio, diagnostic.audioFiles.size - 20))
                 }
             }
         }
@@ -131,16 +133,16 @@ private fun AudioSection(diagnostic: BibleFileDiagnostic) {
 private fun SourceCard(state: LibraryUiState) {
     Card {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("데이터 위치", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.library_data_location), style = MaterialTheme.typography.titleMedium)
             Text(
                 text = state.dataFolderUri?.toString() ?: state.dataRoot.absolutePath,
                 style = MaterialTheme.typography.bodyMedium,
             )
             Text(
                 text = if (state.dataFolderUri != null) {
-                    "설정 탭에서 선택한 폴더를 검사 중입니다."
+                    stringResource(R.string.library_scanning_selected)
                 } else {
-                    "선택한 폴더가 없어 기본 /sdcard/bible 폴더를 검사합니다."
+                    stringResource(R.string.library_scanning_default)
                 },
                 style = MaterialTheme.typography.bodyMedium,
             )
@@ -152,16 +154,16 @@ private fun SourceCard(state: LibraryUiState) {
 private fun SummaryGrid(diagnostic: BibleFileDiagnostic) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            SummaryCard("전체 파일", diagnostic.scannedFileCount.toString(), Modifier.weight(1f))
-            SummaryCard("역본", diagnostic.versions.size.toString(), Modifier.weight(1f))
+            SummaryCard(stringResource(R.string.library_all_files), diagnostic.scannedFileCount.toString(), Modifier.weight(1f))
+            SummaryCard(stringResource(R.string.library_versions), diagnostic.versions.size.toString(), Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SummaryCard(".lfa", diagnostic.lfaCount.toString(), Modifier.weight(1f))
-            SummaryCard(".bdf", "${diagnostic.bdfFileCount}개", Modifier.weight(1f))
+            SummaryCard(".bdf", stringResource(R.string.library_file_count, diagnostic.bdfFileCount), Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            SummaryCard("완성 bdf", diagnostic.completeBdfVersionCount.toString(), Modifier.weight(1f))
-            SummaryCard("이슈", diagnostic.issues.size.toString(), Modifier.weight(1f))
+            SummaryCard(stringResource(R.string.library_complete_bdf), diagnostic.completeBdfVersionCount.toString(), Modifier.weight(1f))
+            SummaryCard(stringResource(R.string.library_issues), diagnostic.issues.size.toString(), Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SummaryCard(".lfb", diagnostic.lfbCount.toString(), Modifier.weight(1f))
@@ -188,9 +190,9 @@ private fun SummaryCard(
 private fun VersionSection(diagnostic: BibleFileDiagnostic) {
     Card {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("감지된 역본", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.library_detected_versions), style = MaterialTheme.typography.titleMedium)
             if (diagnostic.versions.isEmpty()) {
-                Text("읽을 수 있는 역본이 아직 없습니다.")
+                Text(stringResource(R.string.library_no_versions))
             } else {
                 diagnostic.versions.forEach { version ->
                     AssistChip(
@@ -207,9 +209,9 @@ private fun VersionSection(diagnostic: BibleFileDiagnostic) {
 private fun IssueSection(diagnostic: BibleFileDiagnostic) {
     Card {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("진단 결과", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.library_diagnostics), style = MaterialTheme.typography.titleMedium)
             if (diagnostic.issues.isEmpty()) {
-                Text("큰 문제 없이 읽을 수 있는 데이터 폴더로 보입니다.")
+                Text(stringResource(R.string.library_diagnostics_ok))
             } else {
                 diagnostic.issues.forEach { issue ->
                     IssueRow(issue)
@@ -227,9 +229,9 @@ private fun IssueRow(issue: BibleFileIssue) {
         BibleFileIssueSeverity.Info -> MaterialTheme.colorScheme.primary
     }
     val label = when (issue.severity) {
-        BibleFileIssueSeverity.Error -> "오류"
-        BibleFileIssueSeverity.Warning -> "주의"
-        BibleFileIssueSeverity.Info -> "정보"
+        BibleFileIssueSeverity.Error -> stringResource(R.string.severity_error)
+        BibleFileIssueSeverity.Warning -> stringResource(R.string.severity_warning)
+        BibleFileIssueSeverity.Info -> stringResource(R.string.severity_info)
     }
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Text("$label · ${issue.title}", color = color, fontWeight = FontWeight.SemiBold)

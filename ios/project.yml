@@ -3,7 +3,6 @@ options:
   bundleIdPrefix: com.soobinpark.appcraft
   deploymentTarget:
     iOS: "17.0"
-  developmentTeam: 3Z2KXXULNQ
   createIntermediateGroups: true
   groupSortPosition: top
   developmentLanguage: ko
@@ -15,9 +14,14 @@ targets:
   ReadingMyBible:
     type: application
     platform: iOS
+    configFiles:
+      Debug: Config/Shared.xcconfig
+      Release: Config/Shared.xcconfig
     sources:
       - path: Sources
       - path: Resources/Assets.xcassets
+        buildPhase: resources
+      - path: Resources/Localization
         buildPhase: resources
       - path: PrivacyInfo.xcprivacy
         buildPhase: resources
@@ -25,15 +29,13 @@ targets:
       - package: ZIPFoundation
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.soobinpark.appcraft.readingbible
         MARKETING_VERSION: 1.2.1
         CURRENT_PROJECT_VERSION: 10004
         SWIFT_VERSION: "5.10"
-        DEVELOPMENT_TEAM: 3Z2KXXULNQ
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_IDENTITY: ""
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: "내 성경 읽기"
+        INFOPLIST_KEY_CFBundleDisplayName: "$(PRODUCT_NAME)"
         INFOPLIST_KEY_CFBundleIconName: AppIcon
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIRequiresFullScreen: YES

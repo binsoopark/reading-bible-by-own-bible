@@ -107,6 +107,10 @@ fun ReadingBibleApp(
                     AppTab.Records -> RecordsRoute(
                         bookmarks = bookmarks,
                         onNoteChanged = appViewModel::updateBookmarkNote,
+                        onOpenBookmark = { bookmark ->
+                            readerViewModel.openBookmark(bookmark)
+                            selectedTab = AppTab.Reader
+                        },
                         modifier = modifier,
                     )
                     AppTab.PersonalNotes -> PersonalNotesRoute(

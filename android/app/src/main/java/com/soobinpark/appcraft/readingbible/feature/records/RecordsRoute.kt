@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import com.soobinpark.appcraft.readingbible.domain.model.BibleCatalog
 import com.soobinpark.appcraft.readingbible.domain.model.RecordFilter
 import com.soobinpark.appcraft.readingbible.domain.model.RecordShareFormatter
+import com.soobinpark.appcraft.readingbible.domain.model.RecordSortOrder
 import com.soobinpark.appcraft.readingbible.domain.model.VerseHighlight
 import com.soobinpark.appcraft.readingbible.domain.model.VerseBookmark
 import java.text.DateFormat
@@ -54,12 +55,42 @@ import java.util.Date
 fun RecordsRoute(
     bookmarks: List<VerseBookmark>,
     onNoteChanged: (String, String) -> Unit,
+    onOpenBookmark: (VerseBookmark) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var filter by remember { mutableStateOf(RecordFilter.Bookmark) }
+    var query by remember { mutableStateOf("") }
+    var sortOrder by remember { mutableStateOf(RecordSortOrder.Recent) }
     var selectedKeys by remember { mutableStateOf(setOf<String>()) }
     val context = LocalContext.current
-    val filtered = remember(bookmarks, filter) { bookmarks.filter { filter.matches(it) } }
+    val filtered = remember(bookmarks, filter, query, sortOrder) {
+        val normalizedQuery = query.trim().lowercase()
+        bookmarks
+            .asSequence()
+            .filter { filter.matches(it) }
+            .filter { bookmark ->
+                if (normalizedQuery.isEmpty()) return@filter true
+                val book = BibleCatalog.books.getOrNull(bookmark.bookIndex)
+                listOf(
+                    bookmark.text,
+                    bookmark.note,
+                    bookmark.versionCode,
+                    book?.koreanName.orEmpty(),
+                    book?.englishName.orEmpty(),
+                    "${book?.koreanName.orEmpty()} ${bookmark.chapter}:${bookmark.verse}",
+                    "${bookmark.chapter}:${bookmark.verse}",
+                ).any { it.lowercase().contains(normalizedQuery) }
+            }
+            .let { records ->
+                when (sortOrder) {
+                    RecordSortOrder.Recent -> records.sortedByDescending { it.createdAtMillis }
+                    RecordSortOrder.Bible -> records.sortedWith(
+                        compareBy({ it.bookIndex }, { it.chapter }, { it.verse }, { it.versionCode.lowercase() }),
+                    )
+                }
+            }
+            .toList()
+    }
     val selected = remember(filtered, selectedKeys) { filtered.filter { selectedKeys.contains(it.key) } }
 
     Column(
@@ -88,6 +119,28 @@ fun RecordsRoute(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        OutlinedTextField(
+            value = query,
+            onValueChange = {
+                query = it
+                selectedKeys = emptySet()
+            },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("기록 검색") },
+            placeholder = { Text("본문, 메모, 역본, 성경 위치") },
+            singleLine = true,
+        )
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            RecordSortOrder.entries.forEachIndexed { index, item ->
+                SegmentedButton(
+                    selected = sortOrder == item,
+                    onClick = { sortOrder = item },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = RecordSortOrder.entries.size),
+                ) {
+                    Text(item.label)
+                }
+            }
+        }
         if (selectedKeys.isNotEmpty()) {
             SelectedRecordsBar(
                 count = selectedKeys.size,
@@ -97,6 +150,7 @@ fun RecordsRoute(
                     val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                     clipboard.setPrimaryClip(ClipData.newPlainText("성경 구절", text))
                     Toast.makeText(context, "선택한 구절을 복사했습니다", Toast.LENGTH_SHORT).show()
+                    selectedKeys = emptySet()
                 },
                 onShare = {
                     val text = RecordShareFormatter.format(selected)
@@ -105,14 +159,18 @@ fun RecordsRoute(
                         putExtra(Intent.EXTRA_TEXT, text)
                     }
                     context.startActivity(Intent.createChooser(intent, "구절 공유"))
+                    selectedKeys = emptySet()
                 },
             )
         }
         if (filtered.isEmpty()) {
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(emptyTitle(filter), style = MaterialTheme.typography.titleMedium)
-                    Text(emptyMessage(filter), style = MaterialTheme.typography.bodyMedium)
+                    Text(if (query.isBlank()) emptyTitle(filter) else "검색 결과 없음", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        if (query.isBlank()) emptyMessage(filter) else "다른 검색어로 기록을 찾아보세요.",
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
             }
         } else {
@@ -131,6 +189,8 @@ fun RecordsRoute(
                         onClick = {
                             if (selectedKeys.isNotEmpty()) {
                                 selectedKeys = selectedKeys.toggle(bookmark.key)
+                            } else {
+                                onOpenBookmark(bookmark)
                             }
                         },
                         onLongClick = {

@@ -11,6 +11,7 @@ import com.soobinpark.appcraft.readingbible.domain.model.BibleCatalog
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVerse
 import com.soobinpark.appcraft.readingbible.domain.model.BibleVersion
 import com.soobinpark.appcraft.readingbible.domain.model.ReadingProgress
+import com.soobinpark.appcraft.readingbible.domain.model.VerseBookmark
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -246,6 +247,18 @@ class ReaderViewModel(application: Application) : AndroidViewModel(application) 
             saveProgress(targetVersion, comparison, safeBookIndex, safeChapter)
             targetVersion?.let { warmUpSelectedVersion(it) }
         }
+    }
+
+    fun openBookmark(bookmark: VerseBookmark) {
+        openSearchResult(
+            BibleVerse(
+                versionCode = bookmark.versionCode,
+                bookIndex = bookmark.bookIndex,
+                chapter = bookmark.chapter,
+                verse = bookmark.verse,
+                text = bookmark.text,
+            ),
+        )
     }
 
     private fun warmUpSelectedVersion(version: BibleVersion) {

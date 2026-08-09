@@ -1,16 +1,45 @@
 import SwiftUI
 
 struct RecordsView: View {
+    let onOpenBookmark: (VerseBookmark) -> Void
     @EnvironmentObject private var environment: AppEnvironment
     @Environment(\.readingPalette) private var palette
     @State private var filter: RecordFilter = .bookmark
+    @State private var query = ""
+    @State private var sortOrder: RecordSortOrder = .recent
     @State private var selectedKeys: Set<String> = []
     @State private var showShareSheet = false
     @State private var sharePayload = ""
     @State private var copiedNotice = false
 
     private var filteredBookmarks: [VerseBookmark] {
-        environment.bookmarks.filter { $0.matches(filter: filter) }
+        let normalizedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let filtered = environment.bookmarks.filter { bookmark in
+            guard bookmark.matches(filter: filter) else { return false }
+            guard !normalizedQuery.isEmpty else { return true }
+            let book = BibleCatalog.book(at: bookmark.bookIndex)
+            let searchableValues = [
+                bookmark.text,
+                bookmark.note,
+                bookmark.versionCode,
+                book.koreanName,
+                book.englishName,
+                "\(book.koreanName) \(bookmark.chapter):\(bookmark.verse)",
+                "\(bookmark.chapter):\(bookmark.verse)",
+            ]
+            return searchableValues.contains { $0.lowercased().contains(normalizedQuery) }
+        }
+        switch sortOrder {
+        case .recent:
+            return filtered.sorted { $0.createdAtMillis > $1.createdAtMillis }
+        case .bible:
+            return filtered.sorted {
+                if $0.bookIndex != $1.bookIndex { return $0.bookIndex < $1.bookIndex }
+                if $0.chapter != $1.chapter { return $0.chapter < $1.chapter }
+                if $0.verse != $1.verse { return $0.verse < $1.verse }
+                return $0.versionCode.localizedCaseInsensitiveCompare($1.versionCode) == .orderedAscending
+            }
+        }
     }
 
     var body: some View {
@@ -24,6 +53,7 @@ struct RecordsView: View {
                     onShare: {
                         sharePayload = selectionText
                         showShareSheet = true
+                        selectedKeys.removeAll()
                     }
                 )
                 .padding(.horizontal, 16)
@@ -66,6 +96,15 @@ struct RecordsView: View {
             Text(filterDescription)
                 .font(.caption)
                 .readingSecondaryForeground()
+            TextField("본문, 메모, 역본, 성경 위치", text: $query)
+                .textFieldStyle(ReadingTextFieldStyle())
+                .onChange(of: query) { _, _ in selectedKeys.removeAll() }
+            Picker("정렬", selection: $sortOrder) {
+                ForEach(RecordSortOrder.allCases) { item in
+                    Text(item.label).tag(item)
+                }
+            }
+            .pickerStyle(.segmented)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 16)
@@ -90,10 +129,10 @@ struct RecordsView: View {
                 Image(systemName: emptyIcon)
                     .font(.system(size: 40))
                     .foregroundStyle(palette.onSurfaceVariant)
-                Text(emptyTitle)
+                Text(query.isEmpty ? emptyTitle : "검색 결과 없음")
                     .font(.headline)
                     .foregroundStyle(palette.onSurface)
-                Text(emptyMessage)
+                Text(query.isEmpty ? emptyMessage : "다른 검색어로 기록을 찾아보세요.")
                     .font(.subheadline)
                     .multilineTextAlignment(.center)
                     .readingSecondaryForeground()
@@ -173,8 +212,11 @@ struct RecordsView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            if selectedKeys.isEmpty { return }
-            toggleSelection(bookmark.key)
+            if selectedKeys.isEmpty {
+                onOpenBookmark(bookmark)
+            } else {
+                toggleSelection(bookmark.key)
+            }
         }
         .onLongPressGesture {
             toggleSelection(bookmark.key)
@@ -193,6 +235,7 @@ struct RecordsView: View {
         let text = selectionText
         guard !text.isEmpty else { return }
         RecordClipboard.copy(text)
+        selectedKeys.removeAll()
         withAnimation {
             copiedNotice = true
         }

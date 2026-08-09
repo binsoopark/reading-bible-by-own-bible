@@ -156,6 +156,16 @@ final class ReaderViewModel: ObservableObject {
         saveProgress()
     }
 
+    func openBookmark(_ bookmark: VerseBookmark) {
+        openSearchResult(BibleVerse(
+            versionCode: bookmark.versionCode,
+            bookIndex: bookmark.bookIndex,
+            chapter: bookmark.chapter,
+            verse: bookmark.verse,
+            text: bookmark.text
+        ))
+    }
+
     var currentBook: BibleBook { BibleCatalog.book(at: bookIndex) }
 
     private func reloadCurrentChapter() async {

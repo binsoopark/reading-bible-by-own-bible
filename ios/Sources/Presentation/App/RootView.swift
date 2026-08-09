@@ -24,7 +24,10 @@ struct RootView: View {
                     selectedTab = .reader
                 }, readerViewModel: readerViewModel)
             case .records:
-                RecordsView()
+                RecordsView(onOpenBookmark: { bookmark in
+                    readerViewModel.openBookmark(bookmark)
+                    selectedTab = .reader
+                })
             case .personalNotes:
                 PersonalNotesView()
             case .settings:

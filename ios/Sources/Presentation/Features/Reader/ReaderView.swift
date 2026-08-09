@@ -96,8 +96,11 @@ struct ReaderView: View {
                         }
                         .onChange(of: chapterContentID) { _, _ in
                             clearVerseSelection()
-                            guard let first = viewModel.verses.first?.id else { return }
-                            withAnimation { proxy.scrollTo(first, anchor: .top) }
+                            let target = viewModel.focusVerse.flatMap { focusVerse in
+                                viewModel.verses.first { $0.verse == focusVerse }?.id
+                            } ?? viewModel.verses.first?.id
+                            guard let target else { return }
+                            withAnimation { proxy.scrollTo(target, anchor: .top) }
                         }
                     }
 

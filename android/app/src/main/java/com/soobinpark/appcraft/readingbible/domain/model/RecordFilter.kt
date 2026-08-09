@@ -17,31 +17,65 @@ enum class RecordFilter(val label: String) {
     }
 }
 
+enum class RecordSortOrder(val label: String) {
+    Recent("최신순"),
+    Bible("성경순"),
+}
+
 object RecordShareFormatter {
     fun format(bookmarks: List<VerseBookmark>): String {
         if (bookmarks.isEmpty()) return ""
-        val sorted = bookmarks.sortedWith(compareBy({ it.bookIndex }, { it.chapter }, { it.verse }))
+        val sorted = bookmarks.sortedWith(
+            compareBy<VerseBookmark>({ it.versionCode.lowercase() }, { it.bookIndex }, { it.chapter }, { it.verse }),
+        )
         val sections = mutableListOf<String>()
-        var currentHeader = ""
-        val lines = mutableListOf<String>()
+        var currentKey: Triple<String, Int, Int>? = null
+        val sectionBookmarks = mutableListOf<VerseBookmark>()
 
         fun flush() {
-            if (lines.isEmpty()) return
-            sections += listOf(currentHeader, lines.joinToString("\n")).filter { it.isNotBlank() }.joinToString("\n")
-            lines.clear()
+            if (sectionBookmarks.isEmpty()) return
+            val first = sectionBookmarks.first()
+            val bookName = BibleCatalog.books.getOrNull(first.bookIndex)?.koreanName.orEmpty()
+            val verseLabel = sectionBookmarks.map { it.verse }.toVerseRangeLabel()
+            val reference = "$bookName ${first.chapter}:$verseLabel · ${first.versionCode}".trim()
+            sections += if (sectionBookmarks.size == 1) {
+                "“${first.text.trim()}”\n$reference"
+            } else {
+                val body = sectionBookmarks.joinToString("\n") { "${it.verse}절 ${it.text.trim()}" }
+                "$body\n\n$reference"
+            }
+            sectionBookmarks.clear()
         }
 
         sorted.forEach { bookmark ->
-            val book = BibleCatalog.books.getOrNull(bookmark.bookIndex)
-            val header = "${book?.koreanName ?: ""} ${bookmark.chapter}장"
-            if (header != currentHeader) {
+            val key = Triple(bookmark.versionCode.lowercase(), bookmark.bookIndex, bookmark.chapter)
+            if (currentKey != null && key != currentKey) {
                 flush()
-                currentHeader = header
             }
-            lines += "${bookmark.verse}절 ${bookmark.text}"
+            currentKey = key
+            sectionBookmarks += bookmark
         }
         flush()
         return sections.joinToString("\n\n")
+    }
+
+    private fun List<Int>.toVerseRangeLabel(): String {
+        if (isEmpty()) return ""
+        val sortedVerses = distinct().sorted()
+        val ranges = mutableListOf<String>()
+        var start = sortedVerses.first()
+        var end = start
+        sortedVerses.drop(1).forEach { verse ->
+            if (verse == end + 1) {
+                end = verse
+            } else {
+                ranges += if (start == end) "$start" else "$start-$end"
+                start = verse
+                end = verse
+            }
+        }
+        ranges += if (start == end) "$start" else "$start-$end"
+        return ranges.joinToString(", ")
     }
 }
 

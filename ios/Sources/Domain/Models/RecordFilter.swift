@@ -27,35 +27,79 @@ enum RecordFilter: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
+enum RecordSortOrder: String, CaseIterable, Identifiable, Sendable {
+    case recent
+    case bible
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .recent: "최신순"
+        case .bible: "성경순"
+        }
+    }
+}
+
 enum RecordShareFormatter {
     static func format(_ bookmarks: [VerseBookmark]) -> String {
         let sorted = bookmarks.sorted {
+            let versionComparison = $0.versionCode.localizedCaseInsensitiveCompare($1.versionCode)
+            if versionComparison != .orderedSame { return versionComparison == .orderedAscending }
             if $0.bookIndex != $1.bookIndex { return $0.bookIndex < $1.bookIndex }
             if $0.chapter != $1.chapter { return $0.chapter < $1.chapter }
             return $0.verse < $1.verse
         }
-        guard let first = sorted.first else { return "" }
+        guard !sorted.isEmpty else { return "" }
 
         var sections: [String] = []
-        var currentHeader = ""
-        var lines: [String] = []
+        var currentKey: String?
+        var sectionBookmarks: [VerseBookmark] = []
 
         func flush() {
-            guard !lines.isEmpty else { return }
-            sections.append([currentHeader, lines.joined(separator: "\n")].filter { !$0.isEmpty }.joined(separator: "\n"))
-            lines = []
+            guard let first = sectionBookmarks.first else { return }
+            let book = BibleCatalog.book(at: first.bookIndex)
+            let verseLabel = verseRangeLabel(sectionBookmarks.map(\.verse))
+            let reference = "\(book.koreanName) \(first.chapter):\(verseLabel) · \(first.versionCode)"
+            if sectionBookmarks.count == 1 {
+                sections.append("“\(first.text.trimmingCharacters(in: .whitespacesAndNewlines))”\n\(reference)")
+            } else {
+                let body = sectionBookmarks.map {
+                    "\($0.verse)절 \($0.text.trimmingCharacters(in: .whitespacesAndNewlines))"
+                }.joined(separator: "\n")
+                sections.append("\(body)\n\n\(reference)")
+            }
+            sectionBookmarks = []
         }
 
         for bookmark in sorted {
-            let book = BibleCatalog.book(at: bookmark.bookIndex)
-            let header = "\(book.koreanName) \(bookmark.chapter)장"
-            if header != currentHeader {
+            let key = "\(bookmark.versionCode.lowercased())|\(bookmark.bookIndex)|\(bookmark.chapter)"
+            if currentKey != nil, key != currentKey {
                 flush()
-                currentHeader = header
             }
-            lines.append("\(bookmark.verse)절 \(bookmark.text)")
+            currentKey = key
+            sectionBookmarks.append(bookmark)
         }
         flush()
         return sections.joined(separator: "\n\n")
+    }
+
+    private static func verseRangeLabel(_ verses: [Int]) -> String {
+        let sorted = Array(Set(verses)).sorted()
+        guard let first = sorted.first else { return "" }
+        var ranges: [String] = []
+        var start = first
+        var end = first
+        for verse in sorted.dropFirst() {
+            if verse == end + 1 {
+                end = verse
+            } else {
+                ranges.append(start == end ? "\(start)" : "\(start)-\(end)")
+                start = verse
+                end = verse
+            }
+        }
+        ranges.append(start == end ? "\(start)" : "\(start)-\(end)")
+        return ranges.joined(separator: ", ")
     }
 }
